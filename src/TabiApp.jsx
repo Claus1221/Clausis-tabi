@@ -98,41 +98,84 @@ const VOCAB = [
 // Wörter-Blöcke: je 5 thematisch gruppierte Wörter mit Kanji, Hiragana,
 // Übersetzung und Beispielsatz (mit Lesung, Übersetzung, Erklärung).
 // Blöcke schalten der Reihe nach frei. Jedes Wort wird im SRS über sein Kanji abgefragt.
+// Beispielsätze in der Höflichkeitsform (です/ます). Jeder Satz ist in „tokens"
+// zerlegt: t = Text, r = Lesung, de = Bedeutung, b = grammatischer Aufbau.
+// Tokens ohne de (z. B. „。") sind nicht antippbar.
 const WORD_BLOCKS = [
   {
     id: 'wb1', theme: '🏔️', title: 'Natur', words: [
-      { kanji: '山', kana: 'やま', romaji: 'yama', de: 'Berg', ex: { jp: '山が高い。', kana: 'やまがたかい。', de: 'Der Berg ist hoch.', note: '„が" markiert das Subjekt · „高い (たかい)" = hoch' } },
-      { kanji: '川', kana: 'かわ', romaji: 'kawa', de: 'Fluss', ex: { jp: '川を見る。', kana: 'かわをみる。', de: 'Ich sehe den Fluss.', note: '„を" markiert das Objekt · „見る (みる)" = sehen' } },
-      { kanji: '空', kana: 'そら', romaji: 'sora', de: 'Himmel', ex: { jp: '空が青い。', kana: 'そらがあおい。', de: 'Der Himmel ist blau.', note: '„青い (あおい)" = blau' } },
-      { kanji: '星', kana: 'ほし', romaji: 'hoshi', de: 'Stern', ex: { jp: '星がきれいだ。', kana: 'ほしがきれいだ。', de: 'Die Sterne sind schön.', note: '„きれい" = schön · „だ" = ist (einfache Form)' } },
-      { kanji: '月', kana: 'つき', romaji: 'tsuki', de: 'Mond', ex: { jp: '月が出た。', kana: 'つきがでた。', de: 'Der Mond ist aufgegangen.', note: '„出た (でた)" = ging auf (Vergangenheit von 出る)' } },
+      { kanji: '山', kana: 'やま', romaji: 'yama', de: 'Berg', ex: { jp: '山が高いです。', kana: 'やまがたかいです。', de: 'Der Berg ist hoch.', tokens: [
+        { t: '山', r: 'やま', de: 'Berg', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '高い', r: 'たかい', de: 'hoch', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '川', kana: 'かわ', romaji: 'kawa', de: 'Fluss', ex: { jp: '川を見ます。', kana: 'かわをみます。', de: 'Ich sehe den Fluss.', tokens: [
+        { t: '川', r: 'かわ', de: 'Fluss', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '見ます', r: 'みます', de: 'sehen', b: 'Verb, höflich (von 見る)' }, { t: '。' },
+      ] } },
+      { kanji: '空', kana: 'そら', romaji: 'sora', de: 'Himmel', ex: { jp: '空が青いです。', kana: 'そらがあおいです。', de: 'Der Himmel ist blau.', tokens: [
+        { t: '空', r: 'そら', de: 'Himmel', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '青い', r: 'あおい', de: 'blau', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '星', kana: 'ほし', romaji: 'hoshi', de: 'Stern', ex: { jp: '星がきれいです。', kana: 'ほしがきれいです。', de: 'Die Sterne sind schön.', tokens: [
+        { t: '星', r: 'ほし', de: 'Stern', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: 'きれい', de: 'schön', b: 'な-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '月', kana: 'つき', romaji: 'tsuki', de: 'Mond', ex: { jp: '月が出ます。', kana: 'つきがでます。', de: 'Der Mond geht auf.', tokens: [
+        { t: '月', r: 'つき', de: 'Mond', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '出ます', r: 'でます', de: 'aufgehen / herauskommen', b: 'Verb, höflich (von 出る)' }, { t: '。' },
+      ] } },
     ],
   },
   {
     id: 'wb2', theme: '🐾', title: 'Tiere', words: [
-      { kanji: '猫', kana: 'ねこ', romaji: 'neko', de: 'Katze', ex: { jp: '猫が好きだ。', kana: 'ねこがすきだ。', de: 'Ich mag Katzen.', note: '„好き (すき)" = mögen · „だ" = ist' } },
-      { kanji: '犬', kana: 'いぬ', romaji: 'inu', de: 'Hund', ex: { jp: '犬が走る。', kana: 'いぬがはしる。', de: 'Der Hund rennt.', note: '„走る (はしる)" = rennen' } },
-      { kanji: '鳥', kana: 'とり', romaji: 'tori', de: 'Vogel', ex: { jp: '鳥が鳴く。', kana: 'とりがなく。', de: 'Der Vogel zwitschert.', note: '„鳴く (なく)" = (Tier) Laut geben' } },
-      { kanji: '魚', kana: 'さかな', romaji: 'sakana', de: 'Fisch', ex: { jp: '魚を食べる。', kana: 'さかなをたべる。', de: 'Ich esse Fisch.', note: '„食べる (たべる)" = essen' } },
-      { kanji: '馬', kana: 'うま', romaji: 'uma', de: 'Pferd', ex: { jp: '馬が大きい。', kana: 'うまがおおきい。', de: 'Das Pferd ist groß.', note: '„大きい (おおきい)" = groß' } },
+      { kanji: '猫', kana: 'ねこ', romaji: 'neko', de: 'Katze', ex: { jp: '猫が好きです。', kana: 'ねこがすきです。', de: 'Ich mag Katzen.', tokens: [
+        { t: '猫', r: 'ねこ', de: 'Katze', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Partikel bei 好き' }, { t: '好き', r: 'すき', de: 'mögen / mag', b: 'な-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '犬', kana: 'いぬ', romaji: 'inu', de: 'Hund', ex: { jp: '犬が走ります。', kana: 'いぬがはしります。', de: 'Der Hund rennt.', tokens: [
+        { t: '犬', r: 'いぬ', de: 'Hund', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '走ります', r: 'はしります', de: 'rennen', b: 'Verb, höflich (von 走る)' }, { t: '。' },
+      ] } },
+      { kanji: '鳥', kana: 'とり', romaji: 'tori', de: 'Vogel', ex: { jp: '鳥が鳴きます。', kana: 'とりがなきます。', de: 'Der Vogel zwitschert.', tokens: [
+        { t: '鳥', r: 'とり', de: 'Vogel', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '鳴きます', r: 'なきます', de: '(Tier) Laut geben', b: 'Verb, höflich (von 鳴く)' }, { t: '。' },
+      ] } },
+      { kanji: '魚', kana: 'さかな', romaji: 'sakana', de: 'Fisch', ex: { jp: '魚を食べます。', kana: 'さかなをたべます。', de: 'Ich esse Fisch.', tokens: [
+        { t: '魚', r: 'さかな', de: 'Fisch', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '食べます', r: 'たべます', de: 'essen', b: 'Verb, höflich (von 食べる)' }, { t: '。' },
+      ] } },
+      { kanji: '馬', kana: 'うま', romaji: 'uma', de: 'Pferd', ex: { jp: '馬が大きいです。', kana: 'うまがおおきいです。', de: 'Das Pferd ist groß.', tokens: [
+        { t: '馬', r: 'うま', de: 'Pferd', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '大きい', r: 'おおきい', de: 'groß', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
     ],
   },
   {
     id: 'wb3', theme: '👤', title: 'Körper', words: [
-      { kanji: '目', kana: 'め', romaji: 'me', de: 'Auge', ex: { jp: '目が痛い。', kana: 'めがいたい。', de: 'Meine Augen tun weh.', note: '„痛い (いたい)" = schmerzen / weh tun' } },
-      { kanji: '口', kana: 'くち', romaji: 'kuchi', de: 'Mund', ex: { jp: '口を開ける。', kana: 'くちをあける。', de: 'Ich öffne den Mund.', note: '„開ける (あける)" = öffnen' } },
-      { kanji: '耳', kana: 'みみ', romaji: 'mimi', de: 'Ohr', ex: { jp: '耳が大きい。', kana: 'みみがおおきい。', de: 'Die Ohren sind groß.', note: '„大きい (おおきい)" = groß' } },
-      { kanji: '手', kana: 'て', romaji: 'te', de: 'Hand', ex: { jp: '手を洗う。', kana: 'てをあらう。', de: 'Ich wasche die Hände.', note: '„洗う (あらう)" = waschen' } },
-      { kanji: '足', kana: 'あし', romaji: 'ashi', de: 'Fuß / Bein', ex: { jp: '足が速い。', kana: 'あしがはやい。', de: 'Er ist schnell.', note: 'wörtl. „die Füße sind schnell" · „速い (はやい)" = schnell' } },
+      { kanji: '目', kana: 'め', romaji: 'me', de: 'Auge', ex: { jp: '目が痛いです。', kana: 'めがいたいです。', de: 'Meine Augen tun weh.', tokens: [
+        { t: '目', r: 'め', de: 'Auge', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '痛い', r: 'いたい', de: 'schmerzhaft / weh', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '口', kana: 'くち', romaji: 'kuchi', de: 'Mund', ex: { jp: '口を開けます。', kana: 'くちをあけます。', de: 'Ich öffne den Mund.', tokens: [
+        { t: '口', r: 'くち', de: 'Mund', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '開けます', r: 'あけます', de: 'öffnen', b: 'Verb, höflich (von 開ける)' }, { t: '。' },
+      ] } },
+      { kanji: '耳', kana: 'みみ', romaji: 'mimi', de: 'Ohr', ex: { jp: '耳が大きいです。', kana: 'みみがおおきいです。', de: 'Die Ohren sind groß.', tokens: [
+        { t: '耳', r: 'みみ', de: 'Ohr', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '大きい', r: 'おおきい', de: 'groß', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '手', kana: 'て', romaji: 'te', de: 'Hand', ex: { jp: '手を洗います。', kana: 'てをあらいます。', de: 'Ich wasche die Hände.', tokens: [
+        { t: '手', r: 'て', de: 'Hand', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '洗います', r: 'あらいます', de: 'waschen', b: 'Verb, höflich (von 洗う)' }, { t: '。' },
+      ] } },
+      { kanji: '足', kana: 'あし', romaji: 'ashi', de: 'Fuß / Bein', ex: { jp: '足が速いです。', kana: 'あしがはやいです。', de: 'Er ist schnell.', tokens: [
+        { t: '足', r: 'あし', de: 'Fuß / Bein', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '速い', r: 'はやい', de: 'schnell', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
     ],
   },
   {
     id: 'wb4', theme: '🏠', title: 'Alltag', words: [
-      { kanji: '人', kana: 'ひと', romaji: 'hito', de: 'Mensch', ex: { jp: '人が多い。', kana: 'ひとがおおい。', de: 'Es sind viele Menschen da.', note: '„多い (おおい)" = viel / zahlreich' } },
-      { kanji: '家', kana: 'いえ', romaji: 'ie', de: 'Haus', ex: { jp: '家に帰る。', kana: 'いえにかえる。', de: 'Ich gehe nach Hause.', note: '„に" = Richtung · „帰る (かえる)" = zurückkehren' } },
-      { kanji: '水', kana: 'みず', romaji: 'mizu', de: 'Wasser', ex: { jp: '水を飲む。', kana: 'みずをのむ。', de: 'Ich trinke Wasser.', note: '„飲む (のむ)" = trinken' } },
-      { kanji: '車', kana: 'くるま', romaji: 'kuruma', de: 'Auto', ex: { jp: '車で行く。', kana: 'くるまでいく。', de: 'Ich fahre mit dem Auto.', note: '„で" = Mittel (mit) · „行く (いく)" = gehen / fahren' } },
-      { kanji: '店', kana: 'みせ', romaji: 'mise', de: 'Laden', ex: { jp: '店が開く。', kana: 'みせがあく。', de: 'Der Laden öffnet.', note: '„開く (あく)" = sich öffnen' } },
+      { kanji: '人', kana: 'ひと', romaji: 'hito', de: 'Mensch', ex: { jp: '人が多いです。', kana: 'ひとがおおいです。', de: 'Es sind viele Menschen da.', tokens: [
+        { t: '人', r: 'ひと', de: 'Mensch', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '多い', r: 'おおい', de: 'viel / zahlreich', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '家', kana: 'いえ', romaji: 'ie', de: 'Haus', ex: { jp: '家に帰ります。', kana: 'いえにかえります。', de: 'Ich gehe nach Hause.', tokens: [
+        { t: '家', r: 'いえ', de: 'Haus / Zuhause', b: 'Nomen' }, { t: 'に', de: '(Richtung)', b: 'Richtungspartikel (wohin)' }, { t: '帰ります', r: 'かえります', de: 'zurückkehren', b: 'Verb, höflich (von 帰る)' }, { t: '。' },
+      ] } },
+      { kanji: '水', kana: 'みず', romaji: 'mizu', de: 'Wasser', ex: { jp: '水を飲みます。', kana: 'みずをのみます。', de: 'Ich trinke Wasser.', tokens: [
+        { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '飲みます', r: 'のみます', de: 'trinken', b: 'Verb, höflich (von 飲む)' }, { t: '。' },
+      ] } },
+      { kanji: '車', kana: 'くるま', romaji: 'kuruma', de: 'Auto', ex: { jp: '車で行きます。', kana: 'くるまでいきます。', de: 'Ich fahre mit dem Auto.', tokens: [
+        { t: '車', r: 'くるま', de: 'Auto', b: 'Nomen' }, { t: 'で', de: '(Mittel)', b: 'Partikel: womit / Mittel' }, { t: '行きます', r: 'いきます', de: 'gehen / fahren', b: 'Verb, höflich (von 行く)' }, { t: '。' },
+      ] } },
+      { kanji: '店', kana: 'みせ', romaji: 'mise', de: 'Laden', ex: { jp: '店が開きます。', kana: 'みせがあきます。', de: 'Der Laden öffnet.', tokens: [
+        { t: '店', r: 'みせ', de: 'Laden / Geschäft', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '開きます', r: 'あきます', de: 'sich öffnen', b: 'Verb, höflich (von 開く)' }, { t: '。' },
+      ] } },
     ],
   },
 ]
@@ -1073,16 +1116,25 @@ function BlockQuiz({ words, onFinish }) {
 
 function WordDetail({ word }) {
   const [copied, setCopied] = useState(false)
+  const [activeTok, setActiveTok] = useState(null)
+
+  // „Aufbau"-Zeile aus den antippbaren Tokens (für die Zwischenablage).
+  const aufbau = word.ex.tokens
+    .filter(t => t.de)
+    .map(t => `${t.t}${t.r && t.r !== t.t ? ` (${t.r})` : ''} = ${t.de} [${t.b}]`)
+    .join(' · ')
 
   const clip =
     `${word.kanji}（${word.kana} / ${word.romaji}）— ${word.de}\n\n` +
     `Beispielsatz:\n${word.ex.jp}\n${word.ex.kana}\n„${word.ex.de}"\n` +
-    `Erklärung: ${word.ex.note}`
+    `Aufbau: ${aufbau}`
 
   const handleCopy = async () => {
     const ok = await copyText(clip)
     if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1800) }
   }
+
+  const tk = activeTok != null ? word.ex.tokens[activeTok] : null
 
   return (
     <div>
@@ -1099,18 +1151,45 @@ function WordDetail({ word }) {
         <div style={{ fontSize: 18, color: C.sumi, marginTop: 4 }}>{word.de}</div>
       </div>
 
-      {/* Beispielsatz */}
+      {/* Beispielsatz (größer, antippbare Wörter) */}
       <Card>
-        <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 10, display: 'flex', justifyContent: 'space-between' }}>
           <span>BEISPIELSATZ</span>
-          <button onClick={() => speak(word.ex.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14 }}>🔊</button>
+          <button onClick={() => speak(word.ex.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🔊</button>
         </div>
-        <div style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", marginBottom: 4 }}>{word.ex.jp}</div>
-        <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 6 }}>{word.ex.kana}</div>
-        <div style={{ fontSize: 15, color: C.indigo, marginBottom: 10 }}>„{word.ex.de}"</div>
-        <div style={{ background: `${C.shu}10`, borderRadius: 8, padding: 10 }}>
-          <p style={{ fontSize: 12, color: C.shu }}>💡 {word.ex.note}</p>
+
+        <div style={{ fontSize: 32, fontFamily: "'Noto Serif JP', serif", lineHeight: 1.5, marginBottom: 8 }}>
+          {word.ex.tokens.map((t, i) => {
+            if (!t.de) return <span key={i}>{t.t}</span>
+            const active = activeTok === i
+            return (
+              <span key={i} onClick={() => setActiveTok(active ? null : i)}
+                style={{
+                  cursor: 'pointer', borderRadius: 4, padding: '0 1px',
+                  borderBottom: `2px dotted ${active ? C.shu : `${C.indigo}66`}`,
+                  background: active ? `${C.shu}22` : 'transparent',
+                }}>{t.t}</span>
+            )
+          })}
         </div>
+        <div style={{ fontSize: 14, color: C.textMuted, marginBottom: 6 }}>{word.ex.kana}</div>
+        <div style={{ fontSize: 16, color: C.indigo, marginBottom: 12 }}>„{word.ex.de}"</div>
+
+        {/* Tooltip / Detailbox zum angetippten Wort */}
+        {tk ? (
+          <div style={{ background: `${C.indigo}10`, border: `1px solid ${C.indigo}30`, borderRadius: 8, padding: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: 24, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{tk.t}</span>
+              {tk.r && tk.r !== tk.t && <span style={{ fontSize: 14, color: C.textMuted }}>{tk.r}</span>}
+            </div>
+            <div style={{ fontSize: 15, color: C.indigo, fontWeight: 600 }}>{tk.de}</div>
+            <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>Aufbau: {tk.b}</div>
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: C.textMuted, fontStyle: 'italic' }}>
+            💡 Tippe ein Wort im Satz für Bedeutung & Aufbau
+          </div>
+        )}
       </Card>
 
       {/* In die Zwischenablage kopieren (z. B. um eine KI zu fragen) */}
@@ -1167,7 +1246,7 @@ function BlockCourse({ block, onComplete, onClose }) {
       </div>
     )
   } else {
-    content = <WordDetail word={words[step - 1]} />
+    content = <WordDetail key={words[step - 1].kanji} word={words[step - 1]} />
   }
 
   return (
