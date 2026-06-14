@@ -367,6 +367,49 @@ const GRAMMAR = [
   },
 ]
 
+// ─── Durchgehende Geschichte ─────────────────────────────────────────────────
+// Eine fortlaufende Reise-Erzählung: pro Station ein Kapitel. Es baut auf dem
+// auf, was man gelernt hat, und wendet es an (ab den Wort-/Grammatik-Stationen
+// mit echten japanischen Sätzen). Wird am Ende jeder Lektion gezeigt und im
+// Reise-„Tagebuch" gesammelt. Schlüssel = Stations-ID (h1.., k1.., wb1.., g1..).
+const STORY = {
+  h1: { de: 'Dein Flugzeug landet in Japan. Müde, aber voller Vorfreude trittst du hinaus. Über dem Gate leuchten fremde Zeichen – あ、い、う… Deine Reise beginnt.' },
+  h2: { de: 'Am Bahnhof suchst du den richtigen Zug. Überall Hiragana. Langsam erkennst du Silben wieder: か、き、く… Die ersten Schilder ergeben Sinn!' },
+  h3: { de: 'Im Zug gleitet die Landschaft vorbei. Leise übst du die Laute, die du kennst – さ、し、す… Eine alte Frau gegenüber lächelt dir zu.' },
+  h4: { de: 'Du steigst in einer kleinen Stadt aus. た、ち、つ… Die Zeichen werden vertrauter, fast wie alte Bekannte.' },
+  h5: { de: 'Vor einem Lädchen liest du die Speisekarte – noch nicht alles, aber immer mehr. な、に、ぬ… Dein Magen knurrt.' },
+  h6: { de: 'Ein Wegweiser zeigt zu den Bergen. は、ひ、ふ… Du entzifferst ihn fast mühelos und folgst der Richtung.' },
+  h7: { de: 'Am Ortsrand endet das Pflaster. ま、み、む… Vor dir öffnet sich weites, grünes Land.' },
+  h8: { de: 'Ein schmaler Pfad führt bergauf. や、ゆ、よ… Fast alle Hiragana sitzen jetzt.' },
+  h9: { de: 'Vögel rufen über dir. ら、り、る… Du liest ein Schild am Wegrand laut vor – und verstehst es.' },
+  h10: { de: 'わ、を、ん – die letzten Hiragana! Du kannst jetzt alles lesen, was in Hiragana geschrieben steht. Ein kleiner Triumph.' },
+  wb1: { de: 'Vor dir ragt ein Berg auf, ein Fluss glitzert im Tal. Endlich kannst du benennen, was du siehst:', jp: 'これは山です。', kana: 'これはやまです。', tr: 'Das ist ein Berg.' },
+  g1: { de: 'Du lernst, worüber du sprichst zu markieren – mit は. Über den Berg vor dir sagst du:', jp: '山は高いです。', kana: 'やまはたかいです。', tr: 'Der Berg ist hoch.' },
+  g2: { de: 'Mit です sagst du höflich, was etwas ist. Du zeigst auf das Wasser:', jp: 'これは川です。', kana: 'これはかわです。', tr: 'Das ist ein Fluss.' },
+  k1: { de: 'Auf einem Wegweiser stehen kantigere Zeichen – Katakana. ア、イ、ウ… für Wörter aus aller Welt.' },
+  k2: { de: 'カ、キ、ク… An einem Automaten erkennst du ein Wort: コーヒー – Kaffee! Du gönnst dir eine Pause.' },
+  k3: { de: 'サ、シ、ス… An einer Hütte hängt eine Karte mit Namen in Katakana.' },
+  k4: { de: 'タ、チ、ツ… Ein anderer Wanderer grüßt dich freundlich auf dem Pfad.' },
+  k5: { de: 'ナ、ニ、ヌ… Du liest jetzt beide Schriften, mal langsam, mal schon flüssig.' },
+  wb2: { de: 'Ein Hund läuft über den Weg, Vögel fliegen auf, im Fluss blitzt ein Fisch. Tiere überall:', jp: '犬が走ります。', kana: 'いぬがはしります。', tr: 'Der Hund rennt.' },
+  g3: { de: 'Mit が betonst du, WER etwas tut. Eine Katze schleicht heran:', jp: '猫が好きです。', kana: 'ねこがすきです。', tr: 'Ich mag Katzen.' },
+  g4: { de: 'Am Fluss holt ein Fischer seinen Fang ein. Mit を zeigst du das Objekt einer Handlung:', jp: '魚を食べます。', kana: 'さかなをたべます。', tr: 'Ich esse Fisch.' },
+  k6: { de: 'ハ、ヒ、フ… Der Weg wird steiler, der Atem schwerer.' },
+  k7: { de: 'マ、ミ、ム… Dein Rücken schmerzt, doch du gehst weiter, Schritt für Schritt.' },
+  k8: { de: 'ヤ、ユ、ヨ… Kühler Nebel zieht den Hang herauf.' },
+  k9: { de: 'ラ、リ、ル… Aus dem Grau taucht eine kleine Schutzhütte auf.' },
+  k10: { de: 'ワ、ヲ、ン – alle Katakana! Beide Schriften beherrschst du nun. Niemand kann dich mehr aufhalten.' },
+  wb3: { de: 'Nach dem langen Aufstieg spürst du jeden Teil deines Körpers:', jp: '足が痛いです。', kana: 'あしがいたいです。', tr: 'Meine Füße tun weh.' },
+  g5: { de: 'Du denkst an Ziel und Weg. に zeigt wohin, で womit:', jp: '家に帰ります。', kana: 'いえにかえります。', tr: 'Ich gehe nach Hause.' },
+  g6: { de: 'An einer kalten Quelle rastest du. Höfliche Verben enden auf ます:', jp: '水を飲みます。', kana: 'みずをのみます。', tr: 'Ich trinke Wasser.' },
+  wb4: { de: 'Im letzten Dorf vor dem Gipfel pulsiert der Alltag: Menschen, Häuser, ein vorbeifahrendes Auto.', jp: '車で行きます。', kana: 'くるまでいきます。', tr: 'Ich fahre mit dem Auto.' },
+  g7: { de: 'Nachts am Lager beschreibst du, was du siehst – mit Adjektiven:', jp: '星はきれいです。', kana: 'ほしはきれいです。', tr: 'Die Sterne sind schön.' },
+  g8: { de: 'Ein Mitwanderer dreht sich zu dir. Mit か wird aus einer Aussage eine Frage:', jp: '水を飲みますか。', kana: 'みずをのみますか。', tr: 'Trinkst du Wasser?' },
+  g9: { de: 'Im Morgenlicht erhebt sich vor dir der berühmteste Berg des Landes. の verbindet zwei Nomen:', jp: '日本の山。', kana: 'にほんのやま。', tr: 'Japans Berg.' },
+  g10: { de: 'Du verstehst jetzt, wie ein ganzer Satz gebaut ist – Subjekt, Objekt, Verb am Ende. Worte fügen sich zusammen:', jp: '猫が魚を食べます。', kana: 'ねこがさかなをたべます。', tr: 'Die Katze frisst den Fisch.' },
+  fuji: { de: 'Du stehst auf dem Gipfel. Unter dir liegt das ganze Land, das dir vor Wochen noch völlig fremd war – und jetzt kannst du es lesen, benennen, verstehen. 旅は終わりました。Die Reise ist zu Ende. Eine neue beginnt.', jp: 'おめでとうございます！', kana: 'おめでとうございます！', tr: 'Herzlichen Glückwunsch!' },
+}
+
 // Japanisch vorlesen (Web Speech API).
 function speak(text) {
   if ('speechSynthesis' in window) {
@@ -459,6 +502,31 @@ function Btn({ children, onClick, variant = 'primary', style }) {
       padding: '12px 24px', fontSize: 15, fontWeight: 600,
       fontFamily: 'inherit', cursor: 'pointer', ...style,
     }}>{children}</button>
+  )
+}
+
+// Ein Geschichts-Kapitel (am Lektionsende). Baut auf Gelerntem auf und wendet es an.
+function StoryBeat({ id }) {
+  const s = STORY[id]
+  if (!s) return null
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 12, padding: '14px 16px', marginTop: 18,
+      borderLeft: `4px solid ${C.shu}`, boxShadow: '0 1px 4px rgba(33,31,27,0.08)', textAlign: 'left',
+    }}>
+      <div style={{ fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>📖 DEINE REISE</div>
+      <p style={{ fontSize: 14, color: C.sumi, lineHeight: 1.65, margin: 0 }}>{s.de}</p>
+      {s.jp && (
+        <div style={{ marginTop: 10, background: `${C.indigo}0D`, borderRadius: 8, padding: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{s.jp}</span>
+            <button onClick={() => speak(s.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🔊</button>
+          </div>
+          {s.kana && <div style={{ fontSize: 12, color: C.textMuted }}>{s.kana}</div>}
+          <div style={{ fontSize: 14, color: C.indigo }}>„{s.tr}"</div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -767,6 +835,7 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
             }}>{k}</span>
           ))}
         </div>
+        <StoryBeat id={lesson.id} />
       </div>
     )
   } else {
@@ -1424,6 +1493,7 @@ function BlockCourse({ block, onComplete, onClose }) {
         <p style={{ lineHeight: 1.6, marginBottom: 16 }}>
           Du hast <strong>{words.length} Wörter</strong> gelernt. Die Kanji kommen ab jetzt in deinen Wiederholungen vor.
         </p>
+        <StoryBeat id={block.id} />
       </div>
     )
   } else {
@@ -1712,6 +1782,7 @@ function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
           Du hast <strong>{topic.title}</strong> verstanden und angewendet.
         </p>
         <div style={{ fontSize: 48, fontFamily: "'Noto Serif JP', serif", color: C.shu }}>{topic.glyph}</div>
+        <StoryBeat id={topic.id} />
       </div>
     )
   }
@@ -2287,9 +2358,54 @@ const STATE_PALETTE = {
   locked: ['#E0DAC8', '#C7BFA9'],
 }
 
+// Das Reise-Tagebuch: alle bisher freigeschalteten Geschichts-Kapitel am Stück.
+function StoryJournal({ progress, onClose }) {
+  const beats = []
+  PATH.forEach(n => {
+    if (!n.type || n.type === 'review' || n.type === 'goal') return
+    if (isNodeDone(n, progress) && STORY[n.id]) beats.push({ id: n.id, ...STORY[n.id] })
+  })
+  const contentNodes = PATH.filter(n => n.type && n.type !== 'review' && n.type !== 'goal')
+  if (contentNodes.every(n => isNodeDone(n, progress)) && STORY.fuji) beats.push({ id: 'fuji', ...STORY.fuji })
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
+      <div style={{ padding: '12px 16px', background: '#fff', borderBottom: `1px solid ${C.washiDark}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted }}>✕</button>
+        <h3 style={{ fontSize: 15, fontFamily: "'Noto Serif JP', serif", color: C.indigo }}>📖 Deine Geschichte</h3>
+      </div>
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+        {beats.length === 0 ? (
+          <div style={{ textAlign: 'center', color: C.textMuted, marginTop: 40 }}>
+            <div style={{ fontSize: 44, marginBottom: 12 }}>📖</div>
+            <p style={{ lineHeight: 1.6 }}>Noch keine Kapitel. Schließe Stationen auf deiner Reise ab – dann erzählt sich deine Geschichte hier Stück für Stück weiter.</p>
+          </div>
+        ) : beats.map((b, i) => (
+          <div key={b.id} style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>KAPITEL {i + 1}</div>
+            <p style={{ fontSize: 15, color: C.sumi, lineHeight: 1.7, margin: 0 }}>{b.de}</p>
+            {b.jp && (
+              <div style={{ marginTop: 10, background: `${C.indigo}0D`, borderRadius: 8, padding: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{b.jp}</span>
+                  <button onClick={() => speak(b.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🔊</button>
+                </div>
+                {b.kana && <div style={{ fontSize: 12, color: C.textMuted }}>{b.kana}</div>}
+                <div style={{ fontSize: 14, color: C.indigo }}>„{b.tr}"</div>
+              </div>
+            )}
+            {i < beats.length - 1 && <div style={{ height: 1, background: C.washiDark, marginTop: 18 }} />}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ReiseScreen() {
   const { progress, completeLesson, completeWordBlock, completeGrammar } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
+  const [showStory, setShowStory] = useState(false)
   const currentRef = useRef(null)
   const wrapRef = useRef(null)
   const backdropRef = useRef(null)
@@ -2401,6 +2517,7 @@ function ReiseScreen() {
 
   return (
     <div ref={wrapRef} style={{ paddingBottom: 8 }}>
+      {showStory && <StoryJournal progress={progress} onClose={() => setShowStory(false)} />}
       {/* Intro + Gesamtfortschritt */}
       <div style={{ padding: '16px 16px 12px', position: 'relative', zIndex: 1 }}>
         <h2 style={{ fontSize: 20, fontFamily: "'Noto Serif JP', serif", color: C.indigo, marginBottom: 4 }}>
@@ -2416,6 +2533,14 @@ function ReiseScreen() {
           {doneCount} / {contentNodes.length} Stationen gemeistert
           {dueCount > 0 && <span style={{ color: '#BE8316' }}> · {dueCount} fällig</span>}
         </div>
+        <button onClick={() => setShowStory(true)}
+          style={{
+            marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 10,
+            padding: '8px 14px', fontSize: 13, fontWeight: 600, color: C.indigo, cursor: 'pointer',
+          }}>
+          📖 Deine Geschichte
+        </button>
       </div>
 
       {/* Karte */}
@@ -2514,8 +2639,18 @@ function ReiseScreen() {
 export default function TabiApp() {
   const [tab, setTab] = useState('reise')
   const { user, logout } = useAuth()
-  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, reviewCard, reset } = useProgress(user?.uid)
+  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, reviewCard, scheduleNew, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
+
+  // Neu gelernte Kana/Wörter in den Wiederholungsplan einplanen (und bereits
+  // gelernte, aber noch ungeplante migrieren). Hält die „fällig"-Zahl sinnvoll.
+  useEffect(() => {
+    const learned = [
+      ...completedKanaList(progress.completedLessons || []),
+      ...learnedWordKanji(progress.completedWordBlocks || []),
+    ]
+    scheduleNew(learned)
+  }, [progress.completedLessons, progress.completedWordBlocks, progress.srs])
 
   const screens = {
     reise: <ReiseScreen />,

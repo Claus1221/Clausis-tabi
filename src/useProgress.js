@@ -159,11 +159,27 @@ export function useProgress(uid) {
     await setDoc(ref(), { srs: { [key]: next } }, { merge: true })
   }
 
+  // Neu gelernte Items in den Wiederholungsplan aufnehmen: Fälligkeit in der
+  // ZUKUNFT (gestaffelt ~8/Tag ab morgen), statt sie sofort als „fällig" zu
+  // zählen. So zeigt „fällig" echte anstehende Reviews und wächst nicht einfach
+  // mit jedem gelernten Zeichen. Idempotent: plant nur noch nicht geplante Keys.
+  const scheduleNew = async (keys) => {
+    if (!uid || !db || !keys || !keys.length) return
+    const srs = progress.srs || {}
+    const fresh = keys.filter(k => !srs[k])
+    if (!fresh.length) return
+    const updates = {}
+    fresh.forEach((k, i) => {
+      updates[k] = { ease: 2.5, interval: 0, reps: 0, due: addDays(1 + Math.floor(i / 8)) }
+    })
+    await setDoc(ref(), { srs: updates }, { merge: true })
+  }
+
   // Kompletter Reset auf 0 (überschreibt das Dokument).
   const reset = async () => {
     if (!uid || !db) return
     await setDoc(ref(), { completedLessons: [], completedWordBlocks: [], completedGrammar: [], xpByDate: {}, srs: {} })
   }
 
-  return { progress, loading, awardXp, completeLesson, completeWordBlock, completeGrammar, reviewCard, reset }
+  return { progress, loading, awardXp, completeLesson, completeWordBlock, completeGrammar, reviewCard, scheduleNew, reset }
 }
