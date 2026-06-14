@@ -28,6 +28,7 @@ const firebaseConfig = {
 // Für eine reine Privat-App: trage hier deine eigene Gmail-Adresse ein.
 export const ALLOWED_EMAILS = [
   'clausalbers@gmail.com',
+  'balkonien4ever@web.de',
 ]
 
 // true, sobald oben echte Werte eingetragen sind.
