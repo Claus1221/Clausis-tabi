@@ -5,10 +5,11 @@ import { KANA_STROKES, STROKE_VIEWBOX } from './kanaStrokes.js'
 
 // Fortschritt (aus Firestore) für alle Screens verfügbar machen.
 const ProgressCtx = createContext({
-  progress: { completedLessons: [], completedWordBlocks: [], xpByDate: {}, srs: {} },
+  progress: { completedLessons: [], completedWordBlocks: [], completedGrammar: [], xpByDate: {}, srs: {} },
   awardXp: async () => {},
   completeLesson: async () => {},
   completeWordBlock: async () => {},
+  completeGrammar: async () => {},
   reviewCard: async () => {},
   reset: async () => {},
 })
@@ -16,7 +17,8 @@ const ProgressCtx = createContext({
 // XP-Belohnungen
 const XP_PER_KANA = 10  // pro Zeichen in einer abgeschlossenen Lektion
 const XP_PER_CARD = 5   // pro wiederholter SRS-Karte / richtiger Übungsantwort
-const XP_PER_WORD = 15  // pro gelerntem Wort
+const XP_PER_WORD = 15     // pro gelerntem Wort
+const XP_PER_GRAMMAR = 20  // pro gelerntem Grammatik-Thema
 
 // Kana-Statistiken (als Funktionen, da LESSONS weiter unten definiert ist).
 function totalKanaCount() {
@@ -186,6 +188,122 @@ const WORD_BY_KANJI = Object.fromEntries(ALL_WORDS.map(w => [w.kanji, w]))
 function learnedWordKanji(completedBlocks) {
   return WORD_BLOCKS.filter(b => completedBlocks.includes(b.id)).flatMap(b => b.words.map(w => w.kanji))
 }
+
+// ─── Grammatik-Themen ────────────────────────────────────────────────────────
+// Jedes Thema: Glyphe, Titel, Kurzbeschreibung, Erklärungs-Abschnitte (body),
+// Beispiele (jp/kana/de). Themen schalten der Reihe nach frei.
+const GRAMMAR = [
+  {
+    id: 'g1', glyph: 'は', title: 'は – das Thema', summary: 'Worüber gesprochen wird (gelesen „wa")',
+    body: [
+      { text: 'Die Partikel は markiert das Thema des Satzes – das, worüber etwas gesagt wird. Wichtig: als Partikel wird は „wa" gesprochen, nicht „ha".' },
+      { h: 'Muster', text: '〈Thema〉 は 〈Aussage〉。  →  oft „A は B です" = „A ist B".' },
+    ],
+    examples: [
+      { jp: 'これは水です。', kana: 'これはみずです。', de: 'Das ist Wasser.' },
+      { jp: '山は高いです。', kana: 'やまはたかいです。', de: 'Der Berg ist hoch.' },
+    ],
+  },
+  {
+    id: 'g2', glyph: 'です', title: 'です – „sein"', summary: 'Höfliche Kopula am Satzende',
+    body: [
+      { text: 'です ist das höfliche „ist/sind". Es steht am Satzende nach einem Nomen oder Adjektiv.' },
+      { h: 'Verneinung', text: '„ではありません" (förmlich) oder „じゃないです" (lockerer) = „ist nicht".' },
+      { h: 'Vergangenheit', text: '„でした" = „war".' },
+    ],
+    examples: [
+      { jp: '猫です。', kana: 'ねこです。', de: 'Es ist eine Katze.' },
+      { jp: '水ではありません。', kana: 'みずではありません。', de: 'Es ist kein Wasser.' },
+    ],
+  },
+  {
+    id: 'g3', glyph: 'が', title: 'が – das Subjekt', summary: 'Wer/was etwas tut oder ist',
+    body: [
+      { text: 'が markiert das Subjekt – wer oder was etwas tut oder ist. Oft bei neuer Information sowie mit 好き, ある/いる und Adjektiven.' },
+      { h: 'は vs が', text: 'は hebt das Thema hervor („was X betrifft …"), が betont das Subjekt selbst („gerade DIESES").' },
+    ],
+    examples: [
+      { jp: '犬が走ります。', kana: 'いぬがはしります。', de: 'Der Hund rennt.' },
+      { jp: '猫が好きです。', kana: 'ねこがすきです。', de: 'Ich mag Katzen.' },
+    ],
+  },
+  {
+    id: 'g4', glyph: 'を', title: 'を – das Objekt', summary: 'Das direkte Objekt (gesprochen „o")',
+    body: [
+      { text: 'を markiert das direkte Objekt – das Ding, mit dem etwas gemacht wird. Es steht direkt vor dem Verb.' },
+      { h: 'Muster', text: '〈Objekt〉 を 〈Verb〉。' },
+    ],
+    examples: [
+      { jp: '水を飲みます。', kana: 'みずをのみます。', de: 'Ich trinke Wasser.' },
+      { jp: '魚を食べます。', kana: 'さかなをたべます。', de: 'Ich esse Fisch.' },
+    ],
+  },
+  {
+    id: 'g5', glyph: 'に', title: 'に & で – Ort, Ziel, Mittel', summary: 'Wohin/wann (に) und wo/womit (で)',
+    body: [
+      { h: 'に', text: 'に zeigt Ziel/Richtung („wohin"), Zeitpunkt („wann") oder den Ort, an dem etwas existiert.' },
+      { h: 'で', text: 'で zeigt den Ort einer Handlung („wo") oder das Mittel („womit").' },
+    ],
+    examples: [
+      { jp: '家に帰ります。', kana: 'いえにかえります。', de: 'Ich gehe nach Hause. (Ziel)' },
+      { jp: '車で行きます。', kana: 'くるまでいきます。', de: 'Ich fahre mit dem Auto. (Mittel)' },
+    ],
+  },
+  {
+    id: 'g6', glyph: 'ます', title: 'Verben: die ます-Form', summary: 'Höfliche Gegenwart, Verneinung, Vergangenheit',
+    body: [
+      { text: 'In höflicher Sprache enden Verben auf 〜ます.' },
+      { h: 'Formen', text: 'Gegenwart/Zukunft: 〜ます · Verneinung: 〜ません · Vergangenheit: 〜ました · verneinte Vergangenheit: 〜ませんでした.' },
+      { text: 'Beispiel 飲む (trinken) → 飲みます / 飲みません / 飲みました.' },
+    ],
+    examples: [
+      { jp: '水を飲みます。', kana: 'みずをのみます。', de: 'Ich trinke Wasser.' },
+      { jp: '水を飲みません。', kana: 'みずをのみません。', de: 'Ich trinke kein Wasser.' },
+    ],
+  },
+  {
+    id: 'g7', glyph: 'い', title: 'い- und な-Adjektive', summary: 'Die zwei Adjektiv-Typen',
+    body: [
+      { h: 'い-Adjektive', text: 'enden auf い (高い hoch, 大きい groß). Direkt vor dem Nomen oder am Satzende mit です.' },
+      { h: 'な-Adjektive', text: 'brauchen な vor einem Nomen (きれいな花 = eine schöne Blume). Am Satzende ebenfalls mit です.' },
+    ],
+    examples: [
+      { jp: '山は高いです。', kana: 'やまはたかいです。', de: 'Der Berg ist hoch. (い-Adjektiv)' },
+      { jp: '星はきれいです。', kana: 'ほしはきれいです。', de: 'Die Sterne sind schön. (な-Adjektiv)' },
+    ],
+  },
+  {
+    id: 'g8', glyph: 'か', title: 'か – die Frage', summary: 'Aus einem Satz eine Frage machen',
+    body: [
+      { text: 'か am Satzende macht aus einer Aussage eine Frage. Ein Fragezeichen ist nicht nötig (wird aber oft trotzdem geschrieben).' },
+      { h: 'Muster', text: '〈Aussage〉 か。' },
+    ],
+    examples: [
+      { jp: '猫ですか。', kana: 'ねこですか。', de: 'Ist es eine Katze?' },
+      { jp: '水を飲みますか。', kana: 'みずをのみますか。', de: 'Trinkst du Wasser?' },
+    ],
+  },
+  {
+    id: 'g9', glyph: 'の', title: 'の – Verbindung & Besitz', summary: 'A の B = „Bs A"',
+    body: [
+      { text: 'の verbindet zwei Nomen. „A の B" bedeutet meist „Bs A" bzw. „das B von A".' },
+    ],
+    examples: [
+      { jp: '私の犬。', kana: 'わたしのいぬ。', de: 'Mein Hund. (私 = ich)' },
+      { jp: '日本の車。', kana: 'にほんのくるま。', de: 'Ein japanisches Auto. (日本 = Japan)' },
+    ],
+  },
+  {
+    id: 'g10', glyph: '文', title: 'Satzbau (SOV)', summary: 'Das Verb steht am Ende',
+    body: [
+      { text: 'Japanisch ist eine SOV-Sprache: Subjekt – Objekt – Verb. Das Verb steht (fast) immer am Satzende.' },
+      { text: 'Weil Partikel die Rolle jedes Wortes anzeigen, ist die Reihenfolge flexibler als im Deutschen – das Verb bleibt aber hinten.' },
+    ],
+    examples: [
+      { jp: '猫が魚を食べます。', kana: 'ねこがさかなをたべます。', de: 'Die Katze frisst den Fisch.' },
+    ],
+  },
+]
 
 // Japanisch vorlesen (Web Speech API).
 function speak(text) {
@@ -1347,6 +1465,142 @@ function BlockPath() {
   )
 }
 
+// ─── Grammatik-Lernpfad ──────────────────────────────────────────────────────
+
+function ExampleRow({ ex }) {
+  return (
+    <div style={{ padding: '8px 0', borderBottom: `1px solid ${C.washiDark}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+        <div style={{ fontSize: 19, fontFamily: "'Noto Serif JP', serif" }}>{ex.jp}</div>
+        <button onClick={() => speak(ex.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, flexShrink: 0 }}>🔊</button>
+      </div>
+      <div style={{ fontSize: 12, color: C.textMuted }}>{ex.kana}</div>
+      <div style={{ fontSize: 14, color: C.indigo }}>„{ex.de}"</div>
+    </div>
+  )
+}
+
+function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
+  const [copied, setCopied] = useState(false)
+  const clip =
+    `Grammatik: ${topic.title}\n\n` +
+    topic.body.map(s => (s.h ? `${s.h}: ` : '') + s.text).join('\n') +
+    '\n\nBeispiele:\n' +
+    topic.examples.map(e => `${e.jp}  (${e.kana})  – „${e.de}"`).join('\n')
+  const handleCopy = async () => {
+    const ok = await copyText(clip)
+    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1800) }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
+      <div style={{ padding: '12px 16px', background: '#fff', borderBottom: `1px solid ${C.washiDark}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted }}>✕</button>
+        <h3 style={{ fontSize: 14, fontFamily: "'Noto Serif JP', serif", color: C.indigo }}>Grammatik</h3>
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+        <div style={{ textAlign: 'center', marginBottom: 16 }}>
+          <div style={{ fontSize: 48, fontFamily: "'Noto Serif JP', serif", color: C.shu }}>{topic.glyph}</div>
+          <h2 style={{ fontSize: 20, color: C.indigo, marginTop: 4 }}>{topic.title}</h2>
+        </div>
+
+        {topic.body.map((s, i) => (
+          <div key={i} style={{ marginBottom: 12 }}>
+            {s.h && <div style={{ fontSize: 12, color: C.shu, fontWeight: 700, marginBottom: 2 }}>{s.h}</div>}
+            <p style={{ fontSize: 14, color: C.sumi, lineHeight: 1.6 }}>{s.text}</p>
+          </div>
+        ))}
+
+        <Card style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>BEISPIELE</div>
+          {topic.examples.map((ex, i) => <ExampleRow key={i} ex={ex} />)}
+        </Card>
+
+        <button onClick={handleCopy}
+          style={{
+            width: '100%', marginTop: 12, padding: '11px 0', borderRadius: 8,
+            border: `1px solid ${copied ? C.matcha : C.washiDark}`,
+            background: copied ? `${C.matcha}15` : '#fff',
+            color: copied ? C.matcha : C.indigo, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+          }}>
+          {copied ? '✓ Kopiert' : '📋 Thema kopieren'}
+        </button>
+      </div>
+
+      <div style={{ padding: '16px 20px', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
+        <Btn onClick={onDone} style={{ width: '100%' }} variant={alreadyDone ? 'ghost' : 'primary'}>
+          {alreadyDone ? 'Gelesen ✓ – Schließen' : 'Verstanden ✓'}
+        </Btn>
+      </div>
+    </div>
+  )
+}
+
+function GrammarPath() {
+  const { progress, completeGrammar } = useContext(ProgressCtx)
+  const [active, setActive] = useState(null)
+  const done = progress.completedGrammar || []
+
+  if (active) {
+    const topic = GRAMMAR.find(t => t.id === active)
+    const already = done.includes(active)
+    return (
+      <GrammarLesson
+        topic={topic}
+        alreadyDone={already}
+        onDone={() => { if (!already) completeGrammar(active, XP_PER_GRAMMAR); setActive(null) }}
+        onClose={() => setActive(null)}
+      />
+    )
+  }
+
+  const topics = GRAMMAR.map((t, i) => ({
+    ...t,
+    done: done.includes(t.id),
+    locked: i === 0 ? false : !done.includes(GRAMMAR[i - 1].id),
+  }))
+
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 18 }}>
+        Grammatik Schritt für Schritt: Partikel, です, Verben, Adjektive, Fragen und Satzbau.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
+        <div style={{ position: 'absolute', left: 28, top: 28, bottom: 28, width: 2, background: C.washiDark, zIndex: 0 }} />
+        {topics.map((t, i) => (
+          <div key={t.id} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            marginBottom: i < topics.length - 1 ? 16 : 0, position: 'relative', zIndex: 1,
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
+              background: t.done ? C.matcha : t.locked ? C.washiDark : C.shu,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: t.locked ? 18 : 22, color: '#fff', fontFamily: "'Noto Serif JP', serif",
+              boxShadow: !t.locked && !t.done ? `0 0 0 4px ${C.shu}30` : 'none',
+            }}>
+              {t.done ? '✓' : t.locked ? '🔒' : t.glyph}
+            </div>
+            <button onClick={() => !t.locked && setActive(t.id)} disabled={t.locked}
+              style={{
+                flex: 1, background: '#fff', border: '2px solid',
+                borderColor: t.done ? C.matcha : t.locked ? C.washiDark : C.shu,
+                borderRadius: 12, padding: '12px 14px', textAlign: 'left',
+                cursor: t.locked ? 'not-allowed' : 'pointer', opacity: t.locked ? 0.6 : 1,
+              }}>
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{t.title}</div>
+              <div style={{ fontSize: 12, color: C.textMuted }}>
+                {t.done ? 'Gelesen ✓' : t.locked ? 'Noch gesperrt' : t.summary}
+              </div>
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function LernenScreen() {
   const { progress, completeLesson } = useContext(ProgressCtx)
   const [activeLesson, setActiveLesson] = useState(null)
@@ -1387,20 +1641,21 @@ function LernenScreen() {
         Lernen
       </h2>
 
-      {/* Umschalter Kana / Wörter */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
-        {[['kana', 'あ Kana'], ['woerter', '語 Wörter']].map(([id, label]) => (
+      {/* Umschalter Kana / Wörter / Grammatik */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
+        {[['kana', 'あ Kana'], ['woerter', '語 Wörter'], ['grammatik', '文 Grammatik']].map(([id, label]) => (
           <button key={id} onClick={() => setView(id)}
             style={{
-              flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer',
+              flex: 1, padding: '8px 2px', borderRadius: 8, cursor: 'pointer',
               border: `2px solid ${view === id ? C.shu : C.washiDark}`,
               background: view === id ? `${C.shu}15` : '#fff',
-              color: view === id ? C.shu : C.textMuted, fontWeight: 600, fontSize: 14,
+              color: view === id ? C.shu : C.textMuted, fontWeight: 600, fontSize: 13,
             }}>{label}</button>
         ))}
       </div>
 
       {view === 'woerter' && <BlockPath />}
+      {view === 'grammatik' && <GrammarPath />}
 
       {view === 'kana' && (
       <>
@@ -1685,7 +1940,7 @@ function FortschrittScreen() {
 export default function TabiApp() {
   const [tab, setTab] = useState('heute')
   const { user, logout } = useAuth()
-  const { progress, awardXp, completeLesson, completeWordBlock, reviewCard, reset } = useProgress(user?.uid)
+  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, reviewCard, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
 
   const screens = {
@@ -1696,7 +1951,7 @@ export default function TabiApp() {
   }
 
   return (
-    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, completeWordBlock, reviewCard, reset }}>
+    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, completeWordBlock, completeGrammar, reviewCard, reset }}>
     <div style={{
       maxWidth: 480, margin: '0 auto', height: '100vh',
       display: 'flex', flexDirection: 'column', position: 'relative',

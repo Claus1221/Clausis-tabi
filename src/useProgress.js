@@ -6,6 +6,7 @@ import { db } from './firebase'
 const DEFAULT = {
   completedLessons: [],    // IDs abgeschlossener Kana-Lektionen, z.B. ['h1','h2']
   completedWordBlocks: [], // IDs abgeschlossener Wort-Blöcke, z.B. ['wb1']
+  completedGrammar: [],    // IDs gelesener Grammatik-Themen, z.B. ['g1']
   xpByDate: {},            // { 'YYYY-MM-DD': XP }  → XP heute, Streak, Wochenchart
   srs: {},                 // { '山': { ease, interval, reps, due } }  → Wiederholungsplan
 }
@@ -141,6 +142,16 @@ export function useProgress(uid) {
     )
   }
 
+  // Ein Grammatik-Thema als gelernt markieren + XP gutschreiben.
+  const completeGrammar = async (grammarId, xp = 0) => {
+    if (!uid || !db) return
+    await setDoc(
+      ref(),
+      { completedGrammar: arrayUnion(grammarId), xpByDate: { [localDate()]: increment(xp) } },
+      { merge: true },
+    )
+  }
+
   // Eine SRS-Karte bewerten → nächste Fälligkeit per SM-2 berechnen & speichern.
   const reviewCard = async (key, quality) => {
     if (!uid || !db) return
@@ -151,8 +162,8 @@ export function useProgress(uid) {
   // Kompletter Reset auf 0 (überschreibt das Dokument).
   const reset = async () => {
     if (!uid || !db) return
-    await setDoc(ref(), { completedLessons: [], completedWordBlocks: [], xpByDate: {}, srs: {} })
+    await setDoc(ref(), { completedLessons: [], completedWordBlocks: [], completedGrammar: [], xpByDate: {}, srs: {} })
   }
 
-  return { progress, loading, awardXp, completeLesson, completeWordBlock, reviewCard, reset }
+  return { progress, loading, awardXp, completeLesson, completeWordBlock, completeGrammar, reviewCard, reset }
 }
