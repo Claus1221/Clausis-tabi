@@ -1991,6 +1991,28 @@ const PATH = [
 ]
 
 const WORLD_TINTS = ['#E9EFEA', '#E7ECEF', '#EBEFE6', '#ECEAEF', '#EFEDE6', '#E7EEF1']
+const GROUND_TINTS = ['#D7E0CE', '#CBD7C8', '#D9E0CB', '#D3CFDC', '#E0DBC8', '#CCD9D8']
+
+// Kleine flache Landschafts-Motive (Bäume, Torii) als SVG-Gruppen.
+function sceneTree(x, baseY, s, key, c1 = '#5E8A6A', c2 = '#6E9A78') {
+  return (
+    <g key={key}>
+      <rect x={x - 2 * s} y={baseY} width={4 * s} height={9 * s} fill="#7A6242" />
+      <polygon points={`${x},${baseY - 20 * s} ${x - 12 * s},${baseY + 2 * s} ${x + 12 * s},${baseY + 2 * s}`} fill={c1} />
+      <polygon points={`${x},${baseY - 30 * s} ${x - 9 * s},${baseY - 7 * s} ${x + 9 * s},${baseY - 7 * s}`} fill={c2} />
+    </g>
+  )
+}
+function sceneTorii(x, y, s, key) {
+  return (
+    <g key={key}>
+      <rect x={x - 15 * s} y={y} width={4.5 * s} height={28 * s} fill="#DA4A38" />
+      <rect x={x + 10.5 * s} y={y} width={4.5 * s} height={28 * s} fill="#DA4A38" />
+      <rect x={x - 21 * s} y={y - 7 * s} width={42 * s} height={6 * s} fill="#B23A2B" />
+      <rect x={x - 17 * s} y={y} width={34 * s} height={4 * s} fill="#DA4A38" />
+    </g>
+  )
+}
 
 function isNodeDone(node, progress) {
   if (node.type === 'kana') return (progress.completedLessons || []).includes(node.id)
@@ -2115,6 +2137,19 @@ function ReiseScreen() {
   const road = roadPath(laid.map(n => [n.x, n.y]))
   const goal = laid[laid.length - 1]
 
+  // Landschaft: pro Welt ein Boden-Hügel mit Bäumen, Wolken, Torii am Start.
+  const scenery = []
+  bands.forEach((b, i) => {
+    const gy = b.bottom - 4
+    scenery.push(<path key={`grd${i}`} d={`M0,${b.bottom + 1} L0,${gy - 14} Q80,${gy - 30} 160,${gy - 14} T320,${gy - 14} L320,${b.bottom + 1} Z`} fill={GROUND_TINTS[i % GROUND_TINTS.length]} />)
+    scenery.push(sceneTree(32, gy - 18, 1, `t${i}a`))
+    scenery.push(sceneTree(292, gy - 24, 0.85, `t${i}b`))
+    if (i % 2 === 0) scenery.push(sceneTree(72, gy - 12, 0.7, `t${i}c`, '#6E9A78', '#83AE8A'))
+    if (i % 2 === 1) scenery.push(sceneTree(250, gy - 10, 0.65, `t${i}d`, '#6E9A78', '#83AE8A'))
+    if (i > 0) scenery.push(<ellipse key={`cl${i}`} cx={i % 2 ? 240 : 80} cy={b.top + 24} rx="24" ry="8" fill="#FFFFFF" opacity="0.55" />)
+  })
+  if (laid[0]) scenery.push(sceneTorii(256, laid[0].y - 28, 0.7, 'torii'))
+
   return (
     <div style={{ paddingBottom: 8 }}>
       {/* Intro + Gesamtfortschritt */}
@@ -2152,6 +2187,7 @@ function ReiseScreen() {
         {/* zentrierte Spur mit Weg + Stationen */}
         <div style={{ position: 'relative', width: 320, margin: '0 auto', height: trackH }}>
           <svg width="320" height={trackH} viewBox={`0 0 320 ${trackH}`} style={{ position: 'absolute', left: 0, top: 0 }} aria-hidden="true">
+            {scenery}
             <path d={road} fill="none" stroke="#D7CEB6" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" />
             <path d={road} fill="none" stroke="#EFEBE0" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
             <path d={road} fill="none" stroke="#C2B894" strokeWidth="2" strokeDasharray="1 9" strokeLinecap="round" />
