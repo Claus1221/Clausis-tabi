@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, createContext, useContext } from 'react'
 import { useAuth } from './AuthGate.jsx'
 import { useProgress, computeStats, weeklyXp } from './useProgress.js'
+import { KANA_STROKES, STROKE_VIEWBOX } from './kanaStrokes.js'
 
 // Fortschritt (aus Firestore) für alle Screens verfügbar machen.
 const ProgressCtx = createContext({
@@ -36,29 +37,34 @@ const C = {
   textMuted: '#6B6660',
 }
 
-// ─── Stroke data (KanjiVG, CC BY-SA) ────────────────────────────────────────
-const KANA_DATA = {
-  あ: { romaji: 'a', strokes: ['M20,15 C20,15 22,20 22,35 C22,55 15,70 10,80','M40,10 C40,10 45,25 45,45 C45,65 35,78 20,85','M15,45 C15,45 30,42 45,45 C60,48 70,55 75,70'], tip: 'Wie ein Mensch, der winkt' },
-  い: { romaji: 'i', strokes: ['M30,15 C30,15 28,35 25,55 C23,68 20,75 18,82','M55,15 C55,15 58,30 58,50 C58,65 52,75 45,82'], tip: 'Zwei parallele Linien' },
-  う: { romaji: 'u', strokes: ['M45,12 C45,12 45,18 44,22','M25,28 C35,22 55,22 65,28','M45,28 C45,28 45,50 40,65 C36,75 28,82 20,85'], tip: 'Ein Haken mit Dach' },
-  え: { romaji: 'e', strokes: ['M45,10 C45,10 45,20 44,30','M15,35 C30,28 55,28 72,35','M45,35 C45,35 50,50 48,62 C44,75 30,85 15,88','M55,50 C60,55 68,62 72,75'], tip: 'Kreuz mit Schwung' },
-  お: { romaji: 'o', strokes: ['M45,10 C45,10 45,20 44,28','M15,32 C30,25 55,25 72,32','M45,32 C45,32 48,48 45,60 C40,75 28,85 15,90','M58,45 C62,50 68,58 65,72'], tip: 'Wie え aber voller' },
-  か: { romaji: 'ka', strokes: ['M25,15 C25,15 28,35 28,55 C28,70 25,80 22,88','M15,38 C25,32 55,32 70,38','M55,38 C55,38 62,52 62,65 C62,75 55,85 45,90'], tip: 'Vertikale mit Kreuz' },
-  き: { romaji: 'ki', strokes: ['M20,22 C35,18 55,18 68,22','M20,40 C35,35 55,35 68,40','M44,15 C44,15 45,35 45,55 C45,68 40,78 35,85','M55,50 C60,58 65,68 62,80'], tip: 'Zwei Querstriche mit Stiel' },
-  く: { romaji: 'ku', strokes: ['M65,15 C65,15 45,40 25,55 C35,65 55,75 68,85'], tip: 'Ein Winkel nach links' },
-  け: { romaji: 'ke', strokes: ['M25,15 C25,15 28,38 28,58 C28,72 25,82 22,90','M28,35 C40,28 58,28 68,35','M68,35 C68,35 68,55 65,70 C62,80 55,88 45,92'], tip: 'Vertikale mit rechtem Arm' },
-  こ: { romaji: 'ko', strokes: ['M18,28 C35,22 58,22 72,28','M18,62 C35,55 58,55 72,62'], tip: 'Zwei Querstriche' },
-  さ: { romaji: 'sa', strokes: ['M20,25 C35,18 55,18 70,25','M44,18 C44,18 45,38 44,52','M15,55 C25,48 45,52 55,58 C62,65 58,78 45,85 C35,90 22,88 15,82'], tip: 'Querstrich und Schleife' },
-  し: { romaji: 'shi', strokes: ['M45,12 C45,12 48,35 48,58 C48,72 42,82 30,88 C22,92 14,88 12,82'], tip: 'Ein Haken nach rechts' },
-  す: { romaji: 'su', strokes: ['M44,10 C44,10 45,22 44,32','M15,32 C30,25 55,25 72,32','M44,32 C44,32 48,50 46,62 C40,78 25,88 14,85'], tip: 'Dach mit Haken' },
-  せ: { romaji: 'se', strokes: ['M30,18 C30,18 32,38 32,58 C32,72 28,82 24,88','M15,35 C30,28 55,28 68,35','M68,35 C68,35 68,55 65,72 C62,82 55,90 45,92'], tip: 'Wie け gespiegelt' },
-  そ: { romaji: 'so', strokes: ['M18,22 C35,16 58,16 72,22','M44,22 C44,22 48,38 45,52 C38,68 22,80 12,85'], tip: 'Querstrich mit Schwung' },
+// ─── Kana-Daten: echte Strichpfade (KanjiVG, CC BY-SA) + Merkhilfen ───────────
+const TIPS = {
+  あ: 'Wie ein Mensch, der winkt', い: 'Zwei parallele Linien', う: 'Ein Haken mit Dach',
+  え: 'Kreuz mit Schwung', お: 'Wie え aber voller', か: 'Vertikale mit Kreuz',
+  き: 'Zwei Querstriche mit Stiel', く: 'Ein Winkel nach links', け: 'Vertikale mit rechtem Arm',
+  こ: 'Zwei Querstriche', さ: 'Querstrich und Schleife', し: 'Ein Haken nach rechts',
+  す: 'Dach mit Haken', せ: 'Wie け gespiegelt', そ: 'Querstrich mit Schwung',
 }
 
+// char → { romaji, strokes, tip }  (strokes aus kanaStrokes.js, 109×109-Raster)
+const KANA_DATA = Object.fromEntries(
+  Object.entries(KANA_STROKES).map(([ch, v]) => [ch, { ...v, tip: TIPS[ch] }]),
+)
+
+// Lektionen = Gojūon-Zeilen, erst Hiragana, dann Katakana.
+const HIRA_ROWS = [
+  ['あ','い','う','え','お'], ['か','き','く','け','こ'], ['さ','し','す','せ','そ'],
+  ['た','ち','つ','て','と'], ['な','に','ぬ','ね','の'], ['は','ひ','ふ','へ','ほ'],
+  ['ま','み','む','め','も'], ['や','ゆ','よ'], ['ら','り','る','れ','ろ'], ['わ','を','ん'],
+]
+const KATA_ROWS = [
+  ['ア','イ','ウ','エ','オ'], ['カ','キ','ク','ケ','コ'], ['サ','シ','ス','セ','ソ'],
+  ['タ','チ','ツ','テ','ト'], ['ナ','ニ','ヌ','ネ','ノ'], ['ハ','ヒ','フ','ヘ','ホ'],
+  ['マ','ミ','ム','メ','モ'], ['ヤ','ユ','ヨ'], ['ラ','リ','ル','レ','ロ'], ['ワ','ヲ','ン'],
+]
 const LESSONS = [
-  { id: 'l1', title: 'あいうえお', kana: ['あ','い','う','え','お'], done: false },
-  { id: 'l2', title: 'かきくけこ', kana: ['か','き','く','け','こ'], done: false, locked: true },
-  { id: 'l3', title: 'さしすせそ', kana: ['さ','し','す','せ','そ'], done: false, locked: true },
+  ...HIRA_ROWS.map((kana, i) => ({ id: `h${i + 1}`, title: kana.join(''), kana, script: 'Hiragana' })),
+  ...KATA_ROWS.map((kana, i) => ({ id: `k${i + 1}`, title: kana.join(''), kana, script: 'Katakana' })),
 ]
 
 const PHRASES = [
@@ -135,76 +141,98 @@ function Btn({ children, onClick, variant = 'primary', style }) {
   )
 }
 
-// ─── Stroke animation ─────────────────────────────────────────────────────────
+// ─── Stroke animation (echte KanjiVG-Pfade, 109×109) ─────────────────────────
+
+const STROKE_COLORS = ['#DA4A38', '#1E4368', '#5E8A6A', '#8B6914', '#7B3FA0', '#1A7A6E', '#B5651D']
+
+function strokeStart(d) {
+  const m = d.match(/^M\s*(-?[\d.]+)[ ,]\s*(-?[\d.]+)/)
+  return m ? { x: parseFloat(m[1]), y: parseFloat(m[2]) } : null
+}
 
 function StrokeDisplay({ char }) {
   const data = KANA_DATA[char]
-  const [step, setStep] = useState(0)
-  const [playing, setPlaying] = useState(false)
+  const strokes = data?.strokes || []
+  const len = strokes.length
+  const V = STROKE_VIEWBOX
 
-  useEffect(() => { setStep(0); setPlaying(false) }, [char])
+  const [drawn, setDrawn] = useState(0)       // vollständig gezeichnete Striche
+  const [animating, setAnimating] = useState(true)
 
-  useEffect(() => {
-    if (!playing) return
-    if (step >= data.strokes.length) { setPlaying(false); return }
-    const t = setTimeout(() => setStep(s => s + 1), 700)
-    return () => clearTimeout(t)
-  }, [playing, step, data.strokes.length])
+  // Bei neuem Zeichen automatisch von vorn animieren.
+  useEffect(() => { setDrawn(0); setAnimating(true) }, [char])
 
-  const colors = ['#DA4A38', '#1E4368', '#5E8A6A', '#8B6914', '#7B3FA0']
+  const activeIdx = animating && drawn < len ? drawn : -1   // dieser Strich wird gerade gezeichnet
+  const showCount = animating ? Math.min(drawn + 1, len) : drawn
 
   return (
     <div style={{ textAlign: 'center' }}>
-      <svg width="100" height="100" viewBox="0 0 90 100" style={{
-        background: '#fafaf8',
-        borderRadius: 8,
-        border: `1px solid ${C.washiDark}`,
+      <style>{`@keyframes tabiDraw { to { stroke-dashoffset: 0; } }`}</style>
+      <svg width="180" height="180" viewBox={`0 0 ${V} ${V}`} style={{
+        background: '#fafaf8', borderRadius: 8, border: `1px solid ${C.washiDark}`,
       }}>
-        {/* Genkou grid */}
-        <line x1="45" y1="0" x2="45" y2="100" stroke={C.washiDark} strokeWidth="0.5" />
-        <line x1="0" y1="50" x2="90" y2="50" stroke={C.washiDark} strokeWidth="0.5" />
-        {/* Ghost */}
-        <text x="45" y="78" textAnchor="middle" fontSize="64"
-          fontFamily="'Noto Serif JP', serif"
-          fill={C.washiDark} style={{ userSelect: 'none' }}>{char}</text>
-        {/* Animated strokes */}
-        {data.strokes.slice(0, step).map((d, i) => (
-          <path key={i} d={d} stroke={colors[i % colors.length]}
-            strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        ))}
-        {/* Stroke start dots */}
-        {data.strokes.slice(0, step).map((d, i) => {
-          const m = d.match(/M([\d.]+),([\d.]+)/)
-          if (!m) return null
-          return <circle key={i} cx={m[1]} cy={m[2]} r="4"
-            fill={colors[i % colors.length]} opacity="0.7" />
+        {/* Raster */}
+        <line x1={V / 2} y1="0" x2={V / 2} y2={V} stroke={C.washiDark} strokeWidth="0.6" strokeDasharray="3,3" />
+        <line x1="0" y1={V / 2} x2={V} y2={V / 2} stroke={C.washiDark} strokeWidth="0.6" strokeDasharray="3,3" />
+        {/* Geist-Zeichen */}
+        <text x={V / 2} y={V * 0.8} textAnchor="middle" fontSize={V * 0.85}
+          fontFamily="'Noto Serif JP', serif" fill="#EFEBE0" style={{ userSelect: 'none' }}>{char}</text>
+
+        {/* Striche bis showCount */}
+        {strokes.slice(0, showCount).map((d, i) => {
+          const isActive = i === activeIdx
+          return (
+            <path
+              key={`${char}-${i}-${isActive ? 'a' : 's'}`}
+              d={d} stroke={STROKE_COLORS[i % STROKE_COLORS.length]}
+              strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round"
+              pathLength="1"
+              style={isActive ? {
+                strokeDasharray: 1, strokeDashoffset: 1,
+                animation: 'tabiDraw 0.75s linear forwards',
+              } : undefined}
+              onAnimationEnd={isActive ? () => setDrawn(d2 => d2 + 1) : undefined}
+            />
+          )
+        })}
+
+        {/* Start-Nummern */}
+        {strokes.slice(0, showCount).map((d, i) => {
+          const p = strokeStart(d)
+          if (!p) return null
+          const col = STROKE_COLORS[i % STROKE_COLORS.length]
+          return (
+            <g key={`n-${i}`}>
+              <circle cx={p.x} cy={p.y} r="7" fill="#fff" stroke={col} strokeWidth="1.5" />
+              <text x={p.x} y={p.y + 3.2} textAnchor="middle" fontSize="9" fontWeight="700" fill={col}>{i + 1}</text>
+            </g>
+          )
         })}
       </svg>
 
       <div style={{ marginTop: 10, display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-        {data.strokes.map((_, i) => (
-          <button key={i} onClick={() => { setPlaying(false); setStep(i + 1) }}
+        {strokes.map((_, i) => (
+          <button key={i} onClick={() => { setAnimating(false); setDrawn(i + 1) }}
             style={{
               width: 28, height: 28, borderRadius: '50%', border: 'none',
-              background: step > i ? colors[i % colors.length] : C.washiDark,
-              color: step > i ? '#fff' : C.textMuted,
+              background: showCount > i ? STROKE_COLORS[i % STROKE_COLORS.length] : C.washiDark,
+              color: showCount > i ? '#fff' : C.textMuted,
               fontSize: 12, fontWeight: 600, cursor: 'pointer',
             }}>{i + 1}</button>
         ))}
-        <button onClick={() => { setStep(0); setPlaying(true) }}
+        <button onClick={() => { setDrawn(0); setAnimating(true) }}
           style={{
             padding: '0 12px', height: 28, borderRadius: 14, border: 'none',
             background: C.indigo, color: '#fff', fontSize: 12, cursor: 'pointer',
           }}>▶ Abspielen</button>
-        <button onClick={() => setStep(0)}
+        <button onClick={() => { setAnimating(false); setDrawn(0) }}
           style={{
             padding: '0 12px', height: 28, borderRadius: 14, border: 'none',
             background: C.washiDark, color: C.sumi, fontSize: 12, cursor: 'pointer',
           }}>↺</button>
       </div>
       <p style={{ fontSize: 12, color: C.textMuted, marginTop: 8 }}>
-        Strich {Math.min(step, data.strokes.length)} von {data.strokes.length}
-        {step > 0 && ` · Oben → Unten, Links → Rechts`}
+        Strich {showCount} von {len} · Oben → Unten, Links → Rechts
       </p>
     </div>
   )
@@ -295,14 +323,83 @@ function DrawCanvas({ char }) {
 
 // ─── Lesson player ────────────────────────────────────────────────────────────
 
+function QuizStep({ kana, onFinish }) {
+  // Quiz einmalig aufbauen: jedes Kana einmal, gemischt, mit stabilen Optionen.
+  const [quiz] = useState(() => {
+    const pool = [...new Set(kana)]
+    const allRomaji = [...new Set(Object.values(KANA_DATA).map(v => v.romaji))]
+    return [...pool].sort(() => Math.random() - 0.5).map(ch => {
+      const correct = KANA_DATA[ch]?.romaji
+      let distractors = [...new Set(pool.filter(k => k !== ch).map(k => KANA_DATA[k]?.romaji))]
+        .filter(r => r && r !== correct)
+      for (const r of allRomaji.sort(() => Math.random() - 0.5)) {
+        if (distractors.length >= 2) break
+        if (r !== correct && !distractors.includes(r)) distractors.push(r)
+      }
+      distractors = distractors.sort(() => Math.random() - 0.5).slice(0, 2)
+      const options = [correct, ...distractors].sort(() => Math.random() - 0.5)
+      return { char: ch, correct, options }
+    })
+  })
+
+  const [qi, setQi] = useState(0)
+  const [answer, setAnswer] = useState(null)
+  const cur = quiz[qi]
+  const isLastQ = qi === quiz.length - 1
+  const revealed = answer !== null
+
+  const next = () => {
+    if (isLastQ) { onFinish(); return }
+    setQi(qi + 1)
+    setAnswer(null)
+  }
+
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <p style={{ color: C.textMuted, fontSize: 13, marginBottom: 8 }}>
+        Kurzer Check · {qi + 1} / {quiz.length}
+      </p>
+      <div style={{ fontSize: 72, fontFamily: "'Noto Serif JP', serif", marginBottom: 20, color: C.sumi }}>
+        {cur.char}
+      </div>
+      <p style={{ marginBottom: 16, fontWeight: 500 }}>Welche Lesung ist richtig?</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {cur.options.map(o => {
+          const isCorrect = o === cur.correct
+          const isChosen = o === answer
+          return (
+            <button key={o} onClick={() => !revealed && setAnswer(o)} disabled={revealed}
+              style={{
+                padding: '14px 8px', borderRadius: 8, border: '2px solid',
+                borderColor: !revealed ? C.washiDark : isCorrect ? C.matcha : isChosen ? C.shu : C.washiDark,
+                background: !revealed ? '#fff' : isCorrect ? `${C.matcha}20` : isChosen ? `${C.shu}20` : '#fff',
+                fontSize: 18, fontWeight: 600, color: C.sumi,
+                cursor: revealed ? 'default' : 'pointer',
+              }}>{o}</button>
+          )
+        })}
+      </div>
+      {revealed && (
+        <>
+          <p style={{ marginTop: 12, color: answer === cur.correct ? C.matcha : C.shu, fontWeight: 600 }}>
+            {answer === cur.correct ? '✓ Richtig!' : `✗ Richtig wäre: ${cur.correct}`}
+          </p>
+          <Btn onClick={next} style={{ marginTop: 12, width: '100%' }}>
+            {isLastQ ? 'Quiz abschließen →' : 'Nächstes Zeichen →'}
+          </Btn>
+        </>
+      )}
+    </div>
+  )
+}
+
 function LessonPlayer({ lesson, onComplete, onClose }) {
   const kana = lesson.kana
   const totalSteps = kana.length * 3 + 2 // intro + (explain+stroke+draw) * n + quiz + done
   const [step, setStep] = useState(0)
-  const [quizAnswer, setQuizAnswer] = useState(null)
-  const [quizCorrect, setQuizCorrect] = useState(null)
 
   const progress = Math.round((step / totalSteps) * 100)
+  const isQuiz = step === totalSteps - 2
 
   // Determine what to show
   let content = null
@@ -316,7 +413,7 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
           {lesson.title}
         </h2>
         <p style={{ color: C.textMuted, lineHeight: 1.6, marginBottom: 16 }}>
-          In dieser Lektion lernst du {kana.length} Hiragana-Zeichen.
+          In dieser Lektion lernst du {kana.length} {lesson.script || 'Hiragana'}-Zeichen.
           Jedes Zeichen wird erklärt, du siehst die Strichreihenfolge
           und übst es selbst zu schreiben.
         </p>
@@ -359,43 +456,7 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
 
     // Quiz step comes before done
     if (step === totalSteps - 2) {
-      // Quick quiz
-      const question = kana[Math.floor(Math.random() * kana.length)]
-      const correct = KANA_DATA[question]?.romaji
-      const wrong = kana.filter(k => k !== question).slice(0, 2).map(k => KANA_DATA[k]?.romaji)
-      const options = [correct, ...wrong].sort(() => Math.random() - 0.5)
-
-      content = (
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ color: C.textMuted, fontSize: 13, marginBottom: 16 }}>Kurzer Check</p>
-          <div style={{ fontSize: 72, fontFamily: "'Noto Serif JP', serif", marginBottom: 20, color: C.sumi }}>
-            {question}
-          </div>
-          <p style={{ marginBottom: 16, fontWeight: 500 }}>Welche Lesung ist richtig?</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {options.map(o => (
-              <button key={o} onClick={() => {
-                setQuizAnswer(o)
-                setQuizCorrect(o === correct)
-              }}
-                style={{
-                  padding: '14px 8px', borderRadius: 8, border: `2px solid`,
-                  borderColor: quizAnswer === null ? C.washiDark :
-                    o === correct ? C.matcha : o === quizAnswer ? C.shu : C.washiDark,
-                  background: quizAnswer === null ? '#fff' :
-                    o === correct ? `${C.matcha}20` : o === quizAnswer ? `${C.shu}20` : '#fff',
-                  fontSize: 18, fontWeight: 600, cursor: 'pointer',
-                  color: C.sumi,
-                }}>{o}</button>
-            ))}
-          </div>
-          {quizAnswer !== null && (
-            <p style={{ marginTop: 12, color: quizCorrect ? C.matcha : C.shu, fontWeight: 600 }}>
-              {quizCorrect ? '✓ Richtig!' : `✗ Es war: ${correct}`}
-            </p>
-          )}
-        </div>
-      )
+      content = <QuizStep kana={kana} onFinish={() => setStep(s => s + 1)} />
     } else {
       const char = kana[kanaIdx]
       const data = KANA_DATA[char]
@@ -497,24 +558,20 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
         {content}
       </div>
 
-      {/* Footer */}
-      <div style={{ padding: '16px 20px', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
-        {isLast ? (
-          <Btn onClick={onComplete} style={{ width: '100%' }}>
-            Lektion abschließen ✓
-          </Btn>
-        ) : (
-          <Btn onClick={() => {
-            setQuizAnswer(null)
-            setQuizCorrect(null)
-            setStep(s => s + 1)
-          }} style={{ width: '100%' }}
-            variant={step === totalSteps - 2 && quizAnswer === null ? 'ghost' : 'primary'}
-          >
-            {step === 0 ? 'Los geht\'s →' : 'Weiter →'}
-          </Btn>
-        )}
-      </div>
+      {/* Footer – beim Quiz ausgeblendet, da QuizStep eigene Knöpfe hat */}
+      {!isQuiz && (
+        <div style={{ padding: '16px 20px', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
+          {isLast ? (
+            <Btn onClick={onComplete} style={{ width: '100%' }}>
+              Lektion abschließen ✓
+            </Btn>
+          ) : (
+            <Btn onClick={() => setStep(s => s + 1)} style={{ width: '100%' }}>
+              {step === 0 ? 'Los geht\'s →' : 'Weiter →'}
+            </Btn>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -715,7 +772,7 @@ function LernenScreen() {
         Lernpfad
       </h2>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 20 }}>
-        Schritt für Schritt durch Hiragana
+        Schritt für Schritt durch Hiragana & Katakana
       </p>
 
       {/* Lesson path */}
