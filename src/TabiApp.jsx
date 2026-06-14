@@ -107,6 +107,7 @@ function TabBar({ active, setActive }) {
       display: 'flex', borderTop: `2px solid ${C.washiDark}`,
       background: C.washi, position: 'fixed', bottom: 0, left: 0, right: 0,
       paddingBottom: 'env(safe-area-inset-bottom)',
+      zIndex: 50, boxShadow: '0 -2px 8px rgba(33,31,27,0.08)',
     }}>
       {tabs.map(t => (
         <button key={t.id} onClick={() => setActive(t.id)} style={{
