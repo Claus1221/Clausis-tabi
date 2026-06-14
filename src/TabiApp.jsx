@@ -350,6 +350,7 @@ function srsItemInfo(key) {
 
 function TabBar({ active, setActive }) {
   const tabs = [
+    { id: 'reise', label: '旅', sub: 'Reise' },
     { id: 'heute', label: '今日', sub: 'Heute' },
     { id: 'lernen', label: '学ぶ', sub: 'Lernen' },
     { id: 'ueben', label: '練習', sub: 'Üben' },
@@ -1935,15 +1936,295 @@ function FortschrittScreen() {
   )
 }
 
+// ─── Reise: der durchgehende Lernpfad (roter Faden) ──────────────────────────
+// EIN geordneter Pfad bündelt Kana, Wörter, Grammatik und Wiederholung in
+// „Welten". Jede Station startet die passende, bereits vorhandene Lektion.
+// Didaktische Reihenfolge: Hiragana → Katakana → Wörter/Grammatik verzahnt,
+// mit eingestreuten Wiederholungs-Checkpoints (SRS).
+const PATH = [
+  { world: 'ひらがな・一', sub: 'Erste Schritte' },
+  { type: 'kana', id: 'h1' },
+  { type: 'kana', id: 'h2' },
+  { type: 'kana', id: 'h3' },
+  { type: 'review', id: 'rv1' },
+  { world: 'ひらがな・二', sub: 'Mehr Silben' },
+  { type: 'kana', id: 'h4' },
+  { type: 'kana', id: 'h5' },
+  { type: 'kana', id: 'h6' },
+  { type: 'kana', id: 'h7' },
+  { type: 'review', id: 'rv2' },
+  { world: 'ひらがな・三 & 言葉', sub: 'Hiragana fertig · erste Wörter' },
+  { type: 'kana', id: 'h8' },
+  { type: 'kana', id: 'h9' },
+  { type: 'kana', id: 'h10' },
+  { type: 'word', id: 'wb1' },
+  { type: 'grammar', id: 'g1' },
+  { type: 'grammar', id: 'g2' },
+  { type: 'review', id: 'rv3' },
+  { world: 'カタカナ・一', sub: 'Die zweite Schrift' },
+  { type: 'kana', id: 'k1' },
+  { type: 'kana', id: 'k2' },
+  { type: 'kana', id: 'k3' },
+  { type: 'kana', id: 'k4' },
+  { type: 'kana', id: 'k5' },
+  { type: 'word', id: 'wb2' },
+  { type: 'grammar', id: 'g3' },
+  { type: 'grammar', id: 'g4' },
+  { type: 'review', id: 'rv4' },
+  { world: 'カタカナ・二', sub: 'Katakana fertig' },
+  { type: 'kana', id: 'k6' },
+  { type: 'kana', id: 'k7' },
+  { type: 'kana', id: 'k8' },
+  { type: 'kana', id: 'k9' },
+  { type: 'kana', id: 'k10' },
+  { type: 'word', id: 'wb3' },
+  { type: 'grammar', id: 'g5' },
+  { type: 'grammar', id: 'g6' },
+  { type: 'review', id: 'rv5' },
+  { world: '文を作る', sub: 'Sätze bauen' },
+  { type: 'word', id: 'wb4' },
+  { type: 'grammar', id: 'g7' },
+  { type: 'grammar', id: 'g8' },
+  { type: 'grammar', id: 'g9' },
+  { type: 'grammar', id: 'g10' },
+  { type: 'goal', id: 'fuji' },
+]
+
+const WORLD_TINTS = ['#E9EFEA', '#E7ECEF', '#EBEFE6', '#ECEAEF', '#EFEDE6', '#E7EEF1']
+
+function isNodeDone(node, progress) {
+  if (node.type === 'kana') return (progress.completedLessons || []).includes(node.id)
+  if (node.type === 'word') return (progress.completedWordBlocks || []).includes(node.id)
+  if (node.type === 'grammar') return (progress.completedGrammar || []).includes(node.id)
+  return false
+}
+function pathNodeMeta(node) {
+  if (node.type === 'kana') { const l = LESSONS.find(x => x.id === node.id); return { face: l.kana[0], label: l.title, kind: l.script } }
+  if (node.type === 'word') { const b = WORD_BLOCKS.find(x => x.id === node.id); return { face: b.words[0].kanji, label: b.title, kind: 'Wörter' } }
+  if (node.type === 'grammar') { const g = GRAMMAR.find(x => x.id === node.id); return { face: g.glyph, label: g.title, kind: 'Grammatik' } }
+  if (node.type === 'review') return { face: '復', label: 'Wiederholung', kind: 'SRS' }
+  return { face: '富', label: 'Gipfel', kind: 'Ziel' }
+}
+
+// Glatter Weg durch die Stationen (gewundene „Straße").
+function roadPath(pts) {
+  if (pts.length < 2) return ''
+  let d = `M${pts[0][0]},${pts[0][1]}`
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i], my = (a[1] + b[1]) / 2
+    d += ` Q${a[0]},${my} ${(a[0] + b[0]) / 2},${my} T${b[0]},${b[1]}`
+  }
+  return d
+}
+
+const STATE_PALETTE = {
+  done: ['#5E8A6A', '#4A7257'],
+  current: ['#DA4A38', '#B23A2B'],
+  review: ['#E8A020', '#BE8316'],
+  locked: ['#E0DAC8', '#C7BFA9'],
+}
+
+function ReiseScreen() {
+  const { progress, completeLesson, completeWordBlock, completeGrammar } = useContext(ProgressCtx)
+  const [active, setActive] = useState(null)
+  const currentRef = useRef(null)
+
+  useEffect(() => {
+    try { currentRef.current?.scrollIntoView({ block: 'center' }) } catch (e) { /* egal */ }
+  }, [])
+
+  // Fällige Wiederholungen (für Checkpoint-Status).
+  const learnedAll = [
+    ...completedKanaList(progress.completedLessons || []),
+    ...learnedWordKanji(progress.completedWordBlocks || []),
+  ]
+  const dueCount = dueKana(progress, learnedAll).length
+  const contentNodes = PATH.filter(n => n.type && n.type !== 'review' && n.type !== 'goal')
+  const doneCount = contentNodes.filter(n => isNodeDone(n, progress)).length
+  const allDone = doneCount === contentNodes.length
+
+  // ─ Aktive Lektion als Vollbild-Overlay (nutzt bestehende Komponenten) ─
+  if (active) {
+    const close = () => setActive(null)
+    if (active.type === 'kana') {
+      const lesson = LESSONS.find(l => l.id === active.id)
+      return (
+        <LessonPlayer lesson={lesson} onClose={close}
+          onComplete={() => {
+            if (!(progress.completedLessons || []).includes(active.id)) completeLesson(active.id, lesson.kana.length * XP_PER_KANA)
+            close()
+          }} />
+      )
+    }
+    if (active.type === 'word') {
+      const block = WORD_BLOCKS.find(b => b.id === active.id)
+      return (
+        <BlockCourse block={block} onClose={close}
+          onComplete={() => {
+            if (!(progress.completedWordBlocks || []).includes(active.id)) completeWordBlock(active.id, block.words.length * XP_PER_WORD)
+            close()
+          }} />
+      )
+    }
+    if (active.type === 'grammar') {
+      const topic = GRAMMAR.find(t => t.id === active.id)
+      const already = (progress.completedGrammar || []).includes(active.id)
+      return (
+        <GrammarLesson topic={topic} alreadyDone={already} onClose={close}
+          onDone={() => { if (!already) completeGrammar(active.id, XP_PER_GRAMMAR); close() }} />
+      )
+    }
+    if (active.type === 'review') {
+      return (
+        <div style={{ position: 'fixed', inset: 0, background: C.washi, zIndex: 100, overflow: 'auto' }}>
+          <SRSQuiz onClose={close} />
+        </div>
+      )
+    }
+  }
+
+  // ─ Layout der Karte berechnen ─
+  const R = 30, AMP = 86, CENTER = 160, XPAT = [0, 1, 0, -1]
+  const bands = [], headers = [], laid = []
+  let y = 22, ni = 0, foundCurrent = false
+  let bandStart = null, bandIdx = -1
+  for (const it of PATH) {
+    if (it.world) {
+      if (bandIdx >= 0) bands.push({ top: bandStart, bottom: y, idx: bandIdx })
+      bandIdx++
+      bandStart = y
+      headers.push({ y, world: it.world, sub: it.sub })
+      y += 50
+      continue
+    }
+    const done = isNodeDone(it, progress)
+    let state
+    if (it.type === 'review') state = foundCurrent ? 'locked' : (dueCount > 0 ? 'review' : 'done')
+    else if (it.type === 'goal') state = allDone ? 'done' : 'locked'
+    else if (foundCurrent) state = 'locked'
+    else if (done) state = 'done'
+    else { state = 'current'; foundCurrent = true }
+
+    const x = CENTER + AMP * XPAT[ni % 4]
+    laid.push({ node: it, state, x, y: y + R })
+    y += 2 * R + 56
+    ni++
+  }
+  if (bandIdx >= 0) bands.push({ top: bandStart, bottom: y, idx: bandIdx })
+  const trackH = y + 60
+  const road = roadPath(laid.map(n => [n.x, n.y]))
+  const goal = laid[laid.length - 1]
+
+  return (
+    <div style={{ paddingBottom: 8 }}>
+      {/* Intro + Gesamtfortschritt */}
+      <div style={{ padding: '16px 16px 12px' }}>
+        <h2 style={{ fontSize: 20, fontFamily: "'Noto Serif JP', serif", color: C.indigo, marginBottom: 4 }}>
+          Deine Reise 旅
+        </h2>
+        <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>
+          Ein Weg vom Anfang bis zum Gipfel – Schrift, Wörter und Grammatik Schritt für Schritt.
+        </p>
+        <div style={{ height: 8, background: C.washiDark, borderRadius: 4, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${Math.round(doneCount / contentNodes.length * 100)}%`, background: C.matcha, borderRadius: 4, transition: 'width 0.3s' }} />
+        </div>
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6 }}>
+          {doneCount} / {contentNodes.length} Stationen gemeistert
+          {dueCount > 0 && <span style={{ color: '#BE8316' }}> · {dueCount} fällig</span>}
+        </div>
+      </div>
+
+      {/* Karte */}
+      <div style={{ position: 'relative', width: '100%', height: trackH, overflow: 'hidden' }}>
+        {/* Welten-Bänder */}
+        {bands.map(b => (
+          <div key={b.idx} style={{ position: 'absolute', left: 0, right: 0, top: b.top, height: b.bottom - b.top, background: WORLD_TINTS[b.idx % WORLD_TINTS.length] }} />
+        ))}
+
+        {/* Fuji hinter dem Gipfel */}
+        {goal && (
+          <svg width="180" height="120" viewBox="0 0 180 120" style={{ position: 'absolute', left: '50%', top: goal.y - 96, transform: 'translateX(-50%)', opacity: 0.9 }} aria-hidden="true">
+            <polygon points="40,110 90,18 140,110" fill="#C7D2DC" />
+            <polygon points="72,46 90,18 108,46 98,52 90,44 82,52" fill="#F2F0EA" />
+          </svg>
+        )}
+
+        {/* zentrierte Spur mit Weg + Stationen */}
+        <div style={{ position: 'relative', width: 320, margin: '0 auto', height: trackH }}>
+          <svg width="320" height={trackH} viewBox={`0 0 320 ${trackH}`} style={{ position: 'absolute', left: 0, top: 0 }} aria-hidden="true">
+            <path d={road} fill="none" stroke="#D7CEB6" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={road} fill="none" stroke="#EFEBE0" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={road} fill="none" stroke="#C2B894" strokeWidth="2" strokeDasharray="1 9" strokeLinecap="round" />
+          </svg>
+
+          {/* Welten-Überschriften */}
+          {headers.map((h, i) => (
+            <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: h.y, textAlign: 'center' }}>
+              <span style={{ display: 'inline-block', background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 16, padding: '4px 14px' }}>
+                <span style={{ fontFamily: "'Noto Serif JP', serif", fontSize: 14, color: C.indigo, marginRight: 6 }}>{h.world}</span>
+                <span style={{ fontSize: 11, color: C.textMuted }}>{h.sub}</span>
+              </span>
+            </div>
+          ))}
+
+          {/* Stationen */}
+          {laid.map((n, i) => {
+            const meta = pathNodeMeta(n.node)
+            const [bg, edge] = STATE_PALETTE[n.state]
+            const locked = n.state === 'locked'
+            const isGoal = n.node.type === 'goal'
+            const Rr = isGoal ? 34 : R
+            return (
+              <div key={i} ref={n.state === 'current' ? currentRef : null}
+                style={{ position: 'absolute', left: n.x, top: n.y, transform: 'translate(-50%,-50%)', width: 2 * Rr + 64, textAlign: 'center' }}>
+                <button onClick={() => !locked && !isGoal && setActive(n.node)} disabled={locked || isGoal}
+                  style={{
+                    position: 'relative', width: 2 * Rr, height: 2 * Rr, borderRadius: '50%',
+                    background: bg, border: `3px solid ${edge}`, cursor: locked || isGoal ? 'default' : 'pointer',
+                    boxShadow: n.state === 'current' ? `0 0 0 6px ${C.shu}28` : 'none',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+                  }}>
+                  <span style={{ fontFamily: "'Noto Serif JP', serif", fontSize: isGoal ? 30 : 24, color: locked ? C.textMuted : '#fff', lineHeight: 1 }}>
+                    {locked ? '🔒' : meta.face}
+                  </span>
+                  {n.state === 'done' && (
+                    <span style={{ position: 'absolute', top: -4, right: -4, width: 20, height: 20, borderRadius: '50%', background: '#E8B84B', color: '#7A5A14', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✓</span>
+                  )}
+                </button>
+                <div style={{ marginTop: 4 }}>
+                  <span style={{ display: 'inline-block', background: 'rgba(239,235,224,0.85)', borderRadius: 8, padding: '1px 6px', fontSize: 11, color: C.sumi, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {meta.label}
+                  </span>
+                </div>
+                {n.state === 'current' && (
+                  <div style={{ marginTop: 2 }}>
+                    <span style={{ background: C.shu, color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 9px', borderRadius: 10 }}>START</span>
+                  </div>
+                )}
+                {n.state === 'review' && (
+                  <div style={{ marginTop: 2 }}>
+                    <span style={{ background: '#E8A020', color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 9px', borderRadius: 10 }}>{dueCount} fällig</span>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Root App ─────────────────────────────────────────────────────────────────
 
 export default function TabiApp() {
-  const [tab, setTab] = useState('heute')
+  const [tab, setTab] = useState('reise')
   const { user, logout } = useAuth()
   const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, reviewCard, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
 
   const screens = {
+    reise: <ReiseScreen />,
     heute: <HeuteScreen />,
     lernen: <LernenScreen />,
     ueben: <UebenScreen />,
