@@ -5,16 +5,18 @@ import { KANA_STROKES, STROKE_VIEWBOX } from './kanaStrokes.js'
 
 // Fortschritt (aus Firestore) für alle Screens verfügbar machen.
 const ProgressCtx = createContext({
-  progress: { completedLessons: [], xpByDate: {}, srs: {} },
+  progress: { completedLessons: [], completedWords: [], xpByDate: {}, srs: {} },
   awardXp: async () => {},
   completeLesson: async () => {},
+  learnWord: async () => {},
   reviewCard: async () => {},
   reset: async () => {},
 })
 
 // XP-Belohnungen
 const XP_PER_KANA = 10  // pro Zeichen in einer abgeschlossenen Lektion
-const XP_PER_CARD = 5   // pro wiederholter SRS-Karte
+const XP_PER_CARD = 5   // pro wiederholter SRS-Karte / richtiger Übungsantwort
+const XP_PER_WORD = 15  // pro gelerntem Wort
 
 // Kana-Statistiken (als Funktionen, da LESSONS weiter unten definiert ist).
 function totalKanaCount() {
@@ -92,6 +94,78 @@ const VOCAB = [
   { jp: '女', romaji: 'onna', de: 'Frau / Damen', type: 'kanji' },
   { jp: '水', romaji: 'mizu', de: 'Wasser', type: 'kanji' },
 ]
+
+// Wörter aus reinen Basis-Kana (kein Dakuten/kleine Kana). 'ー' (Längungsstrich)
+// gilt als immer verfügbar. Jedes Wort schaltet frei, sobald alle seine Kana gelernt sind.
+const WORDS = [
+  // Hiragana
+  { jp: 'あい', romaji: 'ai', de: 'Liebe', script: 'hira' },
+  { jp: 'いえ', romaji: 'ie', de: 'Haus', script: 'hira' },
+  { jp: 'うえ', romaji: 'ue', de: 'oben', script: 'hira' },
+  { jp: 'あお', romaji: 'ao', de: 'blau', script: 'hira' },
+  { jp: 'あか', romaji: 'aka', de: 'rot', script: 'hira' },
+  { jp: 'かお', romaji: 'kao', de: 'Gesicht', script: 'hira' },
+  { jp: 'かさ', romaji: 'kasa', de: 'Regenschirm', script: 'hira' },
+  { jp: 'くち', romaji: 'kuchi', de: 'Mund', script: 'hira' },
+  { jp: 'みみ', romaji: 'mimi', de: 'Ohr', script: 'hira' },
+  { jp: 'はな', romaji: 'hana', de: 'Nase / Blume', script: 'hira' },
+  { jp: 'やま', romaji: 'yama', de: 'Berg', script: 'hira' },
+  { jp: 'かわ', romaji: 'kawa', de: 'Fluss', script: 'hira' },
+  { jp: 'そら', romaji: 'sora', de: 'Himmel', script: 'hira' },
+  { jp: 'ねこ', romaji: 'neko', de: 'Katze', script: 'hira' },
+  { jp: 'いぬ', romaji: 'inu', de: 'Hund', script: 'hira' },
+  { jp: 'とり', romaji: 'tori', de: 'Vogel', script: 'hira' },
+  { jp: 'さかな', romaji: 'sakana', de: 'Fisch', script: 'hira' },
+  { jp: 'すし', romaji: 'sushi', de: 'Sushi', script: 'hira' },
+  { jp: 'ふね', romaji: 'fune', de: 'Schiff', script: 'hira' },
+  { jp: 'ほし', romaji: 'hoshi', de: 'Stern', script: 'hira' },
+  { jp: 'つき', romaji: 'tsuki', de: 'Mond', script: 'hira' },
+  { jp: 'ひと', romaji: 'hito', de: 'Mensch', script: 'hira' },
+  { jp: 'なまえ', romaji: 'namae', de: 'Name', script: 'hira' },
+  { jp: 'みせ', romaji: 'mise', de: 'Laden', script: 'hira' },
+  // Katakana (ー = Längung)
+  { jp: 'ココア', romaji: 'kokoa', de: 'Kakao', script: 'kata' },
+  { jp: 'カメラ', romaji: 'kamera', de: 'Kamera', script: 'kata' },
+  { jp: 'ホテル', romaji: 'hoteru', de: 'Hotel', script: 'kata' },
+  { jp: 'ナイフ', romaji: 'naifu', de: 'Messer', script: 'kata' },
+  { jp: 'ノート', romaji: 'nōto', de: 'Heft', script: 'kata' },
+  { jp: 'ケーキ', romaji: 'kēki', de: 'Kuchen', script: 'kata' },
+  { jp: 'コーヒー', romaji: 'kōhī', de: 'Kaffee', script: 'kata' },
+  { jp: 'スキー', romaji: 'sukī', de: 'Ski', script: 'kata' },
+  { jp: 'タクシー', romaji: 'takushī', de: 'Taxi', script: 'kata' },
+  { jp: 'ラーメン', romaji: 'rāmen', de: 'Ramen', script: 'kata' },
+  { jp: 'アメリカ', romaji: 'amerika', de: 'Amerika', script: 'kata' },
+  { jp: 'カメ', romaji: 'kame', de: 'Schildkröte', script: 'kata' },
+]
+const WORD_BY_JP = Object.fromEntries(WORDS.map(w => [w.jp, w]))
+
+// Benötigte Kana eines Wortes (Längungsstrich ー zählt nicht).
+function wordKana(jp) {
+  return [...jp].filter(c => c !== 'ー')
+}
+function wordLearnable(jp, learnedSet) {
+  return wordKana(jp).every(k => learnedSet.has(k))
+}
+
+// Japanisch vorlesen (Web Speech API).
+function speak(text) {
+  if ('speechSynthesis' in window) {
+    const u = new SpeechSynthesisUtterance(text)
+    u.lang = 'ja-JP'
+    speechSynthesis.cancel()
+    speechSynthesis.speak(u)
+  }
+}
+
+// Anzeige-Infos für eine SRS-Karte (Kana oder Wort).
+function srsItemInfo(key) {
+  if (WORD_BY_JP[key]) {
+    const w = WORD_BY_JP[key]
+    return { reading: w.romaji, sub: w.de, isWord: true }
+  }
+  const d = KANA_DATA[key]
+  return { reading: d?.romaji, sub: d?.tip, isWord: false }
+}
 
 // ─── Tiny components ─────────────────────────────────────────────────────────
 
@@ -593,11 +667,19 @@ const SRS_RATINGS = [
 
 function SRSQuiz({ onClose }) {
   const { progress, awardXp, reviewCard } = useContext(ProgressCtx)
-  // Deck einmalig bei Sitzungsbeginn festlegen: heute fällige gelernte Kana.
-  const [deck] = useState(() => dueKana(progress, completedKanaList(progress.completedLessons || [])))
-  const [idx, setIdx] = useState(0)
+  // Fällige Karten = heute fällige gelernte Kana UND gelernte Wörter.
+  const [deck] = useState(() => {
+    const learned = [
+      ...completedKanaList(progress.completedLessons || []),
+      ...(progress.completedWords || []),
+    ]
+    return dueKana(progress, learned)
+  })
+  const [queue, setQueue] = useState(deck)   // Arbeits-Warteschlange (kann wachsen)
   const [flipped, setFlipped] = useState(false)
-  const [done, setDone] = useState(0)
+  const [passed, setPassed] = useState(0)    // endgültig gekonnte Karten
+  const [lapses, setLapses] = useState(0)    // wie oft „Nochmal"
+  const [repeats, setRepeats] = useState(() => new Set()) // welche Karten schon mal daneben
 
   // Nichts fällig (oder noch nichts gelernt)
   if (deck.length === 0) {
@@ -606,49 +688,68 @@ function SRSQuiz({ onClose }) {
         <div style={{ fontSize: 48, marginBottom: 12 }}>🌿</div>
         <h3 style={{ fontSize: 18, marginBottom: 8 }}>Nichts fällig</h3>
         <p style={{ color: C.textMuted, marginBottom: 16 }}>
-          Aktuell sind keine Wiederholungen fällig. Lerne neue Lektionen oder
-          komm später wieder – fällige Karten erscheinen automatisch.
+          Aktuell sind keine Wiederholungen fällig. Lerne neue Kana oder Wörter
+          oder komm später wieder – fällige Karten erscheinen automatisch.
         </p>
         <Btn onClick={onClose}>Zurück</Btn>
       </div>
     )
   }
 
-  if (idx >= deck.length) {
+  if (queue.length === 0) {
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-        <h3 style={{ fontSize: 18, marginBottom: 8 }}>Alle fälligen Karten geschafft!</h3>
-        <p style={{ color: C.textMuted, marginBottom: 16 }}>{done} Karten wiederholt · +{done * XP_PER_CARD} XP</p>
+        <h3 style={{ fontSize: 18, marginBottom: 8 }}>Alle fälligen Karten gemeistert!</h3>
+        <p style={{ color: C.textMuted, marginBottom: 16 }}>
+          {passed} Karten · +{passed * XP_PER_CARD} XP
+          {lapses > 0 && ` · ${lapses}× wiederholt`}
+        </p>
         <Btn onClick={onClose}>Fertig</Btn>
       </div>
     )
   }
 
-  const char = deck[idx]
-  const data = KANA_DATA[char]
+  const item = queue[0]
+  const info = srsItemInfo(item)
+  const isRepeat = repeats.has(item)
 
   const rate = (quality) => {
-    reviewCard(char, quality)
-    awardXp(XP_PER_CARD)
+    if (quality < 3) {
+      // „Nochmal": Karte ans Ende der Warteschlange – kommt in dieser Sitzung wieder.
+      setRepeats(prev => new Set(prev).add(item))
+      setQueue(prev => [...prev.slice(1), prev[0]])
+      setLapses(l => l + 1)
+    } else {
+      // gekonnt: Plan speichern, XP, aus der Warteschlange nehmen.
+      reviewCard(item, quality)
+      awardXp(XP_PER_CARD)
+      setPassed(p => p + 1)
+      setQueue(prev => prev.slice(1))
+    }
     setFlipped(false)
-    setIdx(i => i + 1)
-    setDone(d => d + 1)
   }
 
   return (
     <div style={{ padding: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <span style={{ color: C.textMuted, fontSize: 13 }}>{idx + 1} / {deck.length} fällig</span>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer' }}>✕</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <span style={{ color: C.textMuted, fontSize: 13 }}>
+          {passed} / {deck.length} gekonnt · noch {queue.length}
+        </span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: 16 }}>✕</button>
       </div>
 
-      <Card style={{ textAlign: 'center', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 80, fontFamily: "'Noto Serif JP', serif", marginBottom: 12 }}>{char}</div>
+      <Card style={{ textAlign: 'center', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 16, position: 'relative' }}>
+        {isRepeat && (
+          <div style={{ position: 'absolute', top: 10, left: 12, fontSize: 11, color: C.shu, fontWeight: 600 }}>🔁 nochmal</div>
+        )}
+        <button onClick={() => speak(item)} title="Anhören"
+          style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}>🔊</button>
+        <div style={{ fontSize: item.length > 1 ? 52 : 80, fontFamily: "'Noto Serif JP', serif", marginBottom: 12 }}>{item}</div>
         {flipped ? (
           <>
-            <div style={{ fontSize: 24, fontWeight: 700, color: C.indigo, marginBottom: 4 }}>{data?.romaji}</div>
-            {data?.tip && <div style={{ fontSize: 13, color: C.textMuted }}>{data.tip}</div>}
+            <div style={{ fontSize: 22, fontWeight: 700, color: C.indigo, marginBottom: 4 }}>{info.reading}</div>
+            {info.sub && <div style={{ fontSize: 13, color: C.textMuted }}>{info.sub}</div>}
           </>
         ) : (
           <div style={{ color: C.textMuted, fontSize: 14 }}>Tippen zum Aufdecken</div>
@@ -674,12 +775,140 @@ function SRSQuiz({ onClose }) {
   )
 }
 
+// ─── Erkennen & Hören (Übungen) ──────────────────────────────────────────────
+
+// Mischt ein Array (neue Kopie).
+function shuffled(arr) {
+  return [...arr].sort(() => Math.random() - 0.5)
+}
+
+// Baut Multiple-Choice-Runden über die gelernten Kana.
+function buildRounds(learnedKana) {
+  const pool = [...new Set(learnedKana)]
+  return shuffled(pool).map(ch => {
+    const distractors = shuffled(pool.filter(k => k !== ch)).slice(0, 3)
+    const options = shuffled([ch, ...distractors])
+    return { char: ch, options }
+  })
+}
+
+function PracticeQuiz({ mode, onClose }) {
+  // mode: 'erkennen' (Zeichen → Lesung) | 'hoeren' (Audio → Zeichen)
+  const { progress, awardXp } = useContext(ProgressCtx)
+  const learned = completedKanaList(progress.completedLessons || [])
+  const [rounds] = useState(() => buildRounds(learned).slice(0, 12))
+  const [idx, setIdx] = useState(0)
+  const [answer, setAnswer] = useState(null)
+  const [correctCount, setCorrectCount] = useState(0)
+
+  // Bei „Hören" automatisch vorlesen, sobald eine neue Runde erscheint.
+  const cur = rounds[idx]
+  useEffect(() => {
+    if (mode === 'hoeren' && cur) speak(cur.char)
+  }, [mode, idx]) // eslint-disable-line
+
+  if (learned.length < 4) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>📚</div>
+        <h3 style={{ fontSize: 18, marginBottom: 8 }}>Noch zu wenig gelernt</h3>
+        <p style={{ color: C.textMuted, marginBottom: 16 }}>
+          Lerne zuerst ein paar Kana im „Lernen"-Tab – dann kannst du sie hier üben.
+        </p>
+        <Btn onClick={onClose}>Zurück</Btn>
+      </div>
+    )
+  }
+
+  if (idx >= rounds.length) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+        <h3 style={{ fontSize: 18, marginBottom: 8 }}>Übung fertig!</h3>
+        <p style={{ color: C.textMuted, marginBottom: 16 }}>
+          {correctCount} / {rounds.length} richtig · +{correctCount * XP_PER_CARD} XP
+        </p>
+        <Btn onClick={onClose}>Fertig</Btn>
+      </div>
+    )
+  }
+
+  const revealed = answer !== null
+  const choose = (opt) => {
+    if (revealed) return
+    setAnswer(opt)
+    if (opt === cur.char) { awardXp(XP_PER_CARD); setCorrectCount(c => c + 1) }
+  }
+  const next = () => { setAnswer(null); setIdx(i => i + 1) }
+
+  return (
+    <div style={{ padding: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <span style={{ color: C.textMuted, fontSize: 13 }}>
+          {mode === 'erkennen' ? 'Erkennen' : 'Hören'} · {idx + 1} / {rounds.length}
+        </span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: 16 }}>✕</button>
+      </div>
+
+      {/* Aufgabe */}
+      <Card style={{ textAlign: 'center', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 16 }}>
+        {mode === 'erkennen' ? (
+          <>
+            <div style={{ fontSize: 80, fontFamily: "'Noto Serif JP', serif", marginBottom: 4 }}>{cur.char}</div>
+            <div style={{ fontSize: 13, color: C.textMuted }}>Welche Lesung?</div>
+          </>
+        ) : (
+          <>
+            <button onClick={() => speak(cur.char)}
+              style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 40,
+                width: 80, height: 80, fontSize: 36, cursor: 'pointer', margin: '0 auto 8px' }}>🔊</button>
+            <div style={{ fontSize: 13, color: C.textMuted }}>Welches Zeichen hast du gehört?</div>
+          </>
+        )}
+      </Card>
+
+      {/* Optionen */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {cur.options.map(opt => {
+          const isCorrect = opt === cur.char
+          const isChosen = opt === answer
+          // Erkennen: Optionen sind Lesungen; Hören: Optionen sind Zeichen.
+          const label = mode === 'erkennen' ? KANA_DATA[opt]?.romaji : opt
+          return (
+            <button key={opt} onClick={() => choose(opt)} disabled={revealed}
+              style={{
+                padding: '16px 8px', borderRadius: 8, border: '2px solid',
+                borderColor: !revealed ? C.washiDark : isCorrect ? C.matcha : isChosen ? C.shu : C.washiDark,
+                background: !revealed ? '#fff' : isCorrect ? `${C.matcha}20` : isChosen ? `${C.shu}20` : '#fff',
+                fontSize: mode === 'erkennen' ? 18 : 28,
+                fontFamily: mode === 'erkennen' ? 'inherit' : "'Noto Serif JP', serif",
+                fontWeight: 600, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
+              }}>{label}</button>
+          )
+        })}
+      </div>
+
+      {revealed && (
+        <>
+          <p style={{ textAlign: 'center', marginTop: 12, color: answer === cur.char ? C.matcha : C.shu, fontWeight: 600 }}>
+            {answer === cur.char ? '✓ Richtig!' : `✗ Richtig: ${cur.char} (${KANA_DATA[cur.char]?.romaji})`}
+          </p>
+          <Btn onClick={next} style={{ marginTop: 12, width: '100%' }}>
+            {idx === rounds.length - 1 ? 'Übung abschließen →' : 'Weiter →'}
+          </Btn>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── Screens ─────────────────────────────────────────────────────────────────
 
 function HeuteScreen() {
   const { progress } = useContext(ProgressCtx)
   const { streak, xpToday: xp, goal } = computeStats(progress)
-  const due = dueKana(progress, completedKanaList(progress.completedLessons || [])).length
+  const learnedAll = [...completedKanaList(progress.completedLessons || []), ...(progress.completedWords || [])]
+  const due = dueKana(progress, learnedAll).length
   const charOfDay = 'あ'
   const data = KANA_DATA[charOfDay]
 
@@ -771,9 +1000,131 @@ function HeuteScreen() {
   )
 }
 
+// ─── Wörter-Lernpfad ─────────────────────────────────────────────────────────
+
+function WordLesson({ word, alreadyLearned, onLearn, onClose }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
+      <div style={{ padding: '12px 16px', background: '#fff', borderBottom: `1px solid ${C.washiDark}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted }}>✕</button>
+        <h3 style={{ fontSize: 14, fontFamily: "'Noto Serif JP', serif", color: C.indigo }}>Wort lernen</h3>
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: 24, textAlign: 'center' }}>
+        <div style={{ fontSize: 60, fontFamily: "'Noto Serif JP', serif", color: C.sumi, marginBottom: 8 }}>{word.jp}</div>
+        <button onClick={() => speak(word.jp)}
+          style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 20, padding: '6px 16px', fontSize: 13, cursor: 'pointer', color: C.indigo, marginBottom: 16 }}>
+          🔊 Anhören
+        </button>
+        <div style={{ fontSize: 24, fontWeight: 700, color: C.indigo, marginBottom: 2 }}>{word.romaji}</div>
+        <div style={{ fontSize: 18, color: C.sumi, marginBottom: 24 }}>{word.de}</div>
+
+        {/* Aufschlüsselung in einzelne Zeichen */}
+        <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 10 }}>ZEICHEN</div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+          {[...word.jp].map((ch, i) => (
+            <div key={i} style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 8, padding: '8px 12px', minWidth: 44 }}>
+              <div style={{ fontSize: 26, fontFamily: "'Noto Serif JP', serif" }}>{ch}</div>
+              <div style={{ fontSize: 11, color: C.textMuted }}>{ch === 'ー' ? 'lang' : (KANA_DATA[ch]?.romaji || '')}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: '16px 20px', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
+        <Btn onClick={onLearn} style={{ width: '100%' }} variant={alreadyLearned ? 'ghost' : 'primary'}>
+          {alreadyLearned ? 'Schon gelernt ✓ – Schließen' : 'Gelernt ✓'}
+        </Btn>
+      </div>
+    </div>
+  )
+}
+
+function WordPath() {
+  const { progress, learnWord } = useContext(ProgressCtx)
+  const [active, setActive] = useState(null)
+
+  const learnedSet = new Set(completedKanaList(progress.completedLessons || []))
+  const learnedWords = progress.completedWords || []
+
+  if (active) {
+    const already = learnedWords.includes(active)
+    return (
+      <WordLesson
+        word={WORD_BY_JP[active]}
+        alreadyLearned={already}
+        onLearn={() => { if (!already) learnWord(active, XP_PER_WORD); setActive(null) }}
+        onClose={() => setActive(null)}
+      />
+    )
+  }
+
+  const decorated = WORDS.map(w => ({
+    ...w,
+    learnable: wordLearnable(w.jp, learnedSet),
+    learned: learnedWords.includes(w.jp),
+    missing: wordKana(w.jp).filter(k => !learnedSet.has(k)),
+  }))
+  const availableCount = decorated.filter(w => w.learnable && !w.learned).length
+
+  const groups = [
+    { key: 'hira', title: 'Hiragana-Wörter' },
+    { key: 'kata', title: 'Katakana-Wörter' },
+  ]
+
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 6 }}>
+        Wörter aus deinen gelernten Zeichen. Sie schalten frei, sobald du alle nötigen Kana kennst.
+      </p>
+      <p style={{ fontSize: 12, color: C.matcha, marginBottom: 16 }}>
+        {availableCount > 0 ? `${availableCount} Wörter zum Lernen verfügbar` : 'Lerne mehr Kana, um Wörter freizuschalten'}
+      </p>
+
+      {groups.map(g => {
+        const items = decorated.filter(w => w.script === g.key)
+        return (
+          <div key={g.key} style={{ marginBottom: 22 }}>
+            <h3 style={{ fontSize: 15, fontFamily: "'Noto Serif JP', serif", color: C.indigo, marginBottom: 10 }}>{g.title}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {items.map(w => {
+                const open = w.learnable ? () => setActive(w.jp) : undefined
+                const border = w.learned ? C.matcha : w.learnable ? C.shu : C.washiDark
+                return (
+                  <button key={w.jp} onClick={open} disabled={!w.learnable}
+                    style={{
+                      textAlign: 'left', background: '#fff', border: `2px solid ${border}`,
+                      borderRadius: 12, padding: '12px 14px',
+                      cursor: w.learnable ? 'pointer' : 'not-allowed',
+                      opacity: w.learnable ? 1 : 0.55,
+                    }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontFamily: "'Noto Serif JP', serif", fontSize: 22 }}>{w.jp}</span>
+                      {w.learned ? <span style={{ color: C.matcha, fontSize: 14 }}>✓</span>
+                        : !w.learnable ? <span style={{ fontSize: 13 }}>🔒</span> : null}
+                    </div>
+                    {w.learnable ? (
+                      <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{w.romaji} · {w.de}</div>
+                    ) : (
+                      <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
+                        braucht: <span style={{ fontFamily: "'Noto Serif JP', serif" }}>{w.missing.join(' ')}</span>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function LernenScreen() {
   const { progress, completeLesson } = useContext(ProgressCtx)
   const [activeLesson, setActiveLesson] = useState(null)
+  const [view, setView] = useState('kana') // 'kana' | 'woerter'
 
   // Lektionen aus dem gespeicherten Fortschritt ableiten:
   // - done  = ID ist in completedLessons
@@ -806,9 +1157,27 @@ function LernenScreen() {
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
-      <h2 style={{ fontSize: 20, fontFamily: "'Noto Serif JP', serif", color: C.indigo, marginBottom: 4 }}>
-        Lernpfad
+      <h2 style={{ fontSize: 20, fontFamily: "'Noto Serif JP', serif", color: C.indigo, marginBottom: 12 }}>
+        Lernen
       </h2>
+
+      {/* Umschalter Kana / Wörter */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+        {[['kana', 'あ Kana'], ['woerter', '語 Wörter']].map(([id, label]) => (
+          <button key={id} onClick={() => setView(id)}
+            style={{
+              flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer',
+              border: `2px solid ${view === id ? C.shu : C.washiDark}`,
+              background: view === id ? `${C.shu}15` : '#fff',
+              color: view === id ? C.shu : C.textMuted, fontWeight: 600, fontSize: 14,
+            }}>{label}</button>
+        ))}
+      </div>
+
+      {view === 'woerter' && <WordPath />}
+
+      {view === 'kana' && (
+      <>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 20 }}>
         Schritt für Schritt durch Hiragana & Katakana
       </p>
@@ -888,6 +1257,8 @@ function LernenScreen() {
           </Card>
         ))}
       </div>
+      </>
+      )}
     </div>
   )
 }
@@ -897,11 +1268,13 @@ function UebenScreen() {
   const [mode, setMode] = useState(null)
 
   if (mode === 'srs') return <SRSQuiz onClose={() => setMode(null)} />
+  if (mode === 'erkennen' || mode === 'hoeren') return <PracticeQuiz mode={mode} onClose={() => setMode(null)} />
 
-  const dueCount = dueKana(progress, completedKanaList(progress.completedLessons || [])).length
+  const learnedAll = [...completedKanaList(progress.completedLessons || []), ...(progress.completedWords || [])]
+  const dueCount = dueKana(progress, learnedAll).length
   const exercises = [
     { id: 'srs', icon: '🗂', title: 'SRS-Wiederholungen', sub: dueCount > 0 ? `${dueCount} Karten fällig` : 'Nichts fällig', color: C.shu },
-    { id: 'erkennen', icon: '👁', title: 'Erkennen', sub: 'Zeichen → Bedeutung', color: C.indigo },
+    { id: 'erkennen', icon: '👁', title: 'Erkennen', sub: 'Zeichen → Lesung', color: C.indigo },
     { id: 'hoeren', icon: '👂', title: 'Hören', sub: 'Was hast du gehört?', color: C.matcha },
     { id: 'tippen', icon: '⌨️', title: 'Tippen', sub: 'Kana per Tastatur', color: '#8B6914' },
     { id: 'satzbau', icon: '🧩', title: 'Satzbau', sub: 'Wörter sortieren', color: '#7B3FA0' },
@@ -1086,7 +1459,7 @@ function FortschrittScreen() {
 export default function TabiApp() {
   const [tab, setTab] = useState('heute')
   const { user, logout } = useAuth()
-  const { progress, awardXp, completeLesson, reviewCard, reset } = useProgress(user?.uid)
+  const { progress, awardXp, completeLesson, learnWord, reviewCard, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
 
   const screens = {
@@ -1097,7 +1470,7 @@ export default function TabiApp() {
   }
 
   return (
-    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, reviewCard, reset }}>
+    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, learnWord, reviewCard, reset }}>
     <div style={{
       maxWidth: 480, margin: '0 auto', height: '100vh',
       display: 'flex', flexDirection: 'column', position: 'relative',

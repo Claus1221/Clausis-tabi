@@ -5,6 +5,7 @@ import { db } from './firebase'
 // Standard-Fortschritt für einen neuen Nutzer: alles bei 0.
 const DEFAULT = {
   completedLessons: [], // IDs abgeschlossener Lektionen, z.B. ['l1','l2']
+  completedWords: [],   // gelernte Wörter (jp-Strings), z.B. ['ねこ']
   xpByDate: {},         // { 'YYYY-MM-DD': XP }  → XP heute, Streak, Wochenchart
   srs: {},              // { 'あ': { ease, interval, reps, due } }  → Wiederholungsplan
 }
@@ -130,18 +131,28 @@ export function useProgress(uid) {
     )
   }
 
-  // Eine SRS-Karte bewerten → nächste Fälligkeit per SM-2 berechnen & speichern.
-  const reviewCard = async (char, quality) => {
+  // Ein Wort als gelernt markieren + XP gutschreiben.
+  const learnWord = async (jp, xp = 0) => {
     if (!uid || !db) return
-    const next = sm2((progress.srs || {})[char], quality)
-    await setDoc(ref(), { srs: { [char]: next } }, { merge: true })
+    await setDoc(
+      ref(),
+      { completedWords: arrayUnion(jp), xpByDate: { [localDate()]: increment(xp) } },
+      { merge: true },
+    )
+  }
+
+  // Eine SRS-Karte bewerten → nächste Fälligkeit per SM-2 berechnen & speichern.
+  const reviewCard = async (key, quality) => {
+    if (!uid || !db) return
+    const next = sm2((progress.srs || {})[key], quality)
+    await setDoc(ref(), { srs: { [key]: next } }, { merge: true })
   }
 
   // Kompletter Reset auf 0 (überschreibt das Dokument).
   const reset = async () => {
     if (!uid || !db) return
-    await setDoc(ref(), { completedLessons: [], xpByDate: {}, srs: {} })
+    await setDoc(ref(), { completedLessons: [], completedWords: [], xpByDate: {}, srs: {} })
   }
 
-  return { progress, loading, awardXp, completeLesson, reviewCard, reset }
+  return { progress, loading, awardXp, completeLesson, learnWord, reviewCard, reset }
 }
