@@ -77,15 +77,65 @@ const LESSONS = [
   ...KATA_ROWS.map((kana, i) => ({ id: `k${i + 1}`, title: kana.join(''), kana, script: 'Katakana' })),
 ]
 
+// 50 Überlebensphrasen für Touristen, thematisch gruppiert (cat = Kategorie).
 const PHRASES = [
-  { jp: 'ありがとうございます', romaji: 'arigatou gozaimasu', de: 'Vielen Dank' },
-  { jp: 'すみません', romaji: 'sumimasen', de: 'Entschuldigung / Excuse me' },
-  { jp: 'これをください', romaji: 'kore wo kudasai', de: 'Das hier, bitte' },
-  { jp: 'いくらですか？', romaji: 'ikura desu ka?', de: 'Wie viel kostet das?' },
-  { jp: 'どこですか？', romaji: 'doko desu ka?', de: 'Wo ist …?' },
-  { jp: 'わかりません', romaji: 'wakarimasen', de: 'Ich verstehe nicht' },
-  { jp: 'えいごはなせますか？', romaji: 'eigo hanasemasu ka?', de: 'Sprechen Sie Englisch?' },
-  { jp: 'おねがいします', romaji: 'onegaishimasu', de: 'Bitte (höflich)' },
+  // Begrüßung & Höflichkeit
+  { jp: 'こんにちは', romaji: 'konnichiwa', de: 'Hallo / Guten Tag', cat: 'Höflichkeit' },
+  { jp: 'おはようございます', romaji: 'ohayou gozaimasu', de: 'Guten Morgen', cat: 'Höflichkeit' },
+  { jp: 'こんばんは', romaji: 'konbanwa', de: 'Guten Abend', cat: 'Höflichkeit' },
+  { jp: 'さようなら', romaji: 'sayounara', de: 'Auf Wiedersehen', cat: 'Höflichkeit' },
+  { jp: 'ありがとうございます', romaji: 'arigatou gozaimasu', de: 'Vielen Dank', cat: 'Höflichkeit' },
+  { jp: 'どういたしまして', romaji: 'dou itashimashite', de: 'Gern geschehen', cat: 'Höflichkeit' },
+  { jp: 'すみません', romaji: 'sumimasen', de: 'Entschuldigung / Verzeihung', cat: 'Höflichkeit' },
+  { jp: 'ごめんなさい', romaji: 'gomen nasai', de: 'Es tut mir leid', cat: 'Höflichkeit' },
+  { jp: 'おねがいします', romaji: 'onegai shimasu', de: 'Bitte (höflich)', cat: 'Höflichkeit' },
+  { jp: 'はい / いいえ', romaji: 'hai / iie', de: 'Ja / Nein', cat: 'Höflichkeit' },
+  // Verständigung
+  { jp: 'わかりません', romaji: 'wakarimasen', de: 'Ich verstehe nicht', cat: 'Verständigung' },
+  { jp: 'わかりました', romaji: 'wakarimashita', de: 'Ich habe verstanden', cat: 'Verständigung' },
+  { jp: 'えいごをはなせますか？', romaji: 'eigo o hanasemasu ka?', de: 'Sprechen Sie Englisch?', cat: 'Verständigung' },
+  { jp: 'もういちど おねがいします', romaji: 'mou ichido onegai shimasu', de: 'Noch einmal, bitte', cat: 'Verständigung' },
+  { jp: 'ゆっくり おねがいします', romaji: 'yukkuri onegai shimasu', de: 'Langsamer, bitte', cat: 'Verständigung' },
+  { jp: 'にほんごが すこし わかります', romaji: 'nihongo ga sukoshi wakarimasu', de: 'Ich verstehe etwas Japanisch', cat: 'Verständigung' },
+  { jp: 'これは にほんごで なんですか？', romaji: 'kore wa nihongo de nan desu ka?', de: 'Wie heißt das auf Japanisch?', cat: 'Verständigung' },
+  { jp: 'たすけて ください', romaji: 'tasukete kudasai', de: 'Bitte helfen Sie mir', cat: 'Verständigung' },
+  // Orientierung
+  { jp: 'すみません、どこですか？', romaji: 'sumimasen, doko desu ka?', de: 'Entschuldigung, wo ist …?', cat: 'Orientierung' },
+  { jp: 'えきは どこですか？', romaji: 'eki wa doko desu ka?', de: 'Wo ist der Bahnhof?', cat: 'Orientierung' },
+  { jp: 'トイレは どこですか？', romaji: 'toire wa doko desu ka?', de: 'Wo ist die Toilette?', cat: 'Orientierung' },
+  { jp: 'ちかいですか？', romaji: 'chikai desu ka?', de: 'Ist es in der Nähe?', cat: 'Orientierung' },
+  { jp: 'みぎ / ひだり', romaji: 'migi / hidari', de: 'rechts / links', cat: 'Orientierung' },
+  { jp: 'まっすぐ', romaji: 'massugu', de: 'geradeaus', cat: 'Orientierung' },
+  { jp: 'これは ちずに ありますか？', romaji: 'kore wa chizu ni arimasu ka?', de: 'Ist das auf der Karte?', cat: 'Orientierung' },
+  // Unterwegs / Verkehr
+  { jp: 'この でんしゃは ○○に いきますか？', romaji: 'kono densha wa ○○ ni ikimasu ka?', de: 'Fährt dieser Zug nach ○○?', cat: 'Verkehr' },
+  { jp: 'きっぷを ください', romaji: 'kippu o kudasai', de: 'Eine Fahrkarte, bitte', cat: 'Verkehr' },
+  { jp: 'なんばんせんですか？', romaji: 'nan-ban-sen desu ka?', de: 'Welches Gleis?', cat: 'Verkehr' },
+  { jp: 'タクシーを よんで ください', romaji: 'takushii o yonde kudasai', de: 'Rufen Sie bitte ein Taxi', cat: 'Verkehr' },
+  { jp: 'ここで とめて ください', romaji: 'koko de tomete kudasai', de: 'Bitte hier anhalten', cat: 'Verkehr' },
+  { jp: 'くうこうまで おねがいします', romaji: 'kuukou made onegai shimasu', de: 'Zum Flughafen, bitte', cat: 'Verkehr' },
+  // Restaurant
+  { jp: 'メニューを ください', romaji: 'menyuu o kudasai', de: 'Die Speisekarte, bitte', cat: 'Restaurant' },
+  { jp: 'これを ください', romaji: 'kore o kudasai', de: 'Das hier, bitte', cat: 'Restaurant' },
+  { jp: 'おすすめは なんですか？', romaji: 'osusume wa nan desu ka?', de: 'Was empfehlen Sie?', cat: 'Restaurant' },
+  { jp: 'おみずを ください', romaji: 'omizu o kudasai', de: 'Wasser, bitte', cat: 'Restaurant' },
+  { jp: 'おいしいです！', romaji: 'oishii desu!', de: 'Das ist lecker!', cat: 'Restaurant' },
+  { jp: 'おかんじょう おねがいします', romaji: 'okanjou onegai shimasu', de: 'Die Rechnung, bitte', cat: 'Restaurant' },
+  { jp: 'にくは たべません', romaji: 'niku wa tabemasen', de: 'Ich esse kein Fleisch', cat: 'Restaurant' },
+  { jp: 'アレルギーが あります', romaji: 'arerugii ga arimasu', de: 'Ich habe eine Allergie', cat: 'Restaurant' },
+  // Einkaufen
+  { jp: 'いくらですか？', romaji: 'ikura desu ka?', de: 'Wie viel kostet das?', cat: 'Einkaufen' },
+  { jp: 'たかいです', romaji: 'takai desu', de: 'Das ist teuer', cat: 'Einkaufen' },
+  { jp: 'カードで はらえますか？', romaji: 'kaado de haraemasu ka?', de: 'Kann ich mit Karte zahlen?', cat: 'Einkaufen' },
+  { jp: 'みて いるだけです', romaji: 'mite iru dake desu', de: 'Ich schaue nur', cat: 'Einkaufen' },
+  { jp: 'ふくろを ください', romaji: 'fukuro o kudasai', de: 'Eine Tüte, bitte', cat: 'Einkaufen' },
+  { jp: 'これは ありますか？', romaji: 'kore wa arimasu ka?', de: 'Haben Sie das?', cat: 'Einkaufen' },
+  // Notfall & Gesundheit
+  { jp: 'たすけて！', romaji: 'tasukete!', de: 'Hilfe!', cat: 'Notfall' },
+  { jp: 'びょういんは どこですか？', romaji: 'byouin wa doko desu ka?', de: 'Wo ist ein Krankenhaus?', cat: 'Notfall' },
+  { jp: 'けいさつを よんで ください', romaji: 'keisatsu o yonde kudasai', de: 'Rufen Sie die Polizei', cat: 'Notfall' },
+  { jp: 'きぶんが わるいです', romaji: 'kibun ga warui desu', de: 'Mir ist schlecht', cat: 'Notfall' },
+  { jp: 'みちに まよいました', romaji: 'michi ni mayoimashita', de: 'Ich habe mich verlaufen', cat: 'Notfall' },
 ]
 
 // Wörter-Blöcke: je 5 thematisch gruppierte Wörter mit Kanji, Hiragana,
@@ -1307,24 +1357,35 @@ function HeuteScreen() {
         </div>
       </Card>
 
-      {/* Phrases preview */}
-      <Card>
-        <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 10, fontWeight: 600, letterSpacing: 1 }}>
-          ÜBERLEBENSPHRASEN
+    </div>
+  )
+}
+
+// Liste der Überlebensphrasen (im Lernen-Tab), thematisch gruppiert.
+function PhraseList() {
+  const cats = [...new Set(PHRASES.map(p => p.cat))]
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 16 }}>
+        {PHRASES.length} nützliche Sätze für deine Reise – nach Situation sortiert. 🔊 zum Anhören.
+      </p>
+      {cats.map(cat => (
+        <div key={cat} style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>{cat.toUpperCase()}</div>
+          {PHRASES.filter(p => p.cat === cat).map((p, i) => (
+            <Card key={i} style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: "'Noto Serif JP', serif", fontSize: 17, marginBottom: 2 }}>{p.jp}</div>
+                  <div style={{ fontSize: 12, color: C.textMuted }}>{p.romaji}</div>
+                  <div style={{ fontSize: 13, color: C.indigo, marginTop: 2 }}>{p.de}</div>
+                </div>
+                <button onClick={() => speak(p.jp)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', flexShrink: 0 }}>🔊</button>
+              </div>
+            </Card>
+          ))}
         </div>
-        {PHRASES.slice(0, 3).map((p, i) => (
-          <div key={i} style={{
-            padding: '10px 0', borderBottom: i < 2 ? `1px solid ${C.washiDark}` : 'none',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8,
-          }}>
-            <div>
-              <div style={{ fontFamily: "'Noto Serif JP', serif", fontSize: 15 }}>{p.jp}</div>
-              <div style={{ fontSize: 12, color: C.textMuted }}>{p.romaji}</div>
-            </div>
-            <div style={{ fontSize: 12, color: C.indigo, textAlign: 'right', flexShrink: 0 }}>{p.de}</div>
-          </div>
-        ))}
-      </Card>
+      ))}
     </div>
   )
 }
@@ -1832,6 +1893,10 @@ function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
   )
 }
 
+// Grammatik-Reihenfolge identisch zur Reise (Satz-Grundgerüst zuerst).
+const GRAMMAR_ORDER = ['g2', 'g1', 'g6', 'g3', 'g4', 'g5', 'g7', 'g8', 'g9', 'g10']
+const GRAMMAR_SEQ = GRAMMAR_ORDER.map(id => GRAMMAR.find(g => g.id === id))
+
 function GrammarPath() {
   const { progress, completeGrammar } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
@@ -1850,10 +1915,10 @@ function GrammarPath() {
     )
   }
 
-  const topics = GRAMMAR.map((t, i) => ({
+  const topics = GRAMMAR_SEQ.map((t, i) => ({
     ...t,
     done: done.includes(t.id),
-    locked: i === 0 ? false : !done.includes(GRAMMAR[i - 1].id),
+    locked: i === 0 ? false : !done.includes(GRAMMAR_SEQ[i - 1].id),
   }))
 
   return (
@@ -1936,21 +2001,22 @@ function LernenScreen() {
         Lernen
       </h2>
 
-      {/* Umschalter Kana / Wörter / Grammatik */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
-        {[['kana', 'あ Kana'], ['woerter', '語 Wörter'], ['grammatik', '文 Grammatik']].map(([id, label]) => (
+      {/* Umschalter Kana / Wörter / Grammatik / Phrasen */}
+      <div style={{ display: 'flex', gap: 5, marginBottom: 18 }}>
+        {[['kana', 'あ Kana'], ['woerter', '語 Wörter'], ['grammatik', '文 Grammatik'], ['phrasen', '会 Phrasen']].map(([id, label]) => (
           <button key={id} onClick={() => setView(id)}
             style={{
               flex: 1, padding: '8px 2px', borderRadius: 8, cursor: 'pointer',
               border: `2px solid ${view === id ? C.shu : C.washiDark}`,
               background: view === id ? `${C.shu}15` : '#fff',
-              color: view === id ? C.shu : C.textMuted, fontWeight: 600, fontSize: 13,
+              color: view === id ? C.shu : C.textMuted, fontWeight: 600, fontSize: 12,
             }}>{label}</button>
         ))}
       </div>
 
       {view === 'woerter' && <BlockPath />}
       {view === 'grammatik' && <GrammarPath />}
+      {view === 'phrasen' && <PhraseList />}
 
       {view === 'kana' && (
       <>
@@ -2007,33 +2073,172 @@ function LernenScreen() {
         ))}
       </div>
 
-      {/* Phrases section */}
-      <div style={{ marginTop: 28 }}>
-        <h3 style={{ fontSize: 16, fontFamily: "'Noto Serif JP', serif", color: C.indigo, marginBottom: 12 }}>
-          Überlebensphrasen
-        </h3>
-        {PHRASES.map((p, i) => (
-          <Card key={i} style={{ marginBottom: 8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div style={{ fontFamily: "'Noto Serif JP', serif", fontSize: 17, marginBottom: 2 }}>{p.jp}</div>
-                <div style={{ fontSize: 12, color: C.textMuted }}>{p.romaji}</div>
-              </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <div style={{ fontSize: 12, color: C.indigo, textAlign: 'right' }}>{p.de}</div>
-                <button onClick={() => {
-                  if ('speechSynthesis' in window) {
-                    const u = new SpeechSynthesisUtterance(p.jp)
-                    u.lang = 'ja-JP'
-                    speechSynthesis.speak(u)
-                  }
-                }} style={{ background: 'none', border: 'none', fontSize: 16, cursor: 'pointer' }}>🔊</button>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
       </>
+      )}
+    </div>
+  )
+}
+
+// Kleine geteilte Bausteine für die Üben-Übungen.
+function UebenHead({ title, idx, total, onClose }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <span style={{ color: C.textMuted, fontSize: 13 }}>{title}{total ? ` · ${idx + 1} / ${total}` : ''}</span>
+      <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: 16 }}>✕</button>
+    </div>
+  )
+}
+function UebenEmpty({ onClose, text }) {
+  return (
+    <div style={{ padding: 24, textAlign: 'center' }}>
+      <div style={{ fontSize: 48, marginBottom: 12 }}>📚</div>
+      <h3 style={{ fontSize: 18, marginBottom: 8 }}>Noch zu wenig gelernt</h3>
+      <p style={{ color: C.textMuted, marginBottom: 16 }}>{text || 'Lerne zuerst etwas im Lernen-Tab oder auf der Reise.'}</p>
+      <Btn onClick={onClose}>Zurück</Btn>
+    </div>
+  )
+}
+function UebenDone({ correct, total, onClose }) {
+  return (
+    <div style={{ padding: 24, textAlign: 'center' }}>
+      <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+      <h3 style={{ fontSize: 18, marginBottom: 8 }}>Übung fertig!</h3>
+      <p style={{ color: C.textMuted, marginBottom: 16 }}>
+        {correct != null ? `${correct} / ${total} richtig · +${correct * XP_PER_CARD} XP` : 'Gut gemacht!'}
+      </p>
+      <Btn onClick={onClose}>Fertig</Btn>
+    </div>
+  )
+}
+
+// Tippen: Kana ansehen, Lesung (Romaji) per Tastatur eingeben.
+function TypeQuiz({ onClose }) {
+  const { progress, awardXp } = useContext(ProgressCtx)
+  const learned = completedKanaList(progress.completedLessons || [])
+  const [rounds] = useState(() => shuffled(learned).slice(0, 12))
+  const [idx, setIdx] = useState(0)
+  const [val, setVal] = useState('')
+  const [res, setRes] = useState(null)
+  const [correct, setCorrect] = useState(0)
+  const inputRef = useRef(null)
+  useEffect(() => { inputRef.current?.focus() }, [idx])
+
+  if (learned.length < 1) return <UebenEmpty onClose={onClose} text="Lerne zuerst ein paar Kana – dann kannst du sie hier tippen." />
+  if (idx >= rounds.length) return <UebenDone correct={correct} total={rounds.length} onClose={onClose} />
+
+  const cur = rounds[idx]
+  const answer = KANA_DATA[cur]?.romaji
+  const revealed = res != null
+  const check = () => { if (!val.trim()) return; const ok = val.trim().toLowerCase() === answer; setRes(ok); if (ok) { awardXp(XP_PER_CARD); setCorrect(c => c + 1) } }
+  const next = () => { setVal(''); setRes(null); setIdx(i => i + 1) }
+
+  return (
+    <div style={{ padding: 20 }}>
+      <UebenHead title="Tippen" idx={idx} total={rounds.length} onClose={onClose} />
+      <Card style={{ textAlign: 'center', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 16 }}>
+        <div style={{ fontSize: 80, fontFamily: "'Noto Serif JP', serif", marginBottom: 6 }}>{cur}</div>
+        <button onClick={() => speak(cur)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}>🔊</button>
+      </Card>
+      <input ref={inputRef} value={val} onChange={e => setVal(e.target.value)} disabled={revealed}
+        onKeyDown={e => { if (e.key === 'Enter') (revealed ? next() : check()) }}
+        placeholder="Lesung tippen (z. B. ka)" autoCapitalize="none" autoCorrect="off"
+        style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', fontSize: 18, borderRadius: 10, textAlign: 'center', border: `2px solid ${revealed ? (res ? C.matcha : C.shu) : C.washiDark}` }} />
+      {revealed && (
+        <p style={{ textAlign: 'center', marginTop: 12, color: res ? C.matcha : C.shu, fontWeight: 600 }}>
+          {res ? '✓ Richtig!' : `✗ Richtig: ${answer}`}
+        </p>
+      )}
+      <Btn onClick={revealed ? next : check} style={{ width: '100%', marginTop: 12 }}>
+        {revealed ? (idx === rounds.length - 1 ? 'Fertig →' : 'Weiter →') : 'Prüfen'}
+      </Btn>
+    </div>
+  )
+}
+
+// Satzbau: Satz aus Wort-Kacheln bauen (aus gelernten Grammatik-Beispielen).
+function SentenceQuiz({ onClose }) {
+  const { progress } = useContext(ProgressCtx)
+  const done = progress.completedGrammar || []
+  const [rounds] = useState(() => {
+    const ex = GRAMMAR.filter(g => done.includes(g.id)).flatMap(g => g.examples)
+    return shuffled(ex).slice(0, 6).map(e => {
+      const ans = e.tokens.map(t => t.t).filter(t => t !== '。' && t !== '！')
+      return { prompt: `Bilde: „${e.de}"`, tiles: ans, answer: ans, tr: e.de }
+    })
+  })
+  const [idx, setIdx] = useState(0)
+  const [solved, setSolved] = useState(false)
+
+  if (rounds.length === 0) return <UebenEmpty onClose={onClose} text="Lerne zuerst Grammatik – dann kannst du hier Sätze bauen." />
+  if (idx >= rounds.length) return <UebenDone total={rounds.length} onClose={onClose} />
+  const last = idx === rounds.length - 1
+
+  return (
+    <div style={{ padding: 20 }}>
+      <UebenHead title="Satzbau" idx={idx} total={rounds.length} onClose={onClose} />
+      <BuildStep key={idx} step={rounds[idx]} onSolved={() => setSolved(true)} />
+      {solved && <Btn onClick={() => { setSolved(false); setIdx(i => i + 1) }} style={{ width: '100%', marginTop: 14 }}>{last ? 'Fertig →' : 'Weiter →'}</Btn>}
+    </div>
+  )
+}
+
+// Rollenspiel: kurze Dialog-Szene, passende Antwort wählen.
+const ROLEPLAYS = [
+  { title: 'Im Restaurant', emoji: 'food', turns: [
+    { npc: 'いらっしゃいませ！', de: 'Willkommen!', options: ['こんにちは。', 'さようなら。', 'いくらですか？'], answer: 'こんにちは。' },
+    { npc: 'ごちゅうもんは？', de: 'Ihre Bestellung?', options: ['メニューを ください。', 'たすけて！', 'みぎです。'], answer: 'メニューを ください。' },
+    { npc: 'おのみものは？', de: 'Etwas zu trinken?', options: ['おみずを ください。', 'さようなら。', 'わかりません。'], answer: 'おみずを ください。' },
+    { npc: 'ありがとうございました！', de: 'Vielen Dank!', options: ['おかんじょう おねがいします。', 'こんばんは。', 'たかいです。'], answer: 'おかんじょう おねがいします。' },
+  ] },
+  { title: 'Nach dem Weg fragen', emoji: 'map', turns: [
+    { npc: 'はい、なんでしょう？', de: 'Ja, bitte?', options: ['すみません、えきは どこですか？', 'いただきます。', 'おやすみなさい。'], answer: 'すみません、えきは どこですか？' },
+    { npc: 'まっすぐ、それから みぎです。', de: 'Geradeaus, dann rechts.', options: ['ありがとうございます。', 'いくらですか？', 'たべません。'], answer: 'ありがとうございます。' },
+    { npc: 'きを つけて！', de: 'Pass auf dich auf!', options: ['さようなら。', 'メニューを ください。', 'みぎです。'], answer: 'さようなら。' },
+  ] },
+]
+function RolePlay({ onClose }) {
+  const { awardXp } = useContext(ProgressCtx)
+  const [play] = useState(() => ROLEPLAYS[Math.floor(Math.random() * ROLEPLAYS.length)])
+  const [turn, setTurn] = useState(0)
+  const [ans, setAns] = useState(null)
+  const turns = play.turns
+
+  if (turn >= turns.length) return <UebenDone total={turns.length} onClose={onClose} />
+  const t = turns[turn]
+  const revealed = ans != null
+  const choose = (o) => { if (revealed) return; setAns(o); if (o === t.answer) awardXp(XP_PER_CARD) }
+  const next = () => { setAns(null); setTurn(x => x + 1) }
+
+  return (
+    <div style={{ padding: 20 }}>
+      <UebenHead title={play.title} idx={turn} total={turns.length} onClose={onClose} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <Emoji name={play.emoji} size={48} />
+        <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 12, padding: '10px 14px', flex: 1 }}>
+          <div style={{ fontSize: 19, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{t.npc}</div>
+          <button onClick={() => speak(t.npc)} style={{ background: 'none', border: 'none', fontSize: 14, cursor: 'pointer', padding: 0, color: C.textMuted }}>🔊 anhören</button>
+        </div>
+      </div>
+      <p style={{ fontWeight: 500, marginBottom: 12 }}>Was antwortest du?</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+        {t.options.map(o => {
+          const correct = o === t.answer, chosen = o === ans
+          return (
+            <button key={o} onClick={() => choose(o)} disabled={revealed}
+              style={{ padding: '12px 14px', borderRadius: 10, border: `2px solid ${!revealed ? C.washiDark : correct ? C.matcha : chosen ? C.shu : C.washiDark}`,
+                background: !revealed ? '#fff' : correct ? `${C.matcha}20` : chosen ? `${C.shu}20` : '#fff',
+                fontSize: 17, fontFamily: "'Noto Serif JP', serif", color: C.sumi, cursor: revealed ? 'default' : 'pointer', textAlign: 'left' }}>{o}</button>
+          )
+        })}
+      </div>
+      {revealed && (
+        <>
+          <p style={{ marginTop: 12, fontWeight: 600, color: ans === t.answer ? C.matcha : C.shu }}>
+            {ans === t.answer ? '✓ Gute Antwort!' : '✗ Passt nicht ganz'}
+            <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 2 }}>„{t.de}"</span>
+          </p>
+          <Btn onClick={next} style={{ width: '100%', marginTop: 12 }}>{turn === turns.length - 1 ? 'Fertig →' : 'Weiter →'}</Btn>
+        </>
       )}
     </div>
   )
@@ -2045,6 +2250,9 @@ function UebenScreen() {
 
   if (mode === 'srs') return <SRSQuiz onClose={() => setMode(null)} />
   if (mode === 'erkennen' || mode === 'hoeren') return <PracticeQuiz mode={mode} onClose={() => setMode(null)} />
+  if (mode === 'tippen') return <TypeQuiz onClose={() => setMode(null)} />
+  if (mode === 'satzbau') return <SentenceQuiz onClose={() => setMode(null)} />
+  if (mode === 'konversation') return <RolePlay onClose={() => setMode(null)} />
 
   const learnedAll = [...completedKanaList(progress.completedLessons || []), ...learnedWordKanji(progress.completedWordBlocks || [])]
   const dueCount = dueKana(progress, learnedAll).length
@@ -2082,39 +2290,92 @@ function UebenScreen() {
   )
 }
 
+// XP gebündelt nach Zeitraum (Woche = 7 Tage, Monat = 4 Wochen, Jahr = 12 Monate).
+function periodBuckets(xpByDate, period) {
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const out = []
+  if (period === 'woche') {
+    const names = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+    for (let o = -6; o <= 0; o++) { const d = new Date(); d.setDate(d.getDate() + o); out.push({ label: names[d.getDay()], xp: xpByDate[fmt(d)] || 0 }) }
+  } else if (period === 'monat') {
+    for (let w = 3; w >= 0; w--) {
+      let sum = 0
+      for (let day = 0; day < 7; day++) { const d = new Date(); d.setDate(d.getDate() - (w * 7 + day)); sum += xpByDate[fmt(d)] || 0 }
+      const s = new Date(); s.setDate(s.getDate() - (w * 7 + 6))
+      out.push({ label: `${s.getDate()}.${s.getMonth() + 1}.`, xp: sum })
+    }
+  } else {
+    const mn = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+    const sums = {}
+    Object.keys(xpByDate).forEach(k => { const p = k.slice(0, 7); sums[p] = (sums[p] || 0) + (xpByDate[k] || 0) })
+    for (let m = 11; m >= 0; m--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - m); out.push({ label: mn[d.getMonth()], xp: sums[`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`] || 0 }) }
+  }
+  return out
+}
+
+// Vokabel-Kenntnisstufen nach SRS-Intervall (Tage).
+const SRS_STAGES = [
+  { label: 'Neu', color: '#B3AA92', test: e => (e.interval || 0) < 1 },
+  { label: 'Lernphase', color: '#DA4A38', test: e => e.interval >= 1 && e.interval < 7 },
+  { label: 'Vertraut', color: '#E8A020', test: e => e.interval >= 7 && e.interval < 30 },
+  { label: 'Gefestigt', color: '#5E8A6A', test: e => e.interval >= 30 && e.interval < 120 },
+  { label: 'Gemeistert', color: '#1E4368', test: e => e.interval >= 120 },
+]
+
 function FortschrittScreen() {
   const { progress, reset } = useContext(ProgressCtx)
+  const [period, setPeriod] = useState('woche')
   const stats = computeStats(progress)
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0
+
   const completed = progress.completedLessons || []
   const kanaDone = completedKanaCount(completed)
   const kanaTotal = totalKanaCount()
-  const kanaPct = kanaTotal ? Math.round(kanaDone / kanaTotal * 100) : 0
+  const wordsLearned = learnedWordKanji(progress.completedWordBlocks || []).length
+  const grammarDone = (progress.completedGrammar || []).length
+  const chaptersDone = (progress.completedChapters || []).length
 
-  const week = weeklyXp(progress)
-  const weekTotal = week.reduce((a, d) => a + d.xp, 0)
-  const maxXP = Math.max(stats.goal, ...week.map(d => d.xp))
+  // XP-zum-nächsten-Level (1000 XP pro Level).
+  const xpInLevel = stats.totalXp % 1000
+  const xpToNext = 1000 - xpInLevel
 
-  // Fertigkeiten aus echtem Fortschritt abgeleitet (0, solange nichts gelernt).
-  // Lesen/Schreiben hängen am Kana-Fortschritt; übrige Bereiche kommen später.
+  // Zeitraum-Chart.
+  const buckets = periodBuckets(progress.xpByDate || {}, period)
+  const periodTotal = buckets.reduce((a, b) => a + b.xp, 0)
+  const maxXP = Math.max(1, ...buckets.map(b => b.xp))
+
+  // Vokabeln nach Kenntnisstand.
+  const srsVals = Object.values(progress.srs || {})
+  const stageCounts = SRS_STAGES.map(s => ({ ...s, n: srsVals.filter(s.test).length }))
+  const vocabTotal = srsVals.length
+
+  // Fertigkeiten mit Aufschlüsselung (so kommt der Prozentwert zustande).
   const skills = [
-    { label: 'Lesen', value: kanaPct, color: C.shu },
-    { label: 'Schreiben', value: kanaPct, color: C.matcha },
-    { label: 'Hören', value: 0, color: C.indigo },
-    { label: 'Wortschatz', value: 0, color: '#8B6914' },
-    { label: 'Grammatik', value: 0, color: '#7B3FA0' },
+    { label: 'Lesen (Kana)', value: pct(kanaDone, kanaTotal), detail: `${kanaDone} / ${kanaTotal} Zeichen gelernt`, color: C.shu },
+    { label: 'Wortschatz', value: pct(wordsLearned, ALL_WORDS.length), detail: `${wordsLearned} / ${ALL_WORDS.length} Wörter gelernt`, color: '#8B6914' },
+    { label: 'Grammatik', value: pct(grammarDone, GRAMMAR.length), detail: `${grammarDone} / ${GRAMMAR.length} Themen verstanden`, color: '#7B3FA0' },
+    { label: 'Geschichte', value: pct(chaptersDone, CHAPTERS.length), detail: `${chaptersDone} / ${CHAPTERS.length} Kapitel erlebt`, color: C.matcha },
   ]
 
-  // Errungenschaften mit echten Bedingungen.
+  const hiraDone = LESSONS.filter(l => l.script === 'Hiragana').every(l => completed.includes(l.id))
+  const kataDone = LESSONS.filter(l => l.script === 'Katakana').every(l => completed.includes(l.id))
   const achievements = [
-    { icon: '🔥', label: '3-Tage-Streak', sub: 'Bleib dran!', earned: stats.streak >= 3 },
-    { icon: '✍️', label: 'Erste Lektion', sub: 'Hiragana あいうえお', earned: completed.length >= 1 },
-    { icon: '🎓', label: 'Alle Hiragana', sub: `${kanaDone}/${kanaTotal} Zeichen`, earned: kanaDone >= kanaTotal && kanaTotal > 0 },
+    { icon: '✍️', label: 'Erste Lektion', sub: 'Die Reise beginnt', earned: completed.length >= 1 },
+    { icon: '🔥', label: '3-Tage-Streak', sub: 'Drei Tage in Folge', earned: stats.streak >= 3 },
+    { icon: '🔥', label: '7-Tage-Streak', sub: 'Eine ganze Woche dran', earned: stats.streak >= 7 },
+    { icon: '🈂️', label: 'Alle Hiragana', sub: '46 Hiragana gelernt', earned: hiraDone },
+    { icon: '🈁', label: 'Alle Katakana', sub: '46 Katakana gelernt', earned: kataDone },
+    { icon: '🗣️', label: 'Erste Wörter', sub: 'Ersten Wort-Block geschafft', earned: (progress.completedWordBlocks || []).length >= 1 },
+    { icon: '📐', label: 'Grammatik-Start', sub: 'Erstes Thema verstanden', earned: grammarDone >= 1 },
+    { icon: '📖', label: 'Erstes Kapitel', sub: 'Erste Episode erlebt', earned: chaptersDone >= 1 },
+    { icon: '🎓', label: 'Vokabel gemeistert', sub: 'Ein Wort fest im Kopf', earned: stageCounts[4].n >= 1 },
+    { icon: '⭐', label: 'Level 5', sub: '5000 XP gesammelt', earned: stats.level >= 5 },
+    { icon: '🗻', label: 'Gipfel erreicht', sub: 'Alle Kapitel abgeschlossen', earned: chaptersDone >= CHAPTERS.length },
   ]
+  const earnedCount = achievements.filter(a => a.earned).length
 
   const handleReset = () => {
-    if (window.confirm('Wirklich den gesamten Fortschritt auf 0 zurücksetzen? Das kann nicht rückgängig gemacht werden.')) {
-      reset()
-    }
+    if (window.confirm('Wirklich den gesamten Fortschritt auf 0 zurücksetzen? Das kann nicht rückgängig gemacht werden.')) reset()
   }
 
   return (
@@ -2123,7 +2384,7 @@ function FortschrittScreen() {
         Fortschritt
       </h2>
 
-      {/* Gesamt-XP / Level */}
+      {/* Gesamt-XP / Level / Streak */}
       <Card style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
         <div>
           <div style={{ fontSize: 20, fontWeight: 700, color: C.shu }}>{stats.totalXp}</div>
@@ -2139,59 +2400,93 @@ function FortschrittScreen() {
         </div>
       </Card>
 
-      {/* XP Bar chart */}
+      {/* XP bis zum nächsten Level */}
       <Card style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 12, fontWeight: 600, letterSpacing: 1 }}>
-          XP DIESE WOCHE
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: C.textMuted, marginBottom: 6 }}>
+          <span style={{ fontWeight: 600, letterSpacing: 1 }}>LEVEL {stats.level} → {stats.level + 1}</span>
+          <span>{xpInLevel} / 1000 XP</span>
         </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: 80 }}>
-          {week.map((d, i) => (
+        <div style={{ height: 10, background: C.washiDark, borderRadius: 5, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${xpInLevel / 10}%`, background: C.indigo, borderRadius: 5, transition: 'width 0.3s' }} />
+        </div>
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6 }}>Noch <strong style={{ color: C.sumi }}>{xpToNext} XP</strong> bis Level {stats.level + 1}</div>
+      </Card>
+
+      {/* XP-Chart mit Zeitraum-Auswahl */}
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <span style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1 }}>XP-VERLAUF</span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[['woche', 'Woche'], ['monat', 'Monat'], ['jahr', 'Jahr']].map(([id, label]) => (
+              <button key={id} onClick={() => setPeriod(id)}
+                style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                  border: 'none', background: period === id ? C.shu : C.washiDark, color: period === id ? '#fff' : C.textMuted }}>{label}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: period === 'jahr' ? 3 : 6, alignItems: 'flex-end', height: 80 }}>
+          {buckets.map((d, i) => (
             <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <div style={{
-                width: '100%', background: d.xp > 0 ? C.shu : C.washiDark,
-                borderRadius: '3px 3px 0 0',
-                height: `${Math.round(d.xp / maxXP * 60)}px`,
-                minHeight: d.xp > 0 ? 4 : 2,
-              }} />
-              <span style={{ fontSize: 10, color: C.textMuted }}>{d.label}</span>
+              <div style={{ width: '100%', background: d.xp > 0 ? C.shu : C.washiDark, borderRadius: '3px 3px 0 0', height: `${Math.round(d.xp / maxXP * 60)}px`, minHeight: d.xp > 0 ? 4 : 2 }} />
+              <span style={{ fontSize: period === 'jahr' ? 8 : 10, color: C.textMuted }}>{d.label}</span>
             </div>
           ))}
         </div>
         <div style={{ marginTop: 8, fontSize: 13, color: C.textMuted }}>
-          Gesamt diese Woche: <strong style={{ color: C.sumi }}>{weekTotal} XP</strong>
+          Summe ({period === 'woche' ? 'Woche' : period === 'monat' ? '4 Wochen' : 'Jahr'}): <strong style={{ color: C.sumi }}>{periodTotal} XP</strong>
         </div>
       </Card>
 
-      {/* Skills */}
+      {/* Vokabeln nach Kenntnisstand */}
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 12, fontWeight: 600, letterSpacing: 1 }}>
+          VOKABELN NACH KENNTNISSTAND · {vocabTotal} gesamt
+        </div>
+        {vocabTotal === 0 ? (
+          <p style={{ fontSize: 13, color: C.textMuted }}>Noch keine Vokabeln im Wiederholungsplan. Lerne Kana und Wörter auf der Reise.</p>
+        ) : (
+          <>
+            <div style={{ display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden', marginBottom: 10 }}>
+              {stageCounts.map(s => s.n > 0 && <div key={s.label} style={{ width: `${s.n / vocabTotal * 100}%`, background: s.color }} />)}
+            </div>
+            {stageCounts.map(s => (
+              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, flex: 1 }}>{s.label}</span>
+                <span style={{ fontSize: 13, color: C.textMuted, fontWeight: 600 }}>{s.n}</span>
+              </div>
+            ))}
+          </>
+        )}
+      </Card>
+
+      {/* Fertigkeiten mit Aufschlüsselung */}
       <Card style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 12, fontWeight: 600, letterSpacing: 1 }}>
           FERTIGKEITEN
         </div>
         {skills.map(s => (
-          <div key={s.label} style={{ marginBottom: 10 }}>
+          <div key={s.label} style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ fontSize: 13 }}>{s.label}</span>
+              <span style={{ fontSize: 13, fontWeight: 500 }}>{s.label}</span>
               <span style={{ fontSize: 12, color: C.textMuted }}>{s.value}%</span>
             </div>
             <div style={{ height: 6, background: C.washiDark, borderRadius: 3, overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${s.value}%`, background: s.color, borderRadius: 3 }} />
             </div>
+            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>{s.detail}</div>
           </div>
         ))}
       </Card>
 
-      {/* Achievements */}
+      {/* Errungenschaften */}
       <Card style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 12, fontWeight: 600, letterSpacing: 1 }}>
-          ERRUNGENSCHAFTEN
+          ERRUNGENSCHAFTEN · {earnedCount}/{achievements.length}
         </div>
         {achievements.map((a, i) => (
-          <div key={i} style={{
-            display: 'flex', gap: 12, alignItems: 'center',
-            padding: '10px 0', borderBottom: i < achievements.length - 1 ? `1px solid ${C.washiDark}` : 'none',
-            opacity: a.earned ? 1 : 0.4,
-          }}>
-            <div style={{ fontSize: 24, filter: a.earned ? 'none' : 'grayscale(1)' }}>{a.earned ? a.icon : '🔒'}</div>
+          <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '9px 0', borderBottom: i < achievements.length - 1 ? `1px solid ${C.washiDark}` : 'none', opacity: a.earned ? 1 : 0.45 }}>
+            <div style={{ fontSize: 22, filter: a.earned ? 'none' : 'grayscale(1)' }}>{a.earned ? a.icon : '🔒'}</div>
             <div>
               <div style={{ fontWeight: 600, fontSize: 14 }}>{a.label}</div>
               <div style={{ fontSize: 12, color: C.textMuted }}>{a.earned ? a.sub : 'Noch nicht erreicht'}</div>
@@ -2203,10 +2498,7 @@ function FortschrittScreen() {
       {/* Reset */}
       <div style={{ textAlign: 'center', marginBottom: 8 }}>
         <button onClick={handleReset}
-          style={{
-            background: 'none', border: `1px solid ${C.washiDark}`, borderRadius: 8,
-            padding: '8px 16px', fontSize: 12, color: C.textMuted, cursor: 'pointer',
-          }}>
+          style={{ background: 'none', border: `1px solid ${C.washiDark}`, borderRadius: 8, padding: '8px 16px', fontSize: 12, color: C.textMuted, cursor: 'pointer' }}>
           Fortschritt zurücksetzen
         </button>
       </div>
