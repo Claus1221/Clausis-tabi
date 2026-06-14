@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect, createContext, useContext } from 'react'
 import { useAuth } from './AuthGate.jsx'
-import { useProgress, computeStats, weeklyXp } from './useProgress.js'
+import { useProgress, computeStats, weeklyXp, dueKana } from './useProgress.js'
 import { KANA_STROKES, STROKE_VIEWBOX } from './kanaStrokes.js'
 
 // Fortschritt (aus Firestore) für alle Screens verfügbar machen.
 const ProgressCtx = createContext({
-  progress: { completedLessons: [], xpByDate: {} },
+  progress: { completedLessons: [], xpByDate: {}, srs: {} },
   awardXp: async () => {},
   completeLesson: async () => {},
+  reviewCard: async () => {},
   reset: async () => {},
 })
 
@@ -19,10 +20,13 @@ const XP_PER_CARD = 5   // pro wiederholter SRS-Karte
 function totalKanaCount() {
   return new Set(LESSONS.flatMap(l => l.kana)).size
 }
-function completedKanaCount(completedLessons) {
+function completedKanaList(completedLessons) {
   const set = new Set()
   LESSONS.filter(l => completedLessons.includes(l.id)).forEach(l => l.kana.forEach(k => set.add(k)))
-  return set.size
+  return [...set]
+}
+function completedKanaCount(completedLessons) {
+  return completedKanaList(completedLessons).length
 }
 
 // ─── Color tokens ───────────────────────────────────────────────────────────
@@ -578,39 +582,72 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
 
 // ─── SRS Quiz ────────────────────────────────────────────────────────────────
 
+// Bewertungsknöpfe → SM-2-Qualität
+const SRS_RATINGS = [
+  ['Nochmal', C.shu, 1],
+  ['Schwer', '#E8A020', 3],
+  ['Gut', C.matcha, 4],
+  ['Leicht', C.indigo, 5],
+]
+
 function SRSQuiz({ onClose }) {
-  const { awardXp } = useContext(ProgressCtx)
-  const cards = Object.entries(KANA_DATA).map(([k, v]) => ({ char: k, ...v }))
+  const { progress, awardXp, reviewCard } = useContext(ProgressCtx)
+  // Deck einmalig bei Sitzungsbeginn festlegen: heute fällige gelernte Kana.
+  const [deck] = useState(() => dueKana(progress, completedKanaList(progress.completedLessons || [])))
   const [idx, setIdx] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [done, setDone] = useState(0)
 
-  if (idx >= cards.length) {
+  // Nichts fällig (oder noch nichts gelernt)
+  if (deck.length === 0) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>🌿</div>
+        <h3 style={{ fontSize: 18, marginBottom: 8 }}>Nichts fällig</h3>
+        <p style={{ color: C.textMuted, marginBottom: 16 }}>
+          Aktuell sind keine Wiederholungen fällig. Lerne neue Lektionen oder
+          komm später wieder – fällige Karten erscheinen automatisch.
+        </p>
+        <Btn onClick={onClose}>Zurück</Btn>
+      </div>
+    )
+  }
+
+  if (idx >= deck.length) {
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-        <h3 style={{ fontSize: 18, marginBottom: 8 }}>Alle Karten geschafft!</h3>
-        <p style={{ color: C.textMuted, marginBottom: 16 }}>{done} Karten wiederholt.</p>
+        <h3 style={{ fontSize: 18, marginBottom: 8 }}>Alle fälligen Karten geschafft!</h3>
+        <p style={{ color: C.textMuted, marginBottom: 16 }}>{done} Karten wiederholt · +{done * XP_PER_CARD} XP</p>
         <Btn onClick={onClose}>Fertig</Btn>
       </div>
     )
   }
 
-  const card = cards[idx]
+  const char = deck[idx]
+  const data = KANA_DATA[char]
+
+  const rate = (quality) => {
+    reviewCard(char, quality)
+    awardXp(XP_PER_CARD)
+    setFlipped(false)
+    setIdx(i => i + 1)
+    setDone(d => d + 1)
+  }
 
   return (
     <div style={{ padding: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <span style={{ color: C.textMuted, fontSize: 13 }}>{idx + 1} / {cards.length}</span>
+        <span style={{ color: C.textMuted, fontSize: 13 }}>{idx + 1} / {deck.length} fällig</span>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer' }}>✕</button>
       </div>
 
       <Card style={{ textAlign: 'center', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 80, fontFamily: "'Noto Serif JP', serif", marginBottom: 12 }}>{card.char}</div>
+        <div style={{ fontSize: 80, fontFamily: "'Noto Serif JP', serif", marginBottom: 12 }}>{char}</div>
         {flipped ? (
           <>
-            <div style={{ fontSize: 24, fontWeight: 700, color: C.indigo, marginBottom: 4 }}>{card.romaji}</div>
-            <div style={{ fontSize: 13, color: C.textMuted }}>{card.tip}</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: C.indigo, marginBottom: 4 }}>{data?.romaji}</div>
+            {data?.tip && <div style={{ fontSize: 13, color: C.textMuted }}>{data.tip}</div>}
           </>
         ) : (
           <div style={{ color: C.textMuted, fontSize: 14 }}>Tippen zum Aufdecken</div>
@@ -623,8 +660,8 @@ function SRSQuiz({ onClose }) {
         </Btn>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
-          {[['Nochmal', C.shu], ['Schwer', '#E8A020'], ['Gut', C.matcha], ['Leicht', C.indigo]].map(([label, color]) => (
-            <button key={label} onClick={() => { awardXp(XP_PER_CARD); setFlipped(false); setIdx(i => i + 1); setDone(d => d + 1) }}
+          {SRS_RATINGS.map(([label, color, q]) => (
+            <button key={label} onClick={() => rate(q)}
               style={{ padding: '10px 4px', borderRadius: 8, border: `2px solid ${color}`,
                 background: `${color}15`, color, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
               {label}
@@ -641,7 +678,7 @@ function SRSQuiz({ onClose }) {
 function HeuteScreen() {
   const { progress } = useContext(ProgressCtx)
   const { streak, xpToday: xp, goal } = computeStats(progress)
-  const due = completedKanaCount(progress.completedLessons || [])
+  const due = dueKana(progress, completedKanaList(progress.completedLessons || [])).length
   const charOfDay = 'あ'
   const data = KANA_DATA[charOfDay]
 
@@ -855,12 +892,14 @@ function LernenScreen() {
 }
 
 function UebenScreen() {
+  const { progress } = useContext(ProgressCtx)
   const [mode, setMode] = useState(null)
 
   if (mode === 'srs') return <SRSQuiz onClose={() => setMode(null)} />
 
+  const dueCount = dueKana(progress, completedKanaList(progress.completedLessons || [])).length
   const exercises = [
-    { id: 'srs', icon: '🗂', title: 'SRS-Wiederholungen', sub: 'Kana wiederholen (+XP)', color: C.shu },
+    { id: 'srs', icon: '🗂', title: 'SRS-Wiederholungen', sub: dueCount > 0 ? `${dueCount} Karten fällig` : 'Nichts fällig', color: C.shu },
     { id: 'erkennen', icon: '👁', title: 'Erkennen', sub: 'Zeichen → Bedeutung', color: C.indigo },
     { id: 'hoeren', icon: '👂', title: 'Hören', sub: 'Was hast du gehört?', color: C.matcha },
     { id: 'tippen', icon: '⌨️', title: 'Tippen', sub: 'Kana per Tastatur', color: '#8B6914' },
@@ -1046,7 +1085,7 @@ function FortschrittScreen() {
 export default function TabiApp() {
   const [tab, setTab] = useState('heute')
   const { user, logout } = useAuth()
-  const { progress, awardXp, completeLesson, reset } = useProgress(user?.uid)
+  const { progress, awardXp, completeLesson, reviewCard, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
 
   const screens = {
@@ -1057,7 +1096,7 @@ export default function TabiApp() {
   }
 
   return (
-    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, reset }}>
+    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, reviewCard, reset }}>
     <div style={{
       maxWidth: 480, margin: '0 auto', height: '100vh',
       display: 'flex', flexDirection: 'column', position: 'relative',

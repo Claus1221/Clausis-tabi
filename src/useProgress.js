@@ -6,6 +6,7 @@ import { db } from './firebase'
 const DEFAULT = {
   completedLessons: [], // IDs abgeschlossener Lektionen, z.B. ['l1','l2']
   xpByDate: {},         // { 'YYYY-MM-DD': XP }  → XP heute, Streak, Wochenchart
+  srs: {},              // { 'あ': { ease, interval, reps, due } }  → Wiederholungsplan
 }
 
 const DAILY_GOAL = 200      // XP-Ziel pro Tag
@@ -22,6 +23,41 @@ function dateWithOffset(offset) {
   const d = new Date()
   d.setDate(d.getDate() + offset)
   return d
+}
+export function addDays(n) {
+  return localDate(dateWithOffset(n))
+}
+
+// ─── SRS (SM-2-Algorithmus) ───────────────────────────────────────────────────
+// quality: 1 = Nochmal (vergessen), 3 = Schwer, 4 = Gut, 5 = Leicht.
+export function sm2(prev, quality) {
+  let ease = prev?.ease ?? 2.5
+  let interval = prev?.interval ?? 0
+  let reps = prev?.reps ?? 0
+
+  if (quality < 3) {
+    reps = 0
+    interval = 1 // morgen wieder
+  } else {
+    reps += 1
+    if (reps === 1) interval = 1
+    else if (reps === 2) interval = 6
+    else interval = Math.round(interval * ease)
+  }
+  ease = ease + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
+  if (ease < 1.3) ease = 1.3
+
+  return { ease: Math.round(ease * 100) / 100, interval, reps, due: addDays(interval) }
+}
+
+// Welche der gelernten Kana sind heute fällig (oder neu/noch nie wiederholt)?
+export function dueKana(progress, learnedKana) {
+  const srs = progress.srs || {}
+  const today = localDate()
+  return learnedKana.filter(k => {
+    const e = srs[k]
+    return !e || !e.due || e.due <= today
+  })
 }
 
 // ─── Abgeleitete Statistiken aus dem gespeicherten Fortschritt ────────────────
@@ -94,11 +130,18 @@ export function useProgress(uid) {
     )
   }
 
+  // Eine SRS-Karte bewerten → nächste Fälligkeit per SM-2 berechnen & speichern.
+  const reviewCard = async (char, quality) => {
+    if (!uid || !db) return
+    const next = sm2((progress.srs || {})[char], quality)
+    await setDoc(ref(), { srs: { [char]: next } }, { merge: true })
+  }
+
   // Kompletter Reset auf 0 (überschreibt das Dokument).
   const reset = async () => {
     if (!uid || !db) return
-    await setDoc(ref(), { completedLessons: [], xpByDate: {} })
+    await setDoc(ref(), { completedLessons: [], xpByDate: {}, srs: {} })
   }
 
-  return { progress, loading, awardXp, completeLesson, reset }
+  return { progress, loading, awardXp, completeLesson, reviewCard, reset }
 }
