@@ -4,10 +4,10 @@ import { db } from './firebase'
 
 // Standard-Fortschritt für einen neuen Nutzer: alles bei 0.
 const DEFAULT = {
-  completedLessons: [], // IDs abgeschlossener Lektionen, z.B. ['l1','l2']
-  completedWords: [],   // gelernte Wörter (jp-Strings), z.B. ['ねこ']
-  xpByDate: {},         // { 'YYYY-MM-DD': XP }  → XP heute, Streak, Wochenchart
-  srs: {},              // { 'あ': { ease, interval, reps, due } }  → Wiederholungsplan
+  completedLessons: [],    // IDs abgeschlossener Kana-Lektionen, z.B. ['h1','h2']
+  completedWordBlocks: [], // IDs abgeschlossener Wort-Blöcke, z.B. ['wb1']
+  xpByDate: {},            // { 'YYYY-MM-DD': XP }  → XP heute, Streak, Wochenchart
+  srs: {},                 // { '山': { ease, interval, reps, due } }  → Wiederholungsplan
 }
 
 const DAILY_GOAL = 200      // XP-Ziel pro Tag
@@ -131,12 +131,12 @@ export function useProgress(uid) {
     )
   }
 
-  // Ein Wort als gelernt markieren + XP gutschreiben.
-  const learnWord = async (jp, xp = 0) => {
+  // Einen Wort-Block als abgeschlossen markieren + XP gutschreiben.
+  const completeWordBlock = async (blockId, xp = 0) => {
     if (!uid || !db) return
     await setDoc(
       ref(),
-      { completedWords: arrayUnion(jp), xpByDate: { [localDate()]: increment(xp) } },
+      { completedWordBlocks: arrayUnion(blockId), xpByDate: { [localDate()]: increment(xp) } },
       { merge: true },
     )
   }
@@ -151,8 +151,8 @@ export function useProgress(uid) {
   // Kompletter Reset auf 0 (überschreibt das Dokument).
   const reset = async () => {
     if (!uid || !db) return
-    await setDoc(ref(), { completedLessons: [], completedWords: [], xpByDate: {}, srs: {} })
+    await setDoc(ref(), { completedLessons: [], completedWordBlocks: [], xpByDate: {}, srs: {} })
   }
 
-  return { progress, loading, awardXp, completeLesson, learnWord, reviewCard, reset }
+  return { progress, loading, awardXp, completeLesson, completeWordBlock, reviewCard, reset }
 }

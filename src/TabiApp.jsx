@@ -5,10 +5,10 @@ import { KANA_STROKES, STROKE_VIEWBOX } from './kanaStrokes.js'
 
 // Fortschritt (aus Firestore) für alle Screens verfügbar machen.
 const ProgressCtx = createContext({
-  progress: { completedLessons: [], completedWords: [], xpByDate: {}, srs: {} },
+  progress: { completedLessons: [], completedWordBlocks: [], xpByDate: {}, srs: {} },
   awardXp: async () => {},
   completeLesson: async () => {},
-  learnWord: async () => {},
+  completeWordBlock: async () => {},
   reviewCard: async () => {},
   reset: async () => {},
 })
@@ -95,56 +95,53 @@ const VOCAB = [
   { jp: '水', romaji: 'mizu', de: 'Wasser', type: 'kanji' },
 ]
 
-// Wörter aus reinen Basis-Kana (kein Dakuten/kleine Kana). 'ー' (Längungsstrich)
-// gilt als immer verfügbar. Jedes Wort schaltet frei, sobald alle seine Kana gelernt sind.
-const WORDS = [
-  // Hiragana
-  { jp: 'あい', romaji: 'ai', de: 'Liebe', script: 'hira' },
-  { jp: 'いえ', romaji: 'ie', de: 'Haus', script: 'hira' },
-  { jp: 'うえ', romaji: 'ue', de: 'oben', script: 'hira' },
-  { jp: 'あお', romaji: 'ao', de: 'blau', script: 'hira' },
-  { jp: 'あか', romaji: 'aka', de: 'rot', script: 'hira' },
-  { jp: 'かお', romaji: 'kao', de: 'Gesicht', script: 'hira' },
-  { jp: 'かさ', romaji: 'kasa', de: 'Regenschirm', script: 'hira' },
-  { jp: 'くち', romaji: 'kuchi', de: 'Mund', script: 'hira' },
-  { jp: 'みみ', romaji: 'mimi', de: 'Ohr', script: 'hira' },
-  { jp: 'はな', romaji: 'hana', de: 'Nase / Blume', script: 'hira' },
-  { jp: 'やま', romaji: 'yama', de: 'Berg', script: 'hira' },
-  { jp: 'かわ', romaji: 'kawa', de: 'Fluss', script: 'hira' },
-  { jp: 'そら', romaji: 'sora', de: 'Himmel', script: 'hira' },
-  { jp: 'ねこ', romaji: 'neko', de: 'Katze', script: 'hira' },
-  { jp: 'いぬ', romaji: 'inu', de: 'Hund', script: 'hira' },
-  { jp: 'とり', romaji: 'tori', de: 'Vogel', script: 'hira' },
-  { jp: 'さかな', romaji: 'sakana', de: 'Fisch', script: 'hira' },
-  { jp: 'すし', romaji: 'sushi', de: 'Sushi', script: 'hira' },
-  { jp: 'ふね', romaji: 'fune', de: 'Schiff', script: 'hira' },
-  { jp: 'ほし', romaji: 'hoshi', de: 'Stern', script: 'hira' },
-  { jp: 'つき', romaji: 'tsuki', de: 'Mond', script: 'hira' },
-  { jp: 'ひと', romaji: 'hito', de: 'Mensch', script: 'hira' },
-  { jp: 'なまえ', romaji: 'namae', de: 'Name', script: 'hira' },
-  { jp: 'みせ', romaji: 'mise', de: 'Laden', script: 'hira' },
-  // Katakana (ー = Längung)
-  { jp: 'ココア', romaji: 'kokoa', de: 'Kakao', script: 'kata' },
-  { jp: 'カメラ', romaji: 'kamera', de: 'Kamera', script: 'kata' },
-  { jp: 'ホテル', romaji: 'hoteru', de: 'Hotel', script: 'kata' },
-  { jp: 'ナイフ', romaji: 'naifu', de: 'Messer', script: 'kata' },
-  { jp: 'ノート', romaji: 'nōto', de: 'Heft', script: 'kata' },
-  { jp: 'ケーキ', romaji: 'kēki', de: 'Kuchen', script: 'kata' },
-  { jp: 'コーヒー', romaji: 'kōhī', de: 'Kaffee', script: 'kata' },
-  { jp: 'スキー', romaji: 'sukī', de: 'Ski', script: 'kata' },
-  { jp: 'タクシー', romaji: 'takushī', de: 'Taxi', script: 'kata' },
-  { jp: 'ラーメン', romaji: 'rāmen', de: 'Ramen', script: 'kata' },
-  { jp: 'アメリカ', romaji: 'amerika', de: 'Amerika', script: 'kata' },
-  { jp: 'カメ', romaji: 'kame', de: 'Schildkröte', script: 'kata' },
+// Wörter-Blöcke: je 5 thematisch gruppierte Wörter mit Kanji, Hiragana,
+// Übersetzung und Beispielsatz (mit Lesung, Übersetzung, Erklärung).
+// Blöcke schalten der Reihe nach frei. Jedes Wort wird im SRS über sein Kanji abgefragt.
+const WORD_BLOCKS = [
+  {
+    id: 'wb1', theme: '🏔️', title: 'Natur', words: [
+      { kanji: '山', kana: 'やま', romaji: 'yama', de: 'Berg', ex: { jp: '山が高い。', kana: 'やまがたかい。', de: 'Der Berg ist hoch.', note: '„が" markiert das Subjekt · „高い (たかい)" = hoch' } },
+      { kanji: '川', kana: 'かわ', romaji: 'kawa', de: 'Fluss', ex: { jp: '川を見る。', kana: 'かわをみる。', de: 'Ich sehe den Fluss.', note: '„を" markiert das Objekt · „見る (みる)" = sehen' } },
+      { kanji: '空', kana: 'そら', romaji: 'sora', de: 'Himmel', ex: { jp: '空が青い。', kana: 'そらがあおい。', de: 'Der Himmel ist blau.', note: '„青い (あおい)" = blau' } },
+      { kanji: '星', kana: 'ほし', romaji: 'hoshi', de: 'Stern', ex: { jp: '星がきれいだ。', kana: 'ほしがきれいだ。', de: 'Die Sterne sind schön.', note: '„きれい" = schön · „だ" = ist (einfache Form)' } },
+      { kanji: '月', kana: 'つき', romaji: 'tsuki', de: 'Mond', ex: { jp: '月が出た。', kana: 'つきがでた。', de: 'Der Mond ist aufgegangen.', note: '„出た (でた)" = ging auf (Vergangenheit von 出る)' } },
+    ],
+  },
+  {
+    id: 'wb2', theme: '🐾', title: 'Tiere', words: [
+      { kanji: '猫', kana: 'ねこ', romaji: 'neko', de: 'Katze', ex: { jp: '猫が好きだ。', kana: 'ねこがすきだ。', de: 'Ich mag Katzen.', note: '„好き (すき)" = mögen · „だ" = ist' } },
+      { kanji: '犬', kana: 'いぬ', romaji: 'inu', de: 'Hund', ex: { jp: '犬が走る。', kana: 'いぬがはしる。', de: 'Der Hund rennt.', note: '„走る (はしる)" = rennen' } },
+      { kanji: '鳥', kana: 'とり', romaji: 'tori', de: 'Vogel', ex: { jp: '鳥が鳴く。', kana: 'とりがなく。', de: 'Der Vogel zwitschert.', note: '„鳴く (なく)" = (Tier) Laut geben' } },
+      { kanji: '魚', kana: 'さかな', romaji: 'sakana', de: 'Fisch', ex: { jp: '魚を食べる。', kana: 'さかなをたべる。', de: 'Ich esse Fisch.', note: '„食べる (たべる)" = essen' } },
+      { kanji: '馬', kana: 'うま', romaji: 'uma', de: 'Pferd', ex: { jp: '馬が大きい。', kana: 'うまがおおきい。', de: 'Das Pferd ist groß.', note: '„大きい (おおきい)" = groß' } },
+    ],
+  },
+  {
+    id: 'wb3', theme: '👤', title: 'Körper', words: [
+      { kanji: '目', kana: 'め', romaji: 'me', de: 'Auge', ex: { jp: '目が痛い。', kana: 'めがいたい。', de: 'Meine Augen tun weh.', note: '„痛い (いたい)" = schmerzen / weh tun' } },
+      { kanji: '口', kana: 'くち', romaji: 'kuchi', de: 'Mund', ex: { jp: '口を開ける。', kana: 'くちをあける。', de: 'Ich öffne den Mund.', note: '„開ける (あける)" = öffnen' } },
+      { kanji: '耳', kana: 'みみ', romaji: 'mimi', de: 'Ohr', ex: { jp: '耳が大きい。', kana: 'みみがおおきい。', de: 'Die Ohren sind groß.', note: '„大きい (おおきい)" = groß' } },
+      { kanji: '手', kana: 'て', romaji: 'te', de: 'Hand', ex: { jp: '手を洗う。', kana: 'てをあらう。', de: 'Ich wasche die Hände.', note: '„洗う (あらう)" = waschen' } },
+      { kanji: '足', kana: 'あし', romaji: 'ashi', de: 'Fuß / Bein', ex: { jp: '足が速い。', kana: 'あしがはやい。', de: 'Er ist schnell.', note: 'wörtl. „die Füße sind schnell" · „速い (はやい)" = schnell' } },
+    ],
+  },
+  {
+    id: 'wb4', theme: '🏠', title: 'Alltag', words: [
+      { kanji: '人', kana: 'ひと', romaji: 'hito', de: 'Mensch', ex: { jp: '人が多い。', kana: 'ひとがおおい。', de: 'Es sind viele Menschen da.', note: '„多い (おおい)" = viel / zahlreich' } },
+      { kanji: '家', kana: 'いえ', romaji: 'ie', de: 'Haus', ex: { jp: '家に帰る。', kana: 'いえにかえる。', de: 'Ich gehe nach Hause.', note: '„に" = Richtung · „帰る (かえる)" = zurückkehren' } },
+      { kanji: '水', kana: 'みず', romaji: 'mizu', de: 'Wasser', ex: { jp: '水を飲む。', kana: 'みずをのむ。', de: 'Ich trinke Wasser.', note: '„飲む (のむ)" = trinken' } },
+      { kanji: '車', kana: 'くるま', romaji: 'kuruma', de: 'Auto', ex: { jp: '車で行く。', kana: 'くるまでいく。', de: 'Ich fahre mit dem Auto.', note: '„で" = Mittel (mit) · „行く (いく)" = gehen / fahren' } },
+      { kanji: '店', kana: 'みせ', romaji: 'mise', de: 'Laden', ex: { jp: '店が開く。', kana: 'みせがあく。', de: 'Der Laden öffnet.', note: '„開く (あく)" = sich öffnen' } },
+    ],
+  },
 ]
-const WORD_BY_JP = Object.fromEntries(WORDS.map(w => [w.jp, w]))
+const ALL_WORDS = WORD_BLOCKS.flatMap(b => b.words)
+const WORD_BY_KANJI = Object.fromEntries(ALL_WORDS.map(w => [w.kanji, w]))
 
-// Benötigte Kana eines Wortes (Längungsstrich ー zählt nicht).
-function wordKana(jp) {
-  return [...jp].filter(c => c !== 'ー')
-}
-function wordLearnable(jp, learnedSet) {
-  return wordKana(jp).every(k => learnedSet.has(k))
+// Kanji aller Wörter aus abgeschlossenen Blöcken (= fällige Wort-Karten fürs SRS).
+function learnedWordKanji(completedBlocks) {
+  return WORD_BLOCKS.filter(b => completedBlocks.includes(b.id)).flatMap(b => b.words.map(w => w.kanji))
 }
 
 // Japanisch vorlesen (Web Speech API).
@@ -157,12 +154,10 @@ function speak(text) {
   }
 }
 
-// Anzeige-Infos für eine SRS-Karte (Kana oder Wort).
+// Anzeige-Infos für eine SRS-Karte (Kana oder Wort-Kanji).
 function srsItemInfo(key) {
-  if (WORD_BY_JP[key]) {
-    const w = WORD_BY_JP[key]
-    return { reading: w.romaji, sub: w.de, isWord: true }
-  }
+  const w = WORD_BY_KANJI[key]
+  if (w) return { reading: w.kana, sub: `${w.romaji} · ${w.de}`, isWord: true }
   const d = KANA_DATA[key]
   return { reading: d?.romaji, sub: d?.tip, isWord: false }
 }
@@ -671,7 +666,7 @@ function SRSQuiz({ onClose }) {
   const [deck] = useState(() => {
     const learned = [
       ...completedKanaList(progress.completedLessons || []),
-      ...(progress.completedWords || []),
+      ...learnedWordKanji(progress.completedWordBlocks || []),
     ]
     return dueKana(progress, learned)
   })
@@ -907,7 +902,7 @@ function PracticeQuiz({ mode, onClose }) {
 function HeuteScreen() {
   const { progress } = useContext(ProgressCtx)
   const { streak, xpToday: xp, goal } = computeStats(progress)
-  const learnedAll = [...completedKanaList(progress.completedLessons || []), ...(progress.completedWords || [])]
+  const learnedAll = [...completedKanaList(progress.completedLessons || []), ...learnedWordKanji(progress.completedWordBlocks || [])]
   const due = dueKana(progress, learnedAll).length
   const charOfDay = 'あ'
   const data = KANA_DATA[charOfDay]
@@ -1000,123 +995,229 @@ function HeuteScreen() {
   )
 }
 
-// ─── Wörter-Lernpfad ─────────────────────────────────────────────────────────
+// ─── Wörter: Block-Lernkurse (5 Wörter pro Block) ────────────────────────────
 
-function WordLesson({ word, alreadyLearned, onLearn, onClose }) {
+// Quiz am Ende eines Blocks: Kanji → Bedeutung wählen.
+function BlockQuiz({ words, onFinish }) {
+  const [quiz] = useState(() => {
+    const allDe = [...new Set(ALL_WORDS.map(w => w.de))]
+    return shuffled(words).map(w => {
+      const distractors = shuffled(allDe.filter(d => d !== w.de)).slice(0, 3)
+      return { kanji: w.kanji, kana: w.kana, correct: w.de, options: shuffled([w.de, ...distractors]) }
+    })
+  })
+  const [qi, setQi] = useState(0)
+  const [answer, setAnswer] = useState(null)
+  const cur = quiz[qi]
+  const isLast = qi === quiz.length - 1
+  const revealed = answer !== null
+  const next = () => { if (isLast) onFinish(); else { setQi(qi + 1); setAnswer(null) } }
+
   return (
-    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
-      <div style={{ padding: '12px 16px', background: '#fff', borderBottom: `1px solid ${C.washiDark}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted }}>✕</button>
-        <h3 style={{ fontSize: 14, fontFamily: "'Noto Serif JP', serif", color: C.indigo }}>Wort lernen</h3>
+    <div style={{ textAlign: 'center' }}>
+      <p style={{ color: C.textMuted, fontSize: 13, marginBottom: 8 }}>Quiz · {qi + 1} / {quiz.length}</p>
+      <div style={{ fontSize: 72, fontFamily: "'Noto Serif JP', serif", marginBottom: 4, color: C.sumi }}>{cur.kanji}</div>
+      <div style={{ fontSize: 14, color: C.textMuted, marginBottom: 16 }}>{cur.kana}</div>
+      <p style={{ marginBottom: 16, fontWeight: 500 }}>Was bedeutet das?</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {cur.options.map(o => {
+          const isCorrect = o === cur.correct
+          const isChosen = o === answer
+          return (
+            <button key={o} onClick={() => !revealed && setAnswer(o)} disabled={revealed}
+              style={{
+                padding: '14px 8px', borderRadius: 8, border: '2px solid',
+                borderColor: !revealed ? C.washiDark : isCorrect ? C.matcha : isChosen ? C.shu : C.washiDark,
+                background: !revealed ? '#fff' : isCorrect ? `${C.matcha}20` : isChosen ? `${C.shu}20` : '#fff',
+                fontSize: 15, fontWeight: 600, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
+              }}>{o}</button>
+          )
+        })}
       </div>
-
-      <div style={{ flex: 1, overflow: 'auto', padding: 24, textAlign: 'center' }}>
-        <div style={{ fontSize: 60, fontFamily: "'Noto Serif JP', serif", color: C.sumi, marginBottom: 8 }}>{word.jp}</div>
-        <button onClick={() => speak(word.jp)}
-          style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 20, padding: '6px 16px', fontSize: 13, cursor: 'pointer', color: C.indigo, marginBottom: 16 }}>
-          🔊 Anhören
-        </button>
-        <div style={{ fontSize: 24, fontWeight: 700, color: C.indigo, marginBottom: 2 }}>{word.romaji}</div>
-        <div style={{ fontSize: 18, color: C.sumi, marginBottom: 24 }}>{word.de}</div>
-
-        {/* Aufschlüsselung in einzelne Zeichen */}
-        <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 10 }}>ZEICHEN</div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {[...word.jp].map((ch, i) => (
-            <div key={i} style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 8, padding: '8px 12px', minWidth: 44 }}>
-              <div style={{ fontSize: 26, fontFamily: "'Noto Serif JP', serif" }}>{ch}</div>
-              <div style={{ fontSize: 11, color: C.textMuted }}>{ch === 'ー' ? 'lang' : (KANA_DATA[ch]?.romaji || '')}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ padding: '16px 20px', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
-        <Btn onClick={onLearn} style={{ width: '100%' }} variant={alreadyLearned ? 'ghost' : 'primary'}>
-          {alreadyLearned ? 'Schon gelernt ✓ – Schließen' : 'Gelernt ✓'}
-        </Btn>
-      </div>
+      {revealed && (
+        <>
+          <p style={{ marginTop: 12, color: answer === cur.correct ? C.matcha : C.shu, fontWeight: 600 }}>
+            {answer === cur.correct ? '✓ Richtig!' : `✗ Richtig: ${cur.correct}`}
+          </p>
+          <Btn onClick={next} style={{ marginTop: 12, width: '100%' }}>
+            {isLast ? 'Quiz abschließen →' : 'Nächstes →'}
+          </Btn>
+        </>
+      )}
     </div>
   )
 }
 
-function WordPath() {
-  const { progress, learnWord } = useContext(ProgressCtx)
-  const [active, setActive] = useState(null)
+function WordDetail({ word }) {
+  return (
+    <div>
+      {/* Kanji + Lesung + Übersetzung */}
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <div style={{ fontSize: 80, fontFamily: "'Noto Serif JP', serif", color: C.sumi, lineHeight: 1 }}>{word.kanji}</div>
+        <button onClick={() => speak(word.kanji)}
+          style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 20, padding: '4px 14px', fontSize: 13, cursor: 'pointer', color: C.indigo, margin: '10px 0 6px' }}>
+          🔊 Anhören
+        </button>
+        <div style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.indigo }}>{word.kana}
+          <span style={{ fontSize: 14, color: C.textMuted, fontFamily: 'inherit' }}> · {word.romaji}</span>
+        </div>
+        <div style={{ fontSize: 18, color: C.sumi, marginTop: 4 }}>{word.de}</div>
+      </div>
 
-  const learnedSet = new Set(completedKanaList(progress.completedLessons || []))
-  const learnedWords = progress.completedWords || []
+      {/* Beispielsatz */}
+      <Card>
+        <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+          <span>BEISPIELSATZ</span>
+          <button onClick={() => speak(word.ex.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14 }}>🔊</button>
+        </div>
+        <div style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", marginBottom: 4 }}>{word.ex.jp}</div>
+        <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 6 }}>{word.ex.kana}</div>
+        <div style={{ fontSize: 15, color: C.indigo, marginBottom: 10 }}>„{word.ex.de}"</div>
+        <div style={{ background: `${C.shu}10`, borderRadius: 8, padding: 10 }}>
+          <p style={{ fontSize: 12, color: C.shu }}>💡 {word.ex.note}</p>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+function BlockCourse({ block, onComplete, onClose }) {
+  const words = block.words
+  const totalSteps = words.length + 3 // intro + Wörter + Quiz + Abschluss
+  const [step, setStep] = useState(0)
+
+  const isIntro = step === 0
+  const isQuiz = step === words.length + 1
+  const isDone = step === words.length + 2
+  const progress = Math.round((step / totalSteps) * 100)
+
+  let content = null
+  if (isIntro) {
+    content = (
+      <div style={{ textAlign: 'center', padding: '8px 0' }}>
+        <div style={{ fontSize: 52, marginBottom: 12 }}>{block.theme}</div>
+        <h2 style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.indigo, marginBottom: 8 }}>{block.title}</h2>
+        <p style={{ color: C.textMuted, lineHeight: 1.6, marginBottom: 16 }}>
+          In diesem Block lernst du {words.length} Wörter mit Kanji, Lesung und je einem Beispielsatz.
+          Am Ende gibt es ein kurzes Quiz.
+        </p>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+          {words.map(w => (
+            <span key={w.kanji} style={{ fontSize: 28, fontFamily: "'Noto Serif JP', serif", background: `${C.indigo}12`, borderRadius: 8, padding: '4px 12px' }}>{w.kanji}</span>
+          ))}
+        </div>
+      </div>
+    )
+  } else if (isQuiz) {
+    content = <BlockQuiz words={words} onFinish={() => setStep(s => s + 1)} />
+  } else if (isDone) {
+    content = (
+      <div style={{ textAlign: 'center', padding: '8px 0' }}>
+        <div style={{ fontSize: 56, marginBottom: 12 }}>🎉</div>
+        <h2 style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.matcha, marginBottom: 8 }}>Block geschafft!</h2>
+        <p style={{ lineHeight: 1.6, marginBottom: 16 }}>
+          Du hast <strong>{words.length} Wörter</strong> gelernt. Die Kanji kommen ab jetzt in deinen Wiederholungen vor.
+        </p>
+      </div>
+    )
+  } else {
+    content = <WordDetail word={words[step - 1]} />
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
+      <div style={{ padding: '12px 16px', background: '#fff', borderBottom: `1px solid ${C.washiDark}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted }}>✕</button>
+          <div style={{ flex: 1, height: 6, background: C.washiDark, borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: C.shu, borderRadius: 3, transition: 'width 0.3s' }} />
+          </div>
+          <span style={{ fontSize: 12, color: C.textMuted }}>{step}/{totalSteps}</span>
+        </div>
+        <h3 style={{ fontSize: 14, fontFamily: "'Noto Serif JP', serif", color: C.indigo }}>{block.theme} {block.title}</h3>
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>{content}</div>
+
+      {!isQuiz && (
+        <div style={{ padding: '16px 20px', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
+          {isDone ? (
+            <Btn onClick={onComplete} style={{ width: '100%' }}>Block abschließen ✓</Btn>
+          ) : (
+            <Btn onClick={() => setStep(s => s + 1)} style={{ width: '100%' }}>
+              {isIntro ? 'Los geht\'s →' : 'Weiter →'}
+            </Btn>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BlockPath() {
+  const { progress, completeWordBlock } = useContext(ProgressCtx)
+  const [active, setActive] = useState(null)
+  const done = progress.completedWordBlocks || []
 
   if (active) {
-    const already = learnedWords.includes(active)
+    const block = WORD_BLOCKS.find(b => b.id === active)
     return (
-      <WordLesson
-        word={WORD_BY_JP[active]}
-        alreadyLearned={already}
-        onLearn={() => { if (!already) learnWord(active, XP_PER_WORD); setActive(null) }}
+      <BlockCourse
+        block={block}
+        onComplete={() => {
+          if (!done.includes(active)) completeWordBlock(active, block.words.length * XP_PER_WORD)
+          setActive(null)
+        }}
         onClose={() => setActive(null)}
       />
     )
   }
 
-  const decorated = WORDS.map(w => ({
-    ...w,
-    learnable: wordLearnable(w.jp, learnedSet),
-    learned: learnedWords.includes(w.jp),
-    missing: wordKana(w.jp).filter(k => !learnedSet.has(k)),
+  const blocks = WORD_BLOCKS.map((b, i) => ({
+    ...b,
+    done: done.includes(b.id),
+    locked: i === 0 ? false : !done.includes(WORD_BLOCKS[i - 1].id),
   }))
-  const availableCount = decorated.filter(w => w.learnable && !w.learned).length
-
-  const groups = [
-    { key: 'hira', title: 'Hiragana-Wörter' },
-    { key: 'kata', title: 'Katakana-Wörter' },
-  ]
 
   return (
     <div>
-      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 6 }}>
-        Wörter aus deinen gelernten Zeichen. Sie schalten frei, sobald du alle nötigen Kana kennst.
-      </p>
-      <p style={{ fontSize: 12, color: C.matcha, marginBottom: 16 }}>
-        {availableCount > 0 ? `${availableCount} Wörter zum Lernen verfügbar` : 'Lerne mehr Kana, um Wörter freizuschalten'}
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 18 }}>
+        Wörter in 5er-Blöcken: Kanji, Hiragana, Bedeutung und Beispielsätze – mit Quiz am Schluss.
       </p>
 
-      {groups.map(g => {
-        const items = decorated.filter(w => w.script === g.key)
-        return (
-          <div key={g.key} style={{ marginBottom: 22 }}>
-            <h3 style={{ fontSize: 15, fontFamily: "'Noto Serif JP', serif", color: C.indigo, marginBottom: 10 }}>{g.title}</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {items.map(w => {
-                const open = w.learnable ? () => setActive(w.jp) : undefined
-                const border = w.learned ? C.matcha : w.learnable ? C.shu : C.washiDark
-                return (
-                  <button key={w.jp} onClick={open} disabled={!w.learnable}
-                    style={{
-                      textAlign: 'left', background: '#fff', border: `2px solid ${border}`,
-                      borderRadius: 12, padding: '12px 14px',
-                      cursor: w.learnable ? 'pointer' : 'not-allowed',
-                      opacity: w.learnable ? 1 : 0.55,
-                    }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontFamily: "'Noto Serif JP', serif", fontSize: 22 }}>{w.jp}</span>
-                      {w.learned ? <span style={{ color: C.matcha, fontSize: 14 }}>✓</span>
-                        : !w.learnable ? <span style={{ fontSize: 13 }}>🔒</span> : null}
-                    </div>
-                    {w.learnable ? (
-                      <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{w.romaji} · {w.de}</div>
-                    ) : (
-                      <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
-                        braucht: <span style={{ fontFamily: "'Noto Serif JP', serif" }}>{w.missing.join(' ')}</span>
-                      </div>
-                    )}
-                  </button>
-                )
-              })}
+      <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
+        <div style={{ position: 'absolute', left: 28, top: 28, bottom: 28, width: 2, background: C.washiDark, zIndex: 0 }} />
+        {blocks.map((b, i) => (
+          <div key={b.id} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            marginBottom: i < blocks.length - 1 ? 16 : 0, position: 'relative', zIndex: 1,
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
+              background: b.done ? C.matcha : b.locked ? C.washiDark : C.shu,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 24, color: '#fff',
+              boxShadow: !b.locked && !b.done ? `0 0 0 4px ${C.shu}30` : 'none',
+            }}>
+              {b.done ? '✓' : b.locked ? '🔒' : b.theme}
             </div>
+            <button onClick={() => !b.locked && setActive(b.id)} disabled={b.locked}
+              style={{
+                flex: 1, background: '#fff', border: '2px solid',
+                borderColor: b.done ? C.matcha : b.locked ? C.washiDark : C.shu,
+                borderRadius: 12, padding: '12px 14px', textAlign: 'left',
+                cursor: b.locked ? 'not-allowed' : 'pointer', opacity: b.locked ? 0.6 : 1,
+              }}>
+              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 2 }}>{b.title}</div>
+              <div style={{ fontSize: 12, color: C.textMuted }}>
+                {b.done ? 'Abgeschlossen ✓'
+                  : b.locked ? 'Noch gesperrt'
+                    : `${b.words.length} Wörter · ${b.words.map(w => w.kanji).join(' ')}`}
+              </div>
+            </button>
           </div>
-        )
-      })}
+        ))}
+      </div>
     </div>
   )
 }
@@ -1174,7 +1275,7 @@ function LernenScreen() {
         ))}
       </div>
 
-      {view === 'woerter' && <WordPath />}
+      {view === 'woerter' && <BlockPath />}
 
       {view === 'kana' && (
       <>
@@ -1270,7 +1371,7 @@ function UebenScreen() {
   if (mode === 'srs') return <SRSQuiz onClose={() => setMode(null)} />
   if (mode === 'erkennen' || mode === 'hoeren') return <PracticeQuiz mode={mode} onClose={() => setMode(null)} />
 
-  const learnedAll = [...completedKanaList(progress.completedLessons || []), ...(progress.completedWords || [])]
+  const learnedAll = [...completedKanaList(progress.completedLessons || []), ...learnedWordKanji(progress.completedWordBlocks || [])]
   const dueCount = dueKana(progress, learnedAll).length
   const exercises = [
     { id: 'srs', icon: '🗂', title: 'SRS-Wiederholungen', sub: dueCount > 0 ? `${dueCount} Karten fällig` : 'Nichts fällig', color: C.shu },
@@ -1459,7 +1560,7 @@ function FortschrittScreen() {
 export default function TabiApp() {
   const [tab, setTab] = useState('heute')
   const { user, logout } = useAuth()
-  const { progress, awardXp, completeLesson, learnWord, reviewCard, reset } = useProgress(user?.uid)
+  const { progress, awardXp, completeLesson, completeWordBlock, reviewCard, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
 
   const screens = {
@@ -1470,7 +1571,7 @@ export default function TabiApp() {
   }
 
   return (
-    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, learnWord, reviewCard, reset }}>
+    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, completeWordBlock, reviewCard, reset }}>
     <div style={{
       maxWidth: 480, margin: '0 auto', height: '100vh',
       display: 'flex', flexDirection: 'column', position: 'relative',
