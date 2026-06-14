@@ -2230,6 +2230,85 @@ function renderFuri(s) {
 // Lesbare Klammern für die Sprachausgabe entfernen (Kanji bleiben stehen).
 function furiPlain(s) { return s.replace(/\([^)]*\)/g, '') }
 
+// Wort-Tokens für die Story-Sätze (antippbar → Lesung, Bedeutung, Aufbau).
+// Schlüssel = der jp-Furigana-String der Story-Szene.
+const STORY_TOKENS = {
+  '日本(にほん)に着(つ)きました。': [
+    { t: '日本', r: 'にほん', de: 'Japan', b: 'Nomen' }, { t: 'に', de: '(Richtung)', b: 'Partikel: wohin' }, { t: '着きました', r: 'つきました', de: 'ankommen', b: 'Verb, höflich · Vergangenheit (着く)' }, { t: '。' },
+  ],
+  '電車(でんしゃ)に乗(の)ります。': [
+    { t: '電車', r: 'でんしゃ', de: 'Zug', b: 'Nomen' }, { t: 'に', de: '(Ziel)', b: 'Partikel: einsteigen in' }, { t: '乗ります', r: 'のります', de: 'einsteigen / fahren', b: 'Verb, höflich (乗る)' }, { t: '。' },
+  ],
+  '町(まち)を歩(ある)きます。': [
+    { t: '町', r: 'まち', de: 'Stadt', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '歩きます', r: 'あるきます', de: 'gehen / laufen', b: 'Verb, höflich (歩く)' }, { t: '。' },
+  ],
+  'お茶(ちゃ)を飲(の)みます。': [
+    { t: 'お茶', r: 'おちゃ', de: 'Tee', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '飲みます', r: 'のみます', de: 'trinken', b: 'Verb, höflich (飲む)' }, { t: '。' },
+  ],
+  '山(やま)が見(み)えます。': [
+    { t: '山', r: 'やま', de: 'Berg', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '見えます', r: 'みえます', de: 'zu sehen sein', b: 'Verb, höflich (見える)' }, { t: '。' },
+  ],
+  'これは川(かわ)です。空(そら)は青(あお)いです。': [
+    { t: 'これ', de: 'das / dies', b: 'Demonstrativpronomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '川', r: 'かわ', de: 'Fluss', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' }, { t: '空', r: 'そら', de: 'Himmel', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '青い', r: 'あおい', de: 'blau', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+  ],
+  '犬(いぬ)が走(はし)ります。': [
+    { t: '犬', r: 'いぬ', de: 'Hund', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '走ります', r: 'はしります', de: 'rennen', b: 'Verb, höflich (走る)' }, { t: '。' },
+  ],
+  '魚(さかな)を見(み)ます。': [
+    { t: '魚', r: 'さかな', de: 'Fisch', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '見ます', r: 'みます', de: 'sehen / anschauen', b: 'Verb, höflich (見る)' }, { t: '。' },
+  ],
+  '山(やま)を登(のぼ)ります。': [
+    { t: '山', r: 'やま', de: 'Berg', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '登ります', r: 'のぼります', de: 'besteigen / hinaufgehen', b: 'Verb, höflich (登る)' }, { t: '。' },
+  ],
+  '足(あし)が痛(いた)いです。': [
+    { t: '足', r: 'あし', de: 'Fuß / Bein', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '痛い', r: 'いたい', de: 'schmerzhaft / weh', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+  ],
+  '日本(にほん)の山(やま)です。': [
+    { t: '日本', r: 'にほん', de: 'Japan', b: 'Nomen' }, { t: 'の', de: 'von / -s', b: 'Verbindungspartikel (Genitiv)' }, { t: '山', r: 'やま', de: 'Berg', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+  ],
+  'おめでとうございます！旅(たび)は終(お)わりました。': [
+    { t: 'おめでとうございます', de: 'Herzlichen Glückwunsch', b: 'feste Wendung' }, { t: '！' }, { t: '旅', r: 'たび', de: 'Reise', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '終わりました', r: 'おわりました', de: 'ist zu Ende', b: 'Verb, höflich · Vergangenheit (終わる)' }, { t: '。' },
+  ],
+}
+
+// Antippbare Story-Zeile mit Furigana: Wort tippen → Lesung, Bedeutung, Aufbau.
+function StoryLine({ tokens }) {
+  const [active, setActive] = useState(null)
+  const tk = active != null ? tokens[active] : null
+  const plain = tokens.map(t => t.t).join('')
+  return (
+    <div>
+      <div style={{ fontSize: 24, fontFamily: "'Noto Serif JP', serif", lineHeight: 2.1, color: C.sumi }}>
+        {tokens.map((t, i) => {
+          const hasKanji = /[一-龯々]/.test(t.t)
+          const inner = hasKanji && t.r ? <ruby>{t.t}<rt style={{ fontSize: '0.5em', color: '#6B6660', fontWeight: 400 }}>{t.r}</rt></ruby> : t.t
+          if (!t.de) return <span key={i}>{inner}</span>
+          const on = active === i
+          return (
+            <span key={i} onClick={() => setActive(on ? null : i)}
+              style={{ cursor: 'pointer', borderRadius: 4, padding: '0 1px', borderBottom: `2px dotted ${on ? C.shu : `${C.indigo}66`}`, background: on ? `${C.shu}22` : 'transparent' }}>
+              {inner}
+            </span>
+          )
+        })}
+        <button onClick={() => speak(plain)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, marginLeft: 6, verticalAlign: 'middle' }}>🔊</button>
+      </div>
+      {tk ? (
+        <div style={{ background: `${C.indigo}10`, border: `1px solid ${C.indigo}30`, borderRadius: 8, padding: 10, marginTop: 10, textAlign: 'left', maxWidth: 300, margin: '10px auto 0' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{tk.t}</span>
+            {tk.r && <span style={{ fontSize: 13, color: C.textMuted }}>{tk.r}</span>}
+          </div>
+          <div style={{ fontSize: 15, color: C.indigo, fontWeight: 600 }}>{tk.de}</div>
+          {tk.b && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>Aufbau: {tk.b}</div>}
+        </div>
+      ) : (
+        <div style={{ fontSize: 11, color: C.textMuted, fontStyle: 'italic', marginTop: 8 }}>💡 Tippe ein Wort für Bedeutung & Aufbau</div>
+      )}
+    </div>
+  )
+}
+
 // ─── Geschichts-Kapitel (eine Episode pro Welt) ──────────────────────────────
 // Jede Episode führt zuerst die NEUEN Wörter ein (intro: Bild+Schrift+Audio,
 // Deutsch nur einmal) und übt sie dann per ABRUF OHNE deutsche Krücke. Step-Typen:
@@ -2653,16 +2732,21 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
       </div>
     )
   } else if (cur.kind === 'story') {
+    const toks = cur.tokens || STORY_TOKENS[cur.jp]
     content = (
       <div style={{ textAlign: 'center', padding: '8px 0' }}>
         <Emoji name={cur.emoji} size={80} />
         {cur.jp && (
-          <div style={{ marginTop: 16, fontSize: 24, fontFamily: "'Noto Serif JP', serif", lineHeight: 2.1, color: C.sumi }}>
-            {renderFuri(cur.jp)}
-            <button onClick={() => speak(furiPlain(cur.jp))} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, marginLeft: 6, verticalAlign: 'middle' }}>🔊</button>
+          <div style={{ marginTop: 16 }}>
+            {toks ? <StoryLine tokens={toks} /> : (
+              <div style={{ fontSize: 24, fontFamily: "'Noto Serif JP', serif", lineHeight: 2.1, color: C.sumi }}>
+                {renderFuri(cur.jp)}
+                <button onClick={() => speak(furiPlain(cur.jp))} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, marginLeft: 6, verticalAlign: 'middle' }}>🔊</button>
+              </div>
+            )}
           </div>
         )}
-        {cur.text && <p style={{ fontSize: cur.jp ? 13 : 16, color: cur.jp ? C.textMuted : C.sumi, lineHeight: 1.6, marginTop: cur.jp ? 10 : 16 }}>{cur.text}</p>}
+        {cur.text && <p style={{ fontSize: cur.jp ? 13 : 16, color: cur.jp ? C.textMuted : C.sumi, lineHeight: 1.6, marginTop: cur.jp ? 12 : 16 }}>{cur.text}</p>}
       </div>
     )
   } else if (cur.kind === 'intro') {
