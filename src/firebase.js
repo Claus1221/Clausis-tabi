@@ -15,19 +15,19 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
-  apiKey: 'HIER_EINFUEGEN',
-  authDomain: 'HIER_EINFUEGEN',
-  projectId: 'HIER_EINFUEGEN',
-  storageBucket: 'HIER_EINFUEGEN',
-  messagingSenderId: 'HIER_EINFUEGEN',
-  appId: 'HIER_EINFUEGEN',
+  apiKey: "AIzaSyAM8XRE1stHOfFQKNmf0j4pqNWQw-bOKGg",
+  authDomain: "clausis-tabi.firebaseapp.com",
+  projectId: "clausis-tabi",
+  storageBucket: "clausis-tabi.firebasestorage.app",
+  messagingSenderId: "426555633535",
+  appId: "1:426555633535:web:0242c89b897dc30254f44a"
 }
 
 // Nur diese Google-Konten dürfen die App benutzen.
 // Leer lassen ([]) = jedes eingeloggte Google-Konto darf rein.
 // Für eine reine Privat-App: trage hier deine eigene Gmail-Adresse ein.
 export const ALLOWED_EMAILS = [
-  // 'deine-email@gmail.com',
+  'clausalbers@gmail.com',
 ]
 
 // true, sobald oben echte Werte eingetragen sind.
