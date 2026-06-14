@@ -5,12 +5,13 @@ import { KANA_STROKES, STROKE_VIEWBOX } from './kanaStrokes.js'
 
 // Fortschritt (aus Firestore) für alle Screens verfügbar machen.
 const ProgressCtx = createContext({
-  progress: { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], xpByDate: {}, srs: {} },
+  progress: { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], xpByDate: {}, srs: {} },
   awardXp: async () => {},
   completeLesson: async () => {},
   completeWordBlock: async () => {},
   completeGrammar: async () => {},
   completeChapter: async () => {},
+  completeDialog: async () => {},
   reviewCard: async () => {},
   reset: async () => {},
 })
@@ -21,6 +22,7 @@ const XP_PER_CARD = 5   // pro wiederholter SRS-Karte / richtiger Übungsantwort
 const XP_PER_WORD = 15     // pro gelerntem Wort
 const XP_PER_GRAMMAR = 20  // pro gelerntem Grammatik-Thema
 const XP_PER_CHAPTER = 30  // Bonus pro abgeschlossenem Geschichts-Kapitel
+const XP_PER_DIALOG = 25   // Bonus pro abgeschlossener Gesprächs-Szene
 
 // Kana-Statistiken (als Funktionen, da LESSONS weiter unten definiert ist).
 function totalKanaCount() {
@@ -2182,41 +2184,194 @@ function SentenceQuiz({ onClose }) {
   )
 }
 
-// Rollenspiel: kurze Dialog-Szene, passende Antwort wählen.
-const ROLEPLAYS = [
-  { title: 'Im Restaurant', emoji: 'food', turns: [
+// ─── Gesprächspfad (Rollenspiel als Lernpfad) ────────────────────────────────
+// Didaktik (aus der Recherche zu wirksamem Sprachenlernen):
+//  • Aufgabenorientiert (TBLT): jede Szene hat ein echtes Reiseziel.
+//  • Kontext zuerst: eine Intro-Karte aktiviert das Situations-Schema (comprehensible input).
+//  • Abruf ohne L1-Krücke: der NPC spricht Japanisch, du wählst eine japanische
+//    Antwort; Deutsch erscheint nur im Feedback.
+//  • Verblassende Hilfen: 'voll' zeigt die Übersetzung sofort + klar verschiedene
+//    Antworten, 'mittel' blendet sie erst nach der Antwort ein, 'frei' ganz ohne
+//    Übersetzung und mit mehr/ähnlicheren Antworten.
+//  • Verschränktes Wiederholen: Wiederholungs-Knoten mischen Wechsel früherer Szenen.
+//  • Hören-zuerst: die NPC-Zeile wird automatisch vorgelesen, deine Antwort beim Tippen.
+//  • Gating wie die Reise: eine Szene schaltet die nächste frei.
+const DIALOGS = [
+  { section: '到着', sub: 'Ankunft in Japan' },
+  { id: 'd1', title: 'Begrüßung', goal: 'Begrüße jemanden und stell dich vor.', emoji: 'hello', scaffold: 'voll', turns: [
+    { npc: 'こんにちは！', de: 'Guten Tag!', options: ['こんにちは。', 'さようなら。', 'すみません。'], answer: 'こんにちは。' },
+    { npc: 'おなまえは？', de: 'Wie heißen Sie?', options: ['クラウスです。', 'いくらですか？', 'みぎです。'], answer: 'クラウスです。' },
+    { npc: 'どこから？', de: 'Woher kommen Sie?', options: ['ドイツからです。', 'たべます。', 'たかいです。'], answer: 'ドイツからです。' },
+  ] },
+  { id: 'd2', title: 'Mit dem Taxi', goal: 'Lass dich zum Hotel fahren.', emoji: 'taxi', scaffold: 'voll', turns: [
+    { npc: 'どちらまで？', de: 'Wohin?', options: ['ホテルまで おねがいします。', 'いただきます。', 'おやすみなさい。'], answer: 'ホテルまで おねがいします。' },
+    { npc: 'わかりました。', de: 'Verstanden.', options: ['ありがとうございます。', 'たすけて！', 'たかいです。'], answer: 'ありがとうございます。' },
+    { npc: 'つきましたよ。', de: 'Wir sind da.', options: ['いくらですか？', 'おはよう。', 'さかなです。'], answer: 'いくらですか？' },
+  ] },
+  { section: 'ホテル', sub: 'Im Hotel' },
+  { id: 'd3', title: 'Check-in', goal: 'Checke im Hotel ein.', emoji: 'hotel', scaffold: 'voll', turns: [
+    { npc: 'いらっしゃいませ。', de: 'Willkommen.', options: ['チェックイン おねがいします。', 'メニューを ください。', 'みぎです。'], answer: 'チェックイン おねがいします。' },
+    { npc: 'おなまえを どうぞ。', de: 'Ihren Namen, bitte.', options: ['クラウスです。', 'みずです。', 'やすいです。'], answer: 'クラウスです。' },
+    { npc: 'パスポートを おねがいします。', de: 'Ihren Pass, bitte.', options: ['はい、どうぞ。', 'いいえ、けっこうです。', 'たべません。'], answer: 'はい、どうぞ。' },
+  ] },
+  { id: 'dr1', review: true, title: 'Wiederholung 1', goal: 'Gemischte Wechsel aus Ankunft & Hotel.', emoji: 'star', from: ['d1', 'd2', 'd3'] },
+  { section: '食事', sub: 'Essen & Trinken' },
+  { id: 'd4', title: 'Im Restaurant', goal: 'Bestelle Essen und bitte um die Rechnung.', emoji: 'food', scaffold: 'mittel', turns: [
     { npc: 'いらっしゃいませ！', de: 'Willkommen!', options: ['こんにちは。', 'さようなら。', 'いくらですか？'], answer: 'こんにちは。' },
     { npc: 'ごちゅうもんは？', de: 'Ihre Bestellung?', options: ['メニューを ください。', 'たすけて！', 'みぎです。'], answer: 'メニューを ください。' },
     { npc: 'おのみものは？', de: 'Etwas zu trinken?', options: ['おみずを ください。', 'さようなら。', 'わかりません。'], answer: 'おみずを ください。' },
     { npc: 'ありがとうございました！', de: 'Vielen Dank!', options: ['おかんじょう おねがいします。', 'こんばんは。', 'たかいです。'], answer: 'おかんじょう おねがいします。' },
   ] },
-  { title: 'Nach dem Weg fragen', emoji: 'map', turns: [
+  { id: 'd5', title: 'Im Café', goal: 'Bestelle einen Kaffee.', emoji: 'coffee', scaffold: 'mittel', turns: [
+    { npc: 'いらっしゃいませ。', de: 'Willkommen.', options: ['コーヒーを ください。', 'えきは どこですか？', 'たすけて！'], answer: 'コーヒーを ください。' },
+    { npc: 'ホットですか、アイスですか？', de: 'Heiß oder kalt?', options: ['ホットを おねがいします。', 'みぎです。', 'さようなら。'], answer: 'ホットを おねがいします。' },
+    { npc: 'いじょうで よろしいですか？', de: 'Ist das alles?', options: ['はい、けっこうです。', 'いくらですか？', 'たべません。'], answer: 'はい、けっこうです。' },
+  ] },
+  { id: 'dr2', review: true, title: 'Wiederholung 2', goal: 'Gemischte Wechsel aus den Essens-Szenen.', emoji: 'star', from: ['d4', 'd5'] },
+  { section: '移動', sub: 'Unterwegs' },
+  { id: 'd6', title: 'Nach dem Weg fragen', goal: 'Finde den Bahnhof.', emoji: 'map', scaffold: 'mittel', turns: [
     { npc: 'はい、なんでしょう？', de: 'Ja, bitte?', options: ['すみません、えきは どこですか？', 'いただきます。', 'おやすみなさい。'], answer: 'すみません、えきは どこですか？' },
     { npc: 'まっすぐ、それから みぎです。', de: 'Geradeaus, dann rechts.', options: ['ありがとうございます。', 'いくらですか？', 'たべません。'], answer: 'ありがとうございます。' },
     { npc: 'きを つけて！', de: 'Pass auf dich auf!', options: ['さようなら。', 'メニューを ください。', 'みぎです。'], answer: 'さようなら。' },
   ] },
+  { id: 'd7', title: 'Zugticket kaufen', goal: 'Kaufe ein Ticket nach Tokyo.', emoji: 'train', scaffold: 'mittel', turns: [
+    { npc: 'どちらまで？', de: 'Bis wohin?', options: ['とうきょうまで おねがいします。', 'コーヒーを ください。', 'たすけて！'], answer: 'とうきょうまで おねがいします。' },
+    { npc: 'かたみちですか、おうふくですか？', de: 'Einfach oder hin und zurück?', options: ['かたみちで おねがいします。', 'みぎです。', 'さようなら。'], answer: 'かたみちで おねがいします。' },
+    { npc: 'にせんえんです。', de: 'Das macht 2000 Yen.', options: ['はい、どうぞ。', 'わかりません。', 'たかいです。'], answer: 'はい、どうぞ。' },
+  ] },
+  { section: '買い物', sub: 'Einkaufen' },
+  { id: 'd8', title: 'Im Laden', goal: 'Frag nach dem Preis und bezahle.', emoji: 'person', scaffold: 'frei', turns: [
+    { npc: 'いらっしゃいませ。', de: 'Willkommen.', options: ['これは いくらですか？', 'えきは どこですか？', 'たすけて！', 'おやすみなさい。'], answer: 'これは いくらですか？' },
+    { npc: 'せんえんです。', de: '1000 Yen.', options: ['じゃあ、これを ください。', 'メニューを ください。', 'みぎです。', 'たべません。'], answer: 'じゃあ、これを ください。' },
+    { npc: 'カードで よろしいですか？', de: 'Mit Karte in Ordnung?', options: ['はい、おねがいします。', 'いいえ、けっこうです。', 'えきは どこですか？', 'さようなら。'], answer: 'はい、おねがいします。' },
+    { npc: 'ありがとうございました。', de: 'Vielen Dank.', options: ['どうも。', 'いただきます。', 'たかいです。', 'わかりません。'], answer: 'どうも。' },
+  ] },
+  { section: '困った時', sub: 'Wenn es brenzlig wird' },
+  { id: 'd9', title: 'Um Hilfe bitten', goal: 'Du hast dich verlaufen – bitte um Hilfe.', emoji: 'hand', scaffold: 'frei', turns: [
+    { npc: 'だいじょうぶですか？', de: 'Geht es Ihnen gut?', options: ['みちに まよいました。', 'いただきます。', 'おいしいです。', 'こんばんは。'], answer: 'みちに まよいました。' },
+    { npc: 'どうしましたか？', de: 'Was ist passiert?', options: ['ホテルが わかりません。', 'メニューを ください。', 'みぎです。', 'たべます。'], answer: 'ホテルが わかりません。' },
+    { npc: 'いっしょに いきましょう。', de: 'Gehen wir zusammen.', options: ['ありがとうございます、たすかります。', 'いくらですか？', 'さようなら。', 'たかいです。'], answer: 'ありがとうございます、たすかります。' },
+  ] },
 ]
-function RolePlay({ onClose }) {
+
+// Verwaltet Pfad-Liste ↔ aktive Szene.
+function DialogHub({ onClose }) {
+  const { progress, completeDialog } = useContext(ProgressCtx)
+  const done = progress.completedDialogs || []
+  const [active, setActive] = useState(null)
+
+  const steps = DIALOGS.filter(n => !n.section)
+  const unlocked = (id) => { const i = steps.findIndex(s => s.id === id); return i <= 0 || done.includes(steps[i - 1].id) }
+
+  if (active) {
+    const node = DIALOGS.find(n => n.id === active)
+    return <DialogPlay node={node} alreadyDone={done.includes(active)}
+      onComplete={() => completeDialog(active, XP_PER_DIALOG)}
+      onClose={() => setActive(null)} />
+  }
+
+  const doneCount = steps.filter(s => done.includes(s.id)).length
+
+  return (
+    <div style={{ padding: '16px 16px 24px' }}>
+      <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 10 }}>← Üben</button>
+      <h2 style={{ fontSize: 20, fontFamily: "'Noto Serif JP', serif", color: C.indigo, margin: '0 0 4px' }}>会話の道 · Gesprächspfad</h2>
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 16 }}>
+        Echte Reise-Situationen. {doneCount}/{steps.length} gemeistert – jede Szene öffnet die nächste.
+      </p>
+      {DIALOGS.map((n, i) => {
+        if (n.section) return (
+          <div key={`s${i}`} style={{ margin: '18px 0 8px' }}>
+            <div style={{ fontSize: 16, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{n.section}</div>
+            <div style={{ fontSize: 12, color: C.textMuted }}>{n.sub}</div>
+          </div>
+        )
+        const isDone = done.includes(n.id), open = unlocked(n.id)
+        return (
+          <button key={n.id} onClick={() => open && setActive(n.id)} disabled={!open}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+              background: '#fff', border: `2px solid ${isDone ? `${C.matcha}55` : open ? C.washiDark : C.washiDark}`,
+              borderRadius: 12, padding: '12px 14px', marginBottom: 8, opacity: open ? 1 : 0.5,
+              cursor: open ? 'pointer' : 'default', boxShadow: '0 1px 3px rgba(33,31,27,0.06)' }}>
+            <div style={{ position: 'relative' }}>
+              <Emoji name={n.emoji} size={36} style={{ filter: open ? 'none' : 'grayscale(1)' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, fontSize: 15, color: C.sumi }}>{n.title}{n.review && <span style={{ fontWeight: 400, fontSize: 11, color: C.textMuted }}> · Mix</span>}</div>
+              <div style={{ fontSize: 12, color: C.textMuted }}>{n.goal}</div>
+            </div>
+            <div style={{ fontSize: 18 }}>{isDone ? '✓' : open ? '›' : '🔒'}</div>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// Spielt eine Gesprächs-Szene: Kontext-Intro → Wechsel mit verblassenden Hilfen.
+function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
   const { awardXp } = useContext(ProgressCtx)
-  const [play] = useState(() => ROLEPLAYS[Math.floor(Math.random() * ROLEPLAYS.length)])
+  const [turns] = useState(() => {
+    if (node.review) {
+      const pool = node.from.flatMap(id => DIALOGS.find(d => d.id === id)?.turns || [])
+      return shuffled(pool).slice(0, 5)
+    }
+    return node.turns
+  })
+  const scaffold = node.review ? 'mittel' : node.scaffold
+  const [phase, setPhase] = useState('intro')
   const [turn, setTurn] = useState(0)
   const [ans, setAns] = useState(null)
-  const turns = play.turns
+  const [score, setScore] = useState(0)
 
-  if (turn >= turns.length) return <UebenDone total={turns.length} onClose={onClose} />
+  useEffect(() => { if (phase === 'done' && !alreadyDone) onComplete() }, [phase])
+  // NPC-Zeile beim Erscheinen vorlesen (Hören-zuerst).
+  useEffect(() => { if (phase === 'play') speak(turns[turn]?.npc) }, [phase, turn])
+
+  if (phase === 'intro') {
+    return (
+      <div style={{ padding: 20 }}>
+        <UebenHead title={node.title} idx={0} total={turns.length} onClose={onClose} />
+        <Card style={{ textAlign: 'center', padding: '24px 18px' }}>
+          <Emoji name={node.emoji} size={64} />
+          <p style={{ fontSize: 13, color: C.textMuted, margin: '14px 0 2px', letterSpacing: 1 }}>SITUATION</p>
+          <p style={{ fontWeight: 600, fontSize: 17, color: C.sumi, margin: 0 }}>{node.goal}</p>
+        </Card>
+        <Btn onClick={() => setPhase('play')} style={{ width: '100%', marginTop: 16 }}>Los geht's →</Btn>
+      </div>
+    )
+  }
+  if (phase === 'done') {
+    return (
+      <div style={{ padding: 20 }}>
+        <UebenHead title={node.title} idx={turns.length} total={turns.length} onClose={onClose} />
+        <Card style={{ textAlign: 'center', padding: '28px 18px' }}>
+          <div style={{ fontSize: 44 }}>🎉</div>
+          <p style={{ fontWeight: 600, fontSize: 18, color: C.sumi, margin: '8px 0 2px' }}>Szene gemeistert!</p>
+          <p style={{ color: C.textMuted, fontSize: 14 }}>
+            {score} / {turns.length} passend{!alreadyDone && ` · +${XP_PER_DIALOG} XP`}
+          </p>
+        </Card>
+        <Btn onClick={onClose} style={{ width: '100%', marginTop: 16 }}>Zurück zum Pfad →</Btn>
+      </div>
+    )
+  }
+
   const t = turns[turn]
   const revealed = ans != null
-  const choose = (o) => { if (revealed) return; setAns(o); speak(o); if (o === t.answer) awardXp(XP_PER_CARD) }
-  const next = () => { setAns(null); setTurn(x => x + 1) }
+  const showDe = scaffold === 'voll' || revealed
+  const choose = (o) => { if (revealed) return; setAns(o); speak(o); if (o === t.answer) { awardXp(XP_PER_CARD); setScore(s => s + 1) } }
+  const next = () => { if (turn === turns.length - 1) { setPhase('done'); return } setAns(null); setTurn(x => x + 1) }
 
   return (
     <div style={{ padding: 20 }}>
-      <UebenHead title={play.title} idx={turn} total={turns.length} onClose={onClose} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <Emoji name={play.emoji} size={48} />
+      <UebenHead title={node.title} idx={turn} total={turns.length} onClose={onClose} />
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 16 }}>
+        <Emoji name={node.emoji} size={48} />
         <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 12, padding: '10px 14px', flex: 1 }}>
           <div style={{ fontSize: 19, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{t.npc}</div>
-          <button onClick={() => speak(t.npc)} style={{ background: 'none', border: 'none', fontSize: 14, cursor: 'pointer', padding: 0, color: C.textMuted }}>🔊 anhören</button>
+          {showDe && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>„{t.de}"</div>}
+          <button onClick={() => speak(t.npc)} style={{ background: 'none', border: 'none', fontSize: 13, cursor: 'pointer', padding: '2px 0 0', color: C.textMuted }}>🔊 nochmal hören</button>
         </div>
       </div>
       <p style={{ fontWeight: 500, marginBottom: 12 }}>Was antwortest du?</p>
@@ -2235,7 +2390,7 @@ function RolePlay({ onClose }) {
         <>
           <p style={{ marginTop: 12, fontWeight: 600, color: ans === t.answer ? C.matcha : C.shu }}>
             {ans === t.answer ? '✓ Gute Antwort!' : '✗ Passt nicht ganz'}
-            <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 2 }}>„{t.de}"</span>
+            <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 2 }}>NPC: „{t.de}"</span>
           </p>
           <Btn onClick={next} style={{ width: '100%', marginTop: 12 }}>{turn === turns.length - 1 ? 'Fertig →' : 'Weiter →'}</Btn>
         </>
@@ -2252,17 +2407,18 @@ function UebenScreen() {
   if (mode === 'erkennen' || mode === 'hoeren') return <PracticeQuiz mode={mode} onClose={() => setMode(null)} />
   if (mode === 'tippen') return <TypeQuiz onClose={() => setMode(null)} />
   if (mode === 'satzbau') return <SentenceQuiz onClose={() => setMode(null)} />
-  if (mode === 'konversation') return <RolePlay onClose={() => setMode(null)} />
+  if (mode === 'konversation') return <DialogHub onClose={() => setMode(null)} />
 
   const learnedAll = [...completedKanaList(progress.completedLessons || []), ...learnedWordKanji(progress.completedWordBlocks || [])]
   const dueCount = dueKana(progress, learnedAll).length
+  const dialogsDone = (progress.completedDialogs || []).length
   const exercises = [
     { id: 'srs', icon: '🗂', title: 'SRS-Wiederholungen', sub: dueCount > 0 ? `${dueCount} Karten fällig` : 'Nichts fällig', color: C.shu },
     { id: 'erkennen', icon: '👁', title: 'Erkennen', sub: 'Zeichen → Lesung', color: C.indigo },
     { id: 'hoeren', icon: '👂', title: 'Hören', sub: 'Was hast du gehört?', color: C.matcha },
     { id: 'tippen', icon: '⌨️', title: 'Tippen', sub: 'Kana per Tastatur', color: '#8B6914' },
     { id: 'satzbau', icon: '🧩', title: 'Satzbau', sub: 'Wörter sortieren', color: '#7B3FA0' },
-    { id: 'konversation', icon: '💬', title: 'Rollenspiel', sub: 'Im Restaurant', color: '#1A7A6E' },
+    { id: 'konversation', icon: '💬', title: 'Rollenspiel', sub: `Gesprächspfad · ${dialogsDone}/${DIALOGS.filter(n => !n.section).length}`, color: '#1A7A6E' },
   ]
 
   return (
@@ -3370,7 +3526,7 @@ function ReiseScreen() {
 export default function TabiApp() {
   const [tab, setTab] = useState('reise')
   const { user, logout } = useAuth()
-  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, reviewCard, scheduleNew, reset } = useProgress(user?.uid)
+  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
 
   // Neu gelernte Kana/Wörter in den Wiederholungsplan einplanen (und bereits
@@ -3392,7 +3548,7 @@ export default function TabiApp() {
   }
 
   return (
-    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, reviewCard, reset }}>
+    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, reset }}>
     <div style={{
       maxWidth: 480, margin: '0 auto', height: '100vh',
       display: 'flex', flexDirection: 'column', position: 'relative',
