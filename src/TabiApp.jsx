@@ -86,17 +86,6 @@ const PHRASES = [
   { jp: 'おねがいします', romaji: 'onegaishimasu', de: 'Bitte (höflich)' },
 ]
 
-const VOCAB = [
-  { jp: '駅', romaji: 'eki', de: 'Bahnhof', type: 'kanji' },
-  { jp: '出口', romaji: 'deguchi', de: 'Ausgang', type: 'kanji' },
-  { jp: '入口', romaji: 'iriguchi', de: 'Eingang', type: 'kanji' },
-  { jp: '円', romaji: 'en', de: 'Yen', type: 'kanji' },
-  { jp: 'お手洗い', romaji: 'otearai', de: 'Toilette', type: 'kanji' },
-  { jp: '男', romaji: 'otoko', de: 'Mann / Herren', type: 'kanji' },
-  { jp: '女', romaji: 'onna', de: 'Frau / Damen', type: 'kanji' },
-  { jp: '水', romaji: 'mizu', de: 'Wasser', type: 'kanji' },
-]
-
 // Wörter-Blöcke: je 5 thematisch gruppierte Wörter mit Kanji, Hiragana,
 // Übersetzung und Beispielsatz (mit Lesung, Übersetzung, Erklärung).
 // Blöcke schalten der Reihe nach frei. Jedes Wort wird im SRS über sein Kanji abgefragt.
@@ -2061,22 +2050,6 @@ function UebenScreen() {
             <div style={{ fontSize: 11, color: C.textMuted }}>{e.sub}</div>
           </button>
         ))}
-      </div>
-
-      {/* Vocab preview */}
-      <div style={{ marginTop: 24 }}>
-        <h3 style={{ fontSize: 15, fontFamily: "'Noto Serif JP', serif", color: C.indigo, marginBottom: 12 }}>
-          Überlebens-Kanji
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {VOCAB.map((v, i) => (
-            <Card key={i} style={{ padding: 12 }}>
-              <div style={{ fontFamily: "'Noto Serif JP', serif", fontSize: 24, color: C.sumi, marginBottom: 4 }}>{v.jp}</div>
-              <div style={{ fontSize: 11, color: C.textMuted }}>{v.romaji}</div>
-              <div style={{ fontSize: 13, color: C.indigo, fontWeight: 500 }}>{v.de}</div>
-            </Card>
-          ))}
-        </div>
       </div>
     </div>
   )
