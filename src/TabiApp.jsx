@@ -2215,61 +2215,76 @@ function FortschrittScreen() {
 }
 
 // ─── Geschichts-Kapitel (eine Episode pro Welt) ──────────────────────────────
-// Jedes Kapitel ist eine kleine erlebte Episode mit mehreren, abwechslungsreichen
-// Übungen, die NUR das Bereits-Gelernte dieser Welt anwenden. Step-Typen:
-//   story  – Erzählbeat (Text + großes Bild)
-//   tap    – richtiges Bild wählen        sign – Schild/Zeichen deuten
-//   listen – Audio hören & wählen         tf   – wahr/falsch zum Bild
-//   gap    – Lücke (Partikel/Wort) füllen dialog – Figur antworten
-//   build  – Satz aus Wort-Kacheln bauen
+// Jede Episode führt zuerst die NEUEN Wörter ein (intro: Bild+Schrift+Audio,
+// Deutsch nur einmal) und übt sie dann per ABRUF OHNE deutsche Krücke. Step-Typen:
+//   story      – Erzählbeat (Text + Bild)        intro      – neues Wort lernen
+//   pic        – Bild → Schrift wählen           pic_choice – Schrift → Bild wählen
+//   audio      – Audio → Schrift wählen          trace      – Zeichen nachzeichnen
+//   sign       – Schild → Bedeutung (Lesen)      dialog     – Figur antworten
+//   gap        – Partikel-Lücke füllen           tf         – wahr/falsch · build – Satz bauen
+// Deutsch erscheint bei pic/audio/pic_choice ERST im Feedback (Feld `de`).
 const CHAPTERS = [
   { id: 'c1', title: 'Ankunft in Japan', steps: [
     { kind: 'story', emoji: 'airplane', text: 'Dein Flugzeug setzt zur Landung an. Unter dir liegt Japan. Du atmest tief durch – die Reise beginnt.' },
-    { kind: 'tap', prompt: 'Du steigst aus. Welches Bild zeigt dein 飛行機 (Flugzeug)?', options: ['airplane', 'ship', 'train'], answer: 'airplane' },
-    { kind: 'sign', sign: '駅', prompt: 'Du folgst einem Schild. 駅 bedeutet…', options: ['Bahnhof', 'Ausgang', 'Toilette'], answer: 'Bahnhof' },
-    { kind: 'listen', say: 'でんしゃ', prompt: 'Eine Durchsage. Was kommt gleich? (Hör zu)', options: [{ label: 'Zug', emoji: 'train' }, { label: 'Bus', emoji: 'bus' }, { label: 'Taxi', emoji: 'taxi' }], answer: 'Zug' },
+    { kind: 'intro', emoji: 'airplane', jp: '飛行機', reading: 'ひこうき', de: 'Flugzeug' },
+    { kind: 'intro', emoji: 'station', jp: '駅', reading: 'えき', de: 'Bahnhof' },
+    { kind: 'intro', emoji: 'train', jp: '電車', reading: 'でんしゃ', de: 'Zug' },
+    { kind: 'pic', emoji: 'airplane', options: ['飛行機', '駅', '電車'], answer: '飛行機', de: 'Flugzeug' },
+    { kind: 'audio', say: 'でんしゃ', options: ['電車', '駅', '飛行機'], answer: '電車', de: 'Zug' },
+    { kind: 'pic_choice', jp: '駅', options: ['station', 'airplane', 'train'], answer: 'station', de: 'Bahnhof' },
     { kind: 'dialog', emoji: 'oldwoman', line: 'こんにちは。', prompt: 'Eine alte Frau grüßt dich. Was antwortest du?', options: ['こんにちは。', 'さようなら。', 'ありがとう。'], answer: 'こんにちは。', tr: 'Hallo / Guten Tag.' },
     { kind: 'story', emoji: 'train', text: 'Du findest den richtigen Zug. Die Türen schließen mit einer höflichen Melodie. Deine Reise rollt los.' },
   ] },
   { id: 'c2', title: 'Durch die Stadt', steps: [
     { kind: 'story', emoji: 'city', text: 'Der Zug hält in einer kleinen Stadt. Du schlenderst durch enge Gassen voller Schilder.' },
-    { kind: 'tap', prompt: 'Welches Bild zeigt einen 山 (Berg)?', options: ['mountain', 'wave', 'city'], answer: 'mountain' },
-    { kind: 'sign', sign: 'お茶', prompt: 'Vor einem Lädchen steht お茶. Das ist…', options: ['Tee', 'Wasser', 'Reis'], answer: 'Tee' },
-    { kind: 'listen', say: 'そら', prompt: 'Du schaust hoch. „そら" – was bedeutet das?', options: [{ label: 'Himmel', emoji: 'sun' }, { label: 'Meer', emoji: 'wave' }, { label: 'Wald', emoji: 'tree' }], answer: 'Himmel' },
+    { kind: 'intro', emoji: 'tea', jp: 'お茶', reading: 'おちゃ', de: 'Tee' },
+    { kind: 'intro', emoji: 'mountain', jp: '山', reading: 'やま', de: 'Berg' },
+    { kind: 'pic', emoji: 'tea', options: ['お茶', '山', '空'], answer: 'お茶', de: 'Tee' },
+    { kind: 'pic_choice', jp: '山', options: ['mountain', 'wave', 'city'], answer: 'mountain', de: 'Berg' },
+    { kind: 'trace', char: '山', reading: 'やま', de: 'Berg' },
     { kind: 'dialog', emoji: 'person', line: 'いらっしゃいませ！', prompt: 'Der Händler begrüßt dich. Du möchtest Tee. Was sagst du?', options: ['お茶、おねがいします。', 'さようなら。', 'こんばんは。'], answer: 'お茶、おねがいします。', tr: 'Tee, bitte.' },
     { kind: 'story', emoji: 'tea', text: 'Mit einer Tasse Tee in der Hand verlässt du die Stadt. Vor dir: grüne Hügel.' },
   ] },
   { id: 'c3', title: 'In die Natur', steps: [
     { kind: 'story', emoji: 'mountain', text: 'Der Weg führt in die Berge. Ein Fluss glitzert im Tal, der Himmel ist weit.' },
-    { kind: 'tap', prompt: 'Tippe auf das Bild für 川 (Fluss).', options: ['river', 'mountain', 'water'], answer: 'river' },
+    { kind: 'intro', emoji: 'river', jp: '川', reading: 'かわ', de: 'Fluss' },
+    { kind: 'intro', emoji: 'sun', jp: '空', reading: 'そら', de: 'Himmel' },
+    { kind: 'pic', emoji: 'river', options: ['川', '山', '空'], answer: '川', de: 'Fluss' },
+    { kind: 'audio', say: 'そら', options: ['空', '川', '山'], answer: '空', de: 'Himmel' },
     { kind: 'build', prompt: 'Bilde den Satz: „Das ist ein Berg."', tiles: ['これ', 'は', '山', 'です'], answer: ['これ', 'は', '山', 'です'], tr: 'これは山です。' },
     { kind: 'gap', text: 'これ＿山です。', prompt: 'Welche Partikel markiert das Thema?', options: ['は', 'を', 'が'], answer: 'は', hint: 'は markiert das Thema.' },
-    { kind: 'tf', emoji: 'mountain', jp: 'これは山です。', prompt: 'Stimmt die Aussage zum Bild?', answer: true },
+    { kind: 'trace', char: '川', reading: 'かわ', de: 'Fluss' },
     { kind: 'story', emoji: 'river', text: 'Du benennst, was du siehst – Berg, Fluss, Himmel. Die fremde Welt wird langsam deine.' },
   ] },
   { id: 'c4', title: 'Begegnungen', steps: [
     { kind: 'story', emoji: 'dog', text: 'Auf dem Wanderweg begegnest du Tieren – und kantigeren Zeichen: Katakana, für Wörter aus aller Welt.' },
-    { kind: 'tap', prompt: 'Welches Bild zeigt einen 犬 (Hund)?', options: ['dog', 'cat', 'fish'], answer: 'dog' },
+    { kind: 'intro', emoji: 'dog', jp: '犬', reading: 'いぬ', de: 'Hund' },
+    { kind: 'intro', emoji: 'fish', jp: '魚', reading: 'さかな', de: 'Fisch' },
+    { kind: 'pic', emoji: 'dog', options: ['犬', '猫', '魚'], answer: '犬', de: 'Hund' },
+    { kind: 'pic_choice', jp: '魚', options: ['fish', 'dog', 'cat'], answer: 'fish', de: 'Fisch' },
     { kind: 'sign', sign: 'コーヒー', prompt: 'An einem Automaten: コーヒー. Das ist…', options: ['Kaffee', 'Tee', 'Milch'], answer: 'Kaffee' },
     { kind: 'build', prompt: 'Bilde: „Der Hund rennt."', tiles: ['犬', 'が', '走ります'], answer: ['犬', 'が', '走ります'], tr: '犬が走ります。' },
     { kind: 'gap', text: '魚＿食べます。', prompt: 'Welche Partikel markiert das Objekt?', options: ['を', 'が', 'に'], answer: 'を', hint: 'を markiert das Objekt.' },
-    { kind: 'dialog', emoji: 'cat', line: '猫が好きですか？', prompt: 'Jemand fragt dich. Du magst Katzen. Antworte:', options: ['はい、好きです。', 'いいえ。', 'さようなら。'], answer: 'はい、好きです。', tr: 'Ja, ich mag sie.' },
+    { kind: 'story', emoji: 'fish', text: 'Am Fluss winkt dir ein Fischer zu. Du verstehst immer mehr von dem, was um dich herum geschieht.' },
   ] },
   { id: 'c5', title: 'Der Aufstieg', steps: [
     { kind: 'story', emoji: 'person', text: 'Der Aufstieg wird hart. Du spürst jeden Muskel – und übst die Wörter dafür.' },
-    { kind: 'tap', prompt: 'Tippe auf das 目 (Auge).', options: ['eye', 'mouth', 'hand'], answer: 'eye' },
-    { kind: 'listen', say: 'て', prompt: '„て" – welcher Körperteil?', options: [{ label: 'Hand', emoji: 'hand' }, { label: 'Auge', emoji: 'eye' }, { label: 'Ohr', emoji: 'ear' }], answer: 'Hand' },
+    { kind: 'intro', emoji: 'eye', jp: '目', reading: 'め', de: 'Auge' },
+    { kind: 'intro', emoji: 'hand', jp: '手', reading: 'て', de: 'Hand' },
+    { kind: 'pic', emoji: 'eye', options: ['目', '手', '耳'], answer: '目', de: 'Auge' },
+    { kind: 'audio', say: 'て', options: ['手', '目', '耳'], answer: '手', de: 'Hand' },
+    { kind: 'trace', char: '目', reading: 'め', de: 'Auge' },
     { kind: 'build', prompt: 'Bilde: „Ich trinke Wasser."', tiles: ['水', 'を', '飲みます'], answer: ['水', 'を', '飲みます'], tr: '水を飲みます。' },
     { kind: 'gap', text: '家＿帰ります。', prompt: 'Welche Partikel zeigt das Ziel (wohin)?', options: ['に', 'で', 'を'], answer: 'に', hint: 'に zeigt Ziel/Richtung.' },
-    { kind: 'tf', emoji: 'foot', jp: '足が痛いです。', prompt: 'Nach dem langen Aufstieg – passt der Satz?', answer: true },
     { kind: 'story', emoji: 'mountain', text: 'Erschöpft erreichst du eine Hütte. Morgen wartet der Gipfel.' },
   ] },
   { id: 'c6', title: 'Zum Gipfel', steps: [
     { kind: 'story', emoji: 'fuji', text: 'Der letzte Morgen. Vor dir ragt der berühmteste Berg Japans auf.' },
+    { kind: 'intro', emoji: 'japan', jp: '日本', reading: 'にほん', de: 'Japan' },
+    { kind: 'pic_choice', jp: '日本', options: ['japan', 'mountain', 'torii'], answer: 'japan', de: 'Japan' },
     { kind: 'build', prompt: 'Bilde: „Die Katze frisst den Fisch."', tiles: ['猫', 'が', '魚', 'を', '食べます'], answer: ['猫', 'が', '魚', 'を', '食べます'], tr: '猫が魚を食べます。' },
     { kind: 'gap', text: '星＿きれいです。', prompt: 'Welche Partikel markiert das Thema „die Sterne"?', options: ['は', 'を', 'が'], answer: 'は', hint: 'は markiert das Thema.' },
     { kind: 'dialog', emoji: 'person', line: '水を飲みますか？', prompt: 'Ein Mitwanderer fragt. Du hast Durst. Antworte höflich:', options: ['はい、飲みます。', 'いいえ、飲みません。', 'こんにちは。'], answer: 'はい、飲みます。', tr: 'Ja, ich trinke.' },
-    { kind: 'sign', sign: '日本', prompt: 'Auf einer Tafel am Gipfel steht 日本. Das bedeutet…', options: ['Japan', 'China', 'Korea'], answer: 'Japan' },
     { kind: 'tf', emoji: 'fuji', jp: '日本の山です。', prompt: 'Stimmt es zum Bild?', answer: true },
     { kind: 'story', emoji: 'party', text: 'Du stehst auf dem Gipfel. おめでとうございます！Du kannst dieses Land jetzt lesen, hören und sprechen. 旅は終わりました – eine neue Reise beginnt.' },
   ] },
@@ -2436,25 +2451,35 @@ function ChoiceStep({ step, onSolved }) {
   const [ans, setAns] = useState(null)
   const revealed = ans != null
 
+  // Abruf OHNE deutsche Krücke: pic (Bild→Schrift), audio (Audio→Schrift),
+  // pic_choice (Schrift→Bild). Deutsch erscheint NUR im Feedback nach der Antwort.
   let options, answerValue, emojiOptions = false
-  if (step.kind === 'tap') { options = step.options.map(n => ({ value: n, emoji: n })); answerValue = step.answer; emojiOptions = true }
-  else if (step.kind === 'listen') { options = step.options.map(o => ({ value: o.label, label: o.label, emoji: o.emoji })); answerValue = step.answer }
+  if (step.kind === 'pic_choice') { options = step.options.map(n => ({ value: n, emoji: n })); answerValue = step.answer; emojiOptions = true }
   else if (step.kind === 'tf') { options = [{ value: 'Ja' }, { value: 'Nein' }]; answerValue = step.answer ? 'Ja' : 'Nein' }
-  else { options = step.options.map(o => ({ value: o })); answerValue = step.answer }
+  else { options = step.options.map(o => ({ value: o })); answerValue = step.answer } // pic, audio, sign, dialog, gap
 
-  useEffect(() => { if (step.kind === 'listen') speak(step.say) }, []) // eslint-disable-line
+  const prompt = step.prompt || (step.kind === 'pic' ? 'Welches Wort passt?' : step.kind === 'audio' ? 'Was hörst du?' : step.kind === 'pic_choice' ? 'Welches Bild passt?' : '')
+
+  useEffect(() => { if (step.kind === 'audio') speak(step.say) }, []) // eslint-disable-line
 
   const choose = (v) => { if (revealed) return; setAns(v); if (v === answerValue) awardXp(XP_PER_CARD); onSolved() }
 
+  // Feedback-Glosse (Deutsch ERST hier): Schrift — „Bedeutung".
+  let gloss = ''
+  if (step.de) gloss = (step.jp || step.answer || '') + ' — „' + step.de + '"'
+  else if (step.tr) gloss = (step.line || step.sign || '') + ' — „' + step.tr + '"'
+
   return (
     <div style={{ textAlign: 'center' }}>
+      {step.kind === 'pic' && <div style={{ marginBottom: 14 }}><Emoji name={step.emoji} size={76} /></div>}
+      {step.kind === 'pic_choice' && <div style={{ fontSize: 42, fontFamily: "'Noto Serif JP', serif", color: C.sumi, marginBottom: 14 }}>{step.jp}</div>}
+      {step.kind === 'audio' && (
+        <button onClick={() => speak(step.say)} style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 50, width: 76, height: 76, fontSize: 32, cursor: 'pointer', margin: '0 auto 14px' }}>🔊</button>
+      )}
       {step.kind === 'sign' && (
         <div style={{ display: 'inline-block', background: '#1E4368', color: '#fff', borderRadius: 10, padding: '14px 26px', marginBottom: 14 }}>
           <span style={{ fontSize: 34, fontFamily: "'Noto Serif JP', serif" }}>{step.sign}</span>
         </div>
-      )}
-      {step.kind === 'listen' && (
-        <button onClick={() => speak(step.say)} style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 50, width: 76, height: 76, fontSize: 34, cursor: 'pointer', margin: '0 auto 14px' }}>🔊</button>
       )}
       {step.kind === 'dialog' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, textAlign: 'left' }}>
@@ -2478,12 +2503,13 @@ function ChoiceStep({ step, onSolved }) {
         </div>
       )}
 
-      <p style={{ fontWeight: 500, marginBottom: 14 }}>{step.prompt}</p>
+      {prompt && <p style={{ fontWeight: 500, marginBottom: 14, color: C.textMuted }}>{prompt}</p>}
 
       <div style={{ display: emojiOptions ? 'flex' : 'grid', gridTemplateColumns: step.kind === 'tf' ? '1fr 1fr' : '1fr', gap: 10, justifyContent: 'center' }}>
         {options.map(o => {
           const correct = o.value === answerValue, chosen = o.value === ans
           const bc = !revealed ? C.washiDark : correct ? C.matcha : chosen ? C.shu : C.washiDark
+          const isJa = /[぀-ヿ一-龯]/.test(o.value)
           return (
             <button key={o.value} onClick={() => choose(o.value)} disabled={revealed}
               style={{
@@ -2491,12 +2517,10 @@ function ChoiceStep({ step, onSolved }) {
                 background: !revealed ? '#fff' : correct ? `${C.matcha}20` : chosen ? `${C.shu}20` : '#fff',
                 cursor: revealed ? 'default' : 'pointer', flex: emojiOptions ? 1 : undefined,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                fontSize: /[぀-ヿ一-龯]/.test(o.value) ? 18 : 15,
-                fontFamily: /[぀-ヿ一-龯]/.test(o.value) ? "'Noto Serif JP', serif" : 'inherit',
+                fontSize: isJa ? 22 : 15, fontFamily: isJa ? "'Noto Serif JP', serif" : 'inherit',
                 fontWeight: 600, color: C.sumi,
               }}>
-              {o.emoji && <Emoji name={o.emoji} size={emojiOptions ? 52 : 26} />}
-              {!emojiOptions && <span>{o.label || o.value}</span>}
+              {o.emoji ? <Emoji name={o.emoji} size={52} /> : <span>{o.value}</span>}
             </button>
           )
         })}
@@ -2504,10 +2528,44 @@ function ChoiceStep({ step, onSolved }) {
 
       {revealed && (
         <p style={{ marginTop: 14, fontWeight: 600, color: ans === answerValue ? C.matcha : C.shu }}>
-          {ans === answerValue ? '✓ Richtig!' : `✗ Richtig: ${answerValue}`}
-          {step.tr && <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 4 }}>{step.line || step.sign} — „{step.tr}"</span>}
+          {ans === answerValue ? '✓ Richtig!' : (emojiOptions ? '✗ Leider falsch' : `✗ Richtig: ${answerValue}`)}
+          {gloss && <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 4 }}>{gloss}</span>}
         </p>
       )}
+    </div>
+  )
+}
+
+// Wort-Einführungskarte: Bild + Schrift + Lesung + Audio. Deutsch nur einmal.
+function IntroStep({ step }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '8px 0' }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.indigo, marginBottom: 12 }}>NEUES WORT</div>
+      <div style={{ width: 96, height: 96, borderRadius: 20, background: '#EAF0EA', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Emoji name={step.emoji} size={56} />
+      </div>
+      <div style={{ fontSize: 13, color: C.textMuted, marginTop: 12 }}>{step.reading}</div>
+      <div style={{ fontSize: 48, fontFamily: "'Noto Serif JP', serif", color: C.sumi, lineHeight: 1.1 }}>{step.jp}</div>
+      <button onClick={() => speak(step.reading || step.jp)}
+        style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6, background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, color: C.indigo, borderRadius: 20, padding: '7px 16px', fontSize: 14, cursor: 'pointer' }}>
+        🔊 Anhören
+      </button>
+      <div style={{ fontSize: 13, color: C.textMuted, paddingTop: 10, borderTop: `1px solid ${C.washiDark}`, maxWidth: 260, margin: '14px auto 0' }}>
+        Bedeutung: <strong style={{ color: C.sumi }}>{step.de}</strong>
+      </div>
+    </div>
+  )
+}
+
+// Nachzeichnen (produktiver Abruf): das Zeichen selbst auf die Fläche schreiben.
+function TraceStep({ step }) {
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <p style={{ fontWeight: 500, marginBottom: 4 }}>
+        Schreibe nach: <span style={{ fontFamily: "'Noto Serif JP', serif", fontSize: 24 }}>{step.char}</span>
+      </p>
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>{step.reading}{step.de ? ' · ' + step.de : ''}</p>
+      <DrawCanvas char={step.char} />
     </div>
   )
 }
@@ -2562,8 +2620,8 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
   const steps = chapter.steps
   const cur = steps[step]
   const total = steps.length
-  const isStory = cur.kind === 'story'
-  const canContinue = isStory || solved
+  const noGate = cur.kind === 'story' || cur.kind === 'intro' || cur.kind === 'trace'
+  const canContinue = noGate || solved
   const isLastStep = step === total - 1
   const progress = Math.round(((finished ? total : step) / total) * 100)
 
@@ -2578,13 +2636,17 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
         <p style={{ lineHeight: 1.6 }}>„{chapter.title}" – du hast das Gelernte angewendet und die Geschichte erlebt.</p>
       </div>
     )
-  } else if (isStory) {
+  } else if (cur.kind === 'story') {
     content = (
       <div style={{ textAlign: 'center', padding: '8px 0' }}>
         <Emoji name={cur.emoji} size={88} />
         <p style={{ fontSize: 16, color: C.sumi, lineHeight: 1.7, marginTop: 16 }}>{cur.text}</p>
       </div>
     )
+  } else if (cur.kind === 'intro') {
+    content = <IntroStep key={step} step={cur} />
+  } else if (cur.kind === 'trace') {
+    content = <TraceStep key={step} step={cur} />
   } else if (cur.kind === 'build') {
     content = <BuildStep key={step} step={cur} onSolved={() => setSolved(true)} />
   } else {
@@ -2610,7 +2672,7 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
           <Btn onClick={onComplete} style={{ width: '100%' }}>Abschließen ✓</Btn>
         ) : (
           <Btn onClick={advance} style={{ width: '100%', opacity: canContinue ? 1 : 0.5 }} variant={canContinue ? 'primary' : 'ghost'}>
-            {isStory ? 'Weiter →' : (isLastStep ? 'Kapitel abschließen →' : 'Weiter →')}
+            {noGate ? 'Weiter →' : (isLastStep ? 'Kapitel abschließen →' : 'Weiter →')}
           </Btn>
         )}
       </div>
