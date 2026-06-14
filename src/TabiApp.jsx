@@ -5,11 +5,12 @@ import { KANA_STROKES, STROKE_VIEWBOX } from './kanaStrokes.js'
 
 // Fortschritt (aus Firestore) für alle Screens verfügbar machen.
 const ProgressCtx = createContext({
-  progress: { completedLessons: [], completedWordBlocks: [], completedGrammar: [], xpByDate: {}, srs: {} },
+  progress: { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], xpByDate: {}, srs: {} },
   awardXp: async () => {},
   completeLesson: async () => {},
   completeWordBlock: async () => {},
   completeGrammar: async () => {},
+  completeChapter: async () => {},
   reviewCard: async () => {},
   reset: async () => {},
 })
@@ -19,6 +20,7 @@ const XP_PER_KANA = 10  // pro Zeichen in einer abgeschlossenen Lektion
 const XP_PER_CARD = 5   // pro wiederholter SRS-Karte / richtiger Übungsantwort
 const XP_PER_WORD = 15     // pro gelerntem Wort
 const XP_PER_GRAMMAR = 20  // pro gelerntem Grammatik-Thema
+const XP_PER_CHAPTER = 30  // Bonus pro abgeschlossenem Geschichts-Kapitel
 
 // Kana-Statistiken (als Funktionen, da LESSONS weiter unten definiert ist).
 function totalKanaCount() {
@@ -474,6 +476,25 @@ function srsItemInfo(key) {
   return { reading: d?.romaji, sub: d?.tip, isWord: false }
 }
 
+// ─── Twemoji-Grafiken (CC-BY, in public/twemoji/) ────────────────────────────
+// Name → Unicode-Codepoint; gerendert als <img> aus dem öffentlichen Ordner.
+const EMOJI = {
+  airplane: '2708', ship: '1f6a2', car: '1f697', train: '1f686', station: '1f689',
+  city: '1f3d9', mountain: '26f0', fuji: '1f5fb', wave: '1f30a', river: '1f3de',
+  water: '1f4a7', sun: '2600', tree: '1f332', tea: '1f375', coffee: '2615',
+  bread: '1f35e', map: '1f5fa', rain: '1f327', bird: '1f426', dog: '1f415',
+  cat: '1f431', fish: '1f41f', horse: '1f434', eye: '1f441', mouth: '1f444',
+  hand: '270b', foot: '1f9b6', ear: '1f442', house: '1f3e0', hotel: '1f3e8',
+  food: '1f374', taxi: '1f695', bus: '1f68c', torii: '26e9', oldwoman: '1f475',
+  person: '1f9cd', star: '2b50', night: '1f303', party: '1f389', japan: '1f5fe', hello: '1f44b',
+}
+function Emoji({ name, size = 48, style }) {
+  const cp = EMOJI[name]
+  if (!cp) return null
+  return <img src={`${import.meta.env.BASE_URL}twemoji/${cp}.svg`} width={size} height={size} alt=""
+    style={{ display: 'inline-block', verticalAlign: 'middle', ...style }} />
+}
+
 // ─── Tiny components ─────────────────────────────────────────────────────────
 
 function TabBar({ active, setActive }) {
@@ -525,206 +546,6 @@ function Btn({ children, onClick, variant = 'primary', style }) {
       padding: '12px 24px', fontSize: 15, fontWeight: 600,
       fontFamily: 'inherit', cursor: 'pointer', ...style,
     }}>{children}</button>
-  )
-}
-
-// Flache Illustrationen für die Geschichts-Szenen (viewBox 240×120).
-function storyArt(name) {
-  const wrap = (bg, kids) => (
-    <svg viewBox="0 0 240 120" width="100%" style={{ display: 'block' }} aria-hidden="true">
-      <rect width="240" height="120" fill={bg} />
-      {kids}
-    </svg>
-  )
-  switch (name) {
-    case 'airplane': return wrap('#DCE7EE', <>
-      <ellipse cx="55" cy="28" rx="22" ry="8" fill="#fff" opacity="0.8" />
-      <ellipse cx="186" cy="24" rx="18" ry="7" fill="#fff" opacity="0.8" />
-      <ellipse cx="120" cy="66" rx="68" ry="15" fill="#1E4368" />
-      <polygon points="118,66 168,42 150,66" fill="#16314D" />
-      <polygon points="118,70 150,96 108,74" fill="#16314D" />
-      <polygon points="58,66 42,52 66,62" fill="#1E4368" />
-      <circle cx="182" cy="66" r="6" fill="#DA4A38" />
-      <circle cx="96" cy="64" r="3" fill="#DCE7EE" /><circle cx="114" cy="64" r="3" fill="#DCE7EE" /><circle cx="132" cy="64" r="3" fill="#DCE7EE" /><circle cx="150" cy="64" r="3" fill="#DCE7EE" />
-    </>)
-    case 'station': return wrap('#DCE7EE', <>
-      <rect y="92" width="240" height="28" fill="#E6DEC9" />
-      <rect x="46" y="42" width="148" height="52" rx="6" fill="#5E8A6A" />
-      <rect x="46" y="42" width="148" height="15" fill="#4A7257" />
-      <text x="120" y="82" textAnchor="middle" fontSize="24" fontFamily="'Noto Serif JP', serif" fill="#fff">駅</text>
-      <rect x="150" y="60" width="36" height="28" rx="3" fill="#DCE7EE" />
-    </>)
-    case 'train': return wrap('#DCE7EE', <>
-      <rect y="98" width="240" height="6" fill="#9A8D6E" />
-      <rect x="34" y="40" width="172" height="58" rx="12" fill="#1E4368" />
-      <rect x="44" y="50" width="152" height="22" rx="4" fill="#DCE7EE" />
-      <rect x="34" y="40" width="16" height="58" rx="8" fill="#DA4A38" />
-      <circle cx="74" cy="102" r="7" fill="#3a3a38" /><circle cx="166" cy="102" r="7" fill="#3a3a38" />
-    </>)
-    case 'town': return wrap('#DCE7EE', <>
-      <rect y="92" width="240" height="28" fill="#CFE0C4" />
-      <rect x="34" y="58" width="44" height="36" fill="#EFE7D6" /><polygon points="30,58 56,38 82,58" fill="#DA4A38" /><rect x="50" y="74" width="12" height="20" fill="#8A6E4B" />
-      <rect x="100" y="50" width="44" height="44" fill="#E6DEC9" /><polygon points="96,50 122,30 148,50" fill="#1E4368" /><rect x="116" y="72" width="12" height="22" fill="#8A6E4B" />
-      <rect x="166" y="62" width="40" height="32" fill="#EFE7D6" /><polygon points="162,62 186,44 210,62" fill="#5E8A6A" />
-    </>)
-    case 'tea': return wrap('#EFEADF', <>
-      <ellipse cx="120" cy="104" rx="50" ry="7" fill="#D8CDB5" />
-      <path d="M88,64 h56 v14 a28,28 0 0 1 -56,0 z" fill="#fff" stroke="#C9BFA6" strokeWidth="2" />
-      <path d="M144,70 a13,13 0 0 1 0,22" fill="none" stroke="#C9BFA6" strokeWidth="4" />
-      <ellipse cx="116" cy="78" rx="20" ry="5" fill="#6E9A78" />
-      <path d="M104,56 q5,-8 0,-16 M120,56 q5,-8 0,-16 M136,56 q5,-8 0,-16" stroke="#B7AE97" strokeWidth="2.5" fill="none" />
-    </>)
-    case 'mountain': return wrap('#DCE7EE', <>
-      <rect y="92" width="240" height="28" fill="#CFE0C4" />
-      <polygon points="0,96 52,58 104,96" fill="#A8B6BC" />
-      <polygon points="58,96 120,28 182,96" fill="#8FA0A8" />
-      <polygon points="100,54 120,28 140,54 130,58 120,50 110,58" fill="#F4F2EC" />
-    </>)
-    case 'sky': return wrap('#DCE7EE', <>
-      <circle cx="192" cy="34" r="20" fill="#E8B84B" />
-      <ellipse cx="70" cy="48" rx="34" ry="13" fill="#fff" opacity="0.9" />
-      <ellipse cx="128" cy="76" rx="40" ry="14" fill="#fff" opacity="0.75" />
-    </>)
-    case 'path': return wrap('#CFE0C4', <>
-      <path d="M96,120 C140,95 80,80 120,55 C150,35 100,25 120,0" fill="none" stroke="#E0D6BC" strokeWidth="22" strokeLinecap="round" />
-      <path d="M96,120 C140,95 80,80 120,55 C150,35 100,25 120,0" fill="none" stroke="#C2B894" strokeWidth="2" strokeDasharray="2 8" />
-      <polygon points="44,66 30,96 58,96" fill="#5E8A6A" /><rect x="42" y="96" width="4" height="10" fill="#7A6242" />
-      <polygon points="200,72 188,98 212,98" fill="#5E8A6A" /><rect x="198" y="98" width="4" height="9" fill="#7A6242" />
-    </>)
-    case 'bird': return wrap('#DCE7EE', <>
-      <path d="M60,40 q12,-12 24,0 q12,-12 24,0" fill="none" stroke="#1E4368" strokeWidth="3.5" strokeLinecap="round" />
-      <ellipse cx="138" cy="74" rx="26" ry="17" fill="#5E8A6A" />
-      <circle cx="162" cy="64" r="10" fill="#5E8A6A" />
-      <circle cx="165" cy="62" r="2" fill="#211F1B" />
-      <polygon points="170,63 184,66 170,70" fill="#E8B84B" />
-      <polygon points="128,72 106,60 126,82" fill="#4A7257" />
-    </>)
-    case 'torii': return wrap('#DCE7EE', <>
-      <rect y="96" width="240" height="24" fill="#CFE0C4" />
-      <rect x="80" y="40" width="10" height="60" fill="#DA4A38" />
-      <rect x="150" y="40" width="10" height="60" fill="#DA4A38" />
-      <rect x="64" y="32" width="112" height="11" fill="#B23A2B" />
-      <rect x="74" y="48" width="92" height="7" fill="#DA4A38" />
-    </>)
-    case 'coffee': return wrap('#EFEADF', <>
-      <rect x="84" y="56" width="62" height="46" rx="6" fill="#fff" stroke="#C9BFA6" strokeWidth="2" />
-      <path d="M146,64 a14,14 0 0 1 0,24" fill="none" stroke="#C9BFA6" strokeWidth="4" />
-      <rect x="90" y="62" width="50" height="14" rx="3" fill="#6F4E37" />
-      <path d="M100,50 q5,-8 0,-16 M120,50 q5,-8 0,-16" stroke="#B7AE97" strokeWidth="2.5" fill="none" />
-    </>)
-    case 'car': return wrap('#DCE7EE', <>
-      <rect y="96" width="240" height="24" fill="#9A8D6E" />
-      <path d="M64,90 v-22 q0,-6 6,-6 h16 l14,-16 q3,-4 8,-4 h28 q5,0 8,4 l12,16 h14 q6,0 6,6 v22 z" fill="#DA4A38" />
-      <rect x="96" y="50" width="44" height="16" rx="3" fill="#DCE7EE" />
-      <circle cx="92" cy="92" r="11" fill="#2c2c2a" /><circle cx="162" cy="92" r="11" fill="#2c2c2a" />
-    </>)
-    case 'river': return wrap('#CFE0C4', <>
-      <path d="M0,36 q60,-12 120,0 t120,0 v22 q-60,12 -120,0 t-120,0 z" fill="#7FB0D6" />
-      <path d="M0,58 q60,-12 120,0 t120,0 v26 q-60,12 -120,0 t-120,0 z" fill="#5E97C2" />
-      <path d="M30,50 q8,-3 16,0 M120,64 q8,-3 16,0 M186,50 q8,-3 16,0" stroke="#fff" strokeWidth="2" fill="none" opacity="0.7" />
-    </>)
-    case 'animal': return wrap('#CFE0C4', <>
-      <rect y="100" width="240" height="20" fill="#BBD0B4" />
-      <ellipse cx="116" cy="78" rx="40" ry="19" fill="#B98B5E" />
-      <circle cx="158" cy="62" r="16" fill="#B98B5E" />
-      <polygon points="150,50 145,36 159,48" fill="#9A7048" />
-      <circle cx="163" cy="60" r="2.4" fill="#211F1B" />
-      <circle cx="171" cy="66" r="3" fill="#211F1B" />
-      <rect x="90" y="92" width="5" height="14" fill="#9A7048" /><rect x="138" y="92" width="5" height="14" fill="#9A7048" />
-      <path d="M78,72 q-16,-6 -10,8" fill="none" stroke="#B98B5E" strokeWidth="6" strokeLinecap="round" />
-    </>)
-    case 'fish': return wrap('#7FB0D6', <>
-      <ellipse cx="120" cy="60" rx="44" ry="24" fill="#DA8A4A" />
-      <polygon points="76,60 50,44 50,76" fill="#C2702F" />
-      <circle cx="150" cy="54" r="3.4" fill="#211F1B" />
-      <path d="M118,36 q8,-12 18,-6" fill="none" stroke="#C2702F" strokeWidth="4" />
-      <circle cx="58" cy="30" r="4" fill="#fff" opacity="0.6" /><circle cx="46" cy="40" r="2.6" fill="#fff" opacity="0.6" />
-    </>)
-    case 'body': return wrap('#EFEADF', <>
-      <circle cx="120" cy="34" r="13" fill="#E8C9A0" />
-      <rect x="108" y="48" width="24" height="40" rx="8" fill="#1E4368" />
-      <rect x="112" y="86" width="8" height="28" fill="#5A4632" /><rect x="120" y="86" width="8" height="28" fill="#5A4632" />
-      <rect x="97" y="52" width="8" height="30" rx="4" fill="#1E4368" /><rect x="135" y="52" width="8" height="30" rx="4" fill="#1E4368" />
-    </>)
-    case 'night': return wrap('#2A3A55', <>
-      <circle cx="192" cy="34" r="15" fill="#F4F2EC" />
-      <circle cx="186" cy="30" r="13" fill="#2A3A55" />
-      <g fill="#E8B84B">
-        <circle cx="40" cy="32" r="2.4" /><circle cx="78" cy="54" r="1.8" /><circle cx="110" cy="28" r="2.2" /><circle cx="150" cy="60" r="1.8" /><circle cx="64" cy="80" r="2" /><circle cx="130" cy="84" r="2.2" /><circle cx="30" cy="64" r="1.6" />
-      </g>
-    </>)
-    case 'home': return wrap('#DCE7EE', <>
-      <rect y="96" width="240" height="24" fill="#CFE0C4" />
-      <rect x="86" y="56" width="68" height="40" fill="#EFE7D6" />
-      <polygon points="78,56 120,28 162,56" fill="#DA4A38" />
-      <rect x="112" y="72" width="18" height="24" fill="#8A6E4B" />
-      <rect x="94" y="62" width="14" height="12" fill="#7FB0D6" />
-    </>)
-    default: return wrap('#EFEADF', <>
-      <rect x="60" y="34" width="120" height="64" rx="6" fill="#fff" stroke="#C9BFA6" strokeWidth="2" />
-      <path d="M76,52 h88 M76,66 h88 M76,80 h60" stroke="#C9BFA6" strokeWidth="3" />
-    </>)
-  }
-}
-
-// Eine aktiv erlebte Geschichts-Szene (am Lektionsende): Erzählung + Illustration
-// + kleine Übersetzungsfrage. Baut auf Gelerntem auf und wendet es an.
-function StoryScene({ id }) {
-  const { awardXp } = useContext(ProgressCtx)
-  const s = STORY[id]
-  const [ans, setAns] = useState(null)
-  if (!s) return null
-  const sc = s.scene
-  const revealed = ans != null
-  const choose = (o) => { if (revealed || !sc) return; setAns(o); if (o === sc.answer) awardXp(XP_PER_CARD) }
-
-  return (
-    <div style={{
-      background: '#fff', borderRadius: 12, padding: '14px 16px', marginTop: 18,
-      borderLeft: `4px solid ${C.shu}`, boxShadow: '0 1px 4px rgba(33,31,27,0.08)', textAlign: 'left',
-    }}>
-      <div style={{ fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>📖 DEINE REISE</div>
-      <p style={{ fontSize: 14, color: C.sumi, lineHeight: 1.65, margin: 0 }}>{s.de}</p>
-      {sc ? (
-        <>
-          <div style={{ marginTop: 10, border: `1px solid ${C.washiDark}`, borderRadius: 8, overflow: 'hidden' }}>
-            {storyArt(sc.art)}
-          </div>
-          <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <div>
-              <span style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{sc.ask}</span>
-              {sc.kana && sc.kana !== sc.ask && <span style={{ fontSize: 12, color: C.textMuted, marginLeft: 8 }}>{sc.kana}</span>}
-            </div>
-            <button onClick={() => speak(sc.ask)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🔊</button>
-          </div>
-          <p style={{ fontSize: 13, color: C.textMuted, margin: '8px 0' }}>Was bedeutet das?</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-            {sc.options.map(o => {
-              const correct = o === sc.answer, chosen = o === ans
-              return (
-                <button key={o} onClick={() => choose(o)} disabled={revealed}
-                  style={{
-                    padding: '10px 12px', borderRadius: 8, border: '2px solid', textAlign: 'left',
-                    borderColor: !revealed ? C.washiDark : correct ? C.matcha : chosen ? C.shu : C.washiDark,
-                    background: !revealed ? '#fff' : correct ? `${C.matcha}20` : chosen ? `${C.shu}20` : '#fff',
-                    fontSize: 14, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
-                  }}>{o}</button>
-              )
-            })}
-          </div>
-          {revealed && (
-            <p style={{ marginTop: 8, fontSize: 13, color: ans === sc.answer ? C.matcha : C.shu, fontWeight: 600 }}>
-              {ans === sc.answer ? '✓ Richtig!' : `✗ ${sc.ask} = ${sc.answer}`}
-            </p>
-          )}
-        </>
-      ) : s.jp && (
-        <div style={{ marginTop: 10, background: `${C.indigo}0D`, borderRadius: 8, padding: 10 }}>
-          <span style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{s.jp}</span>
-          <div style={{ fontSize: 14, color: C.indigo }}>„{s.tr}"</div>
-        </div>
-      )}
-    </div>
   )
 }
 
@@ -1033,7 +854,6 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
             }}>{k}</span>
           ))}
         </div>
-        <StoryScene id={lesson.id} />
       </div>
     )
   } else {
@@ -1691,7 +1511,6 @@ function BlockCourse({ block, onComplete, onClose }) {
         <p style={{ lineHeight: 1.6, marginBottom: 16 }}>
           Du hast <strong>{words.length} Wörter</strong> gelernt. Die Kanji kommen ab jetzt in deinen Wiederholungen vor.
         </p>
-        <StoryScene id={block.id} />
       </div>
     )
   } else {
@@ -1980,7 +1799,6 @@ function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
           Du hast <strong>{topic.title}</strong> verstanden und angewendet.
         </p>
         <div style={{ fontSize: 48, fontFamily: "'Noto Serif JP', serif", color: C.shu }}>{topic.glyph}</div>
-        <StoryScene id={topic.id} />
       </div>
     )
   }
@@ -2396,6 +2214,68 @@ function FortschrittScreen() {
   )
 }
 
+// ─── Geschichts-Kapitel (eine Episode pro Welt) ──────────────────────────────
+// Jedes Kapitel ist eine kleine erlebte Episode mit mehreren, abwechslungsreichen
+// Übungen, die NUR das Bereits-Gelernte dieser Welt anwenden. Step-Typen:
+//   story  – Erzählbeat (Text + großes Bild)
+//   tap    – richtiges Bild wählen        sign – Schild/Zeichen deuten
+//   listen – Audio hören & wählen         tf   – wahr/falsch zum Bild
+//   gap    – Lücke (Partikel/Wort) füllen dialog – Figur antworten
+//   build  – Satz aus Wort-Kacheln bauen
+const CHAPTERS = [
+  { id: 'c1', title: 'Ankunft in Japan', steps: [
+    { kind: 'story', emoji: 'airplane', text: 'Dein Flugzeug setzt zur Landung an. Unter dir liegt Japan. Du atmest tief durch – die Reise beginnt.' },
+    { kind: 'tap', prompt: 'Du steigst aus. Welches Bild zeigt dein 飛行機 (Flugzeug)?', options: ['airplane', 'ship', 'train'], answer: 'airplane' },
+    { kind: 'sign', sign: '駅', prompt: 'Du folgst einem Schild. 駅 bedeutet…', options: ['Bahnhof', 'Ausgang', 'Toilette'], answer: 'Bahnhof' },
+    { kind: 'listen', say: 'でんしゃ', prompt: 'Eine Durchsage. Was kommt gleich? (Hör zu)', options: [{ label: 'Zug', emoji: 'train' }, { label: 'Bus', emoji: 'bus' }, { label: 'Taxi', emoji: 'taxi' }], answer: 'Zug' },
+    { kind: 'dialog', emoji: 'oldwoman', line: 'こんにちは。', prompt: 'Eine alte Frau grüßt dich. Was antwortest du?', options: ['こんにちは。', 'さようなら。', 'ありがとう。'], answer: 'こんにちは。', tr: 'Hallo / Guten Tag.' },
+    { kind: 'story', emoji: 'train', text: 'Du findest den richtigen Zug. Die Türen schließen mit einer höflichen Melodie. Deine Reise rollt los.' },
+  ] },
+  { id: 'c2', title: 'Durch die Stadt', steps: [
+    { kind: 'story', emoji: 'city', text: 'Der Zug hält in einer kleinen Stadt. Du schlenderst durch enge Gassen voller Schilder.' },
+    { kind: 'tap', prompt: 'Welches Bild zeigt einen 山 (Berg)?', options: ['mountain', 'wave', 'city'], answer: 'mountain' },
+    { kind: 'sign', sign: 'お茶', prompt: 'Vor einem Lädchen steht お茶. Das ist…', options: ['Tee', 'Wasser', 'Reis'], answer: 'Tee' },
+    { kind: 'listen', say: 'そら', prompt: 'Du schaust hoch. „そら" – was bedeutet das?', options: [{ label: 'Himmel', emoji: 'sun' }, { label: 'Meer', emoji: 'wave' }, { label: 'Wald', emoji: 'tree' }], answer: 'Himmel' },
+    { kind: 'dialog', emoji: 'person', line: 'いらっしゃいませ！', prompt: 'Der Händler begrüßt dich. Du möchtest Tee. Was sagst du?', options: ['お茶、おねがいします。', 'さようなら。', 'こんばんは。'], answer: 'お茶、おねがいします。', tr: 'Tee, bitte.' },
+    { kind: 'story', emoji: 'tea', text: 'Mit einer Tasse Tee in der Hand verlässt du die Stadt. Vor dir: grüne Hügel.' },
+  ] },
+  { id: 'c3', title: 'In die Natur', steps: [
+    { kind: 'story', emoji: 'mountain', text: 'Der Weg führt in die Berge. Ein Fluss glitzert im Tal, der Himmel ist weit.' },
+    { kind: 'tap', prompt: 'Tippe auf das Bild für 川 (Fluss).', options: ['river', 'mountain', 'water'], answer: 'river' },
+    { kind: 'build', prompt: 'Bilde den Satz: „Das ist ein Berg."', tiles: ['これ', 'は', '山', 'です'], answer: ['これ', 'は', '山', 'です'], tr: 'これは山です。' },
+    { kind: 'gap', text: 'これ＿山です。', prompt: 'Welche Partikel markiert das Thema?', options: ['は', 'を', 'が'], answer: 'は', hint: 'は markiert das Thema.' },
+    { kind: 'tf', emoji: 'mountain', jp: 'これは山です。', prompt: 'Stimmt die Aussage zum Bild?', answer: true },
+    { kind: 'story', emoji: 'river', text: 'Du benennst, was du siehst – Berg, Fluss, Himmel. Die fremde Welt wird langsam deine.' },
+  ] },
+  { id: 'c4', title: 'Begegnungen', steps: [
+    { kind: 'story', emoji: 'dog', text: 'Auf dem Wanderweg begegnest du Tieren – und kantigeren Zeichen: Katakana, für Wörter aus aller Welt.' },
+    { kind: 'tap', prompt: 'Welches Bild zeigt einen 犬 (Hund)?', options: ['dog', 'cat', 'fish'], answer: 'dog' },
+    { kind: 'sign', sign: 'コーヒー', prompt: 'An einem Automaten: コーヒー. Das ist…', options: ['Kaffee', 'Tee', 'Milch'], answer: 'Kaffee' },
+    { kind: 'build', prompt: 'Bilde: „Der Hund rennt."', tiles: ['犬', 'が', '走ります'], answer: ['犬', 'が', '走ります'], tr: '犬が走ります。' },
+    { kind: 'gap', text: '魚＿食べます。', prompt: 'Welche Partikel markiert das Objekt?', options: ['を', 'が', 'に'], answer: 'を', hint: 'を markiert das Objekt.' },
+    { kind: 'dialog', emoji: 'cat', line: '猫が好きですか？', prompt: 'Jemand fragt dich. Du magst Katzen. Antworte:', options: ['はい、好きです。', 'いいえ。', 'さようなら。'], answer: 'はい、好きです。', tr: 'Ja, ich mag sie.' },
+  ] },
+  { id: 'c5', title: 'Der Aufstieg', steps: [
+    { kind: 'story', emoji: 'person', text: 'Der Aufstieg wird hart. Du spürst jeden Muskel – und übst die Wörter dafür.' },
+    { kind: 'tap', prompt: 'Tippe auf das 目 (Auge).', options: ['eye', 'mouth', 'hand'], answer: 'eye' },
+    { kind: 'listen', say: 'て', prompt: '„て" – welcher Körperteil?', options: [{ label: 'Hand', emoji: 'hand' }, { label: 'Auge', emoji: 'eye' }, { label: 'Ohr', emoji: 'ear' }], answer: 'Hand' },
+    { kind: 'build', prompt: 'Bilde: „Ich trinke Wasser."', tiles: ['水', 'を', '飲みます'], answer: ['水', 'を', '飲みます'], tr: '水を飲みます。' },
+    { kind: 'gap', text: '家＿帰ります。', prompt: 'Welche Partikel zeigt das Ziel (wohin)?', options: ['に', 'で', 'を'], answer: 'に', hint: 'に zeigt Ziel/Richtung.' },
+    { kind: 'tf', emoji: 'foot', jp: '足が痛いです。', prompt: 'Nach dem langen Aufstieg – passt der Satz?', answer: true },
+    { kind: 'story', emoji: 'mountain', text: 'Erschöpft erreichst du eine Hütte. Morgen wartet der Gipfel.' },
+  ] },
+  { id: 'c6', title: 'Zum Gipfel', steps: [
+    { kind: 'story', emoji: 'fuji', text: 'Der letzte Morgen. Vor dir ragt der berühmteste Berg Japans auf.' },
+    { kind: 'build', prompt: 'Bilde: „Die Katze frisst den Fisch."', tiles: ['猫', 'が', '魚', 'を', '食べます'], answer: ['猫', 'が', '魚', 'を', '食べます'], tr: '猫が魚を食べます。' },
+    { kind: 'gap', text: '星＿きれいです。', prompt: 'Welche Partikel markiert das Thema „die Sterne"?', options: ['は', 'を', 'が'], answer: 'は', hint: 'は markiert das Thema.' },
+    { kind: 'dialog', emoji: 'person', line: '水を飲みますか？', prompt: 'Ein Mitwanderer fragt. Du hast Durst. Antworte höflich:', options: ['はい、飲みます。', 'いいえ、飲みません。', 'こんにちは。'], answer: 'はい、飲みます。', tr: 'Ja, ich trinke.' },
+    { kind: 'sign', sign: '日本', prompt: 'Auf einer Tafel am Gipfel steht 日本. Das bedeutet…', options: ['Japan', 'China', 'Korea'], answer: 'Japan' },
+    { kind: 'tf', emoji: 'fuji', jp: '日本の山です。', prompt: 'Stimmt es zum Bild?', answer: true },
+    { kind: 'story', emoji: 'party', text: 'Du stehst auf dem Gipfel. おめでとうございます！Du kannst dieses Land jetzt lesen, hören und sprechen. 旅は終わりました – eine neue Reise beginnt.' },
+  ] },
+]
+const CHAPTER_BY_ID = Object.fromEntries(CHAPTERS.map(c => [c.id, c]))
+
 // ─── Reise: der durchgehende Lernpfad (roter Faden) ──────────────────────────
 // EIN geordneter Pfad bündelt Kana, Wörter, Grammatik und Wiederholung in
 // „Welten". Jede Station startet die passende, bereits vorhandene Lektion.
@@ -2407,12 +2287,14 @@ const PATH = [
   { type: 'kana', id: 'h2' },
   { type: 'kana', id: 'h3' },
   { type: 'review', id: 'rv1' },
+  { type: 'chapter', id: 'c1' },
   { world: 'ひらがな・二', sub: 'Mehr Silben' },
   { type: 'kana', id: 'h4' },
   { type: 'kana', id: 'h5' },
   { type: 'kana', id: 'h6' },
   { type: 'kana', id: 'h7' },
   { type: 'review', id: 'rv2' },
+  { type: 'chapter', id: 'c2' },
   { world: 'ひらがな・三 & 言葉', sub: 'Hiragana fertig · erste Wörter' },
   { type: 'kana', id: 'h8' },
   { type: 'kana', id: 'h9' },
@@ -2421,6 +2303,7 @@ const PATH = [
   { type: 'grammar', id: 'g1' },
   { type: 'grammar', id: 'g2' },
   { type: 'review', id: 'rv3' },
+  { type: 'chapter', id: 'c3' },
   { world: 'カタカナ・一', sub: 'Die zweite Schrift' },
   { type: 'kana', id: 'k1' },
   { type: 'kana', id: 'k2' },
@@ -2431,6 +2314,7 @@ const PATH = [
   { type: 'grammar', id: 'g3' },
   { type: 'grammar', id: 'g4' },
   { type: 'review', id: 'rv4' },
+  { type: 'chapter', id: 'c4' },
   { world: 'カタカナ・二', sub: 'Katakana fertig' },
   { type: 'kana', id: 'k6' },
   { type: 'kana', id: 'k7' },
@@ -2441,12 +2325,14 @@ const PATH = [
   { type: 'grammar', id: 'g5' },
   { type: 'grammar', id: 'g6' },
   { type: 'review', id: 'rv5' },
+  { type: 'chapter', id: 'c5' },
   { world: '文を作る', sub: 'Sätze bauen' },
   { type: 'word', id: 'wb4' },
   { type: 'grammar', id: 'g7' },
   { type: 'grammar', id: 'g8' },
   { type: 'grammar', id: 'g9' },
   { type: 'grammar', id: 'g10' },
+  { type: 'chapter', id: 'c6' },
   { type: 'goal', id: 'fuji' },
 ]
 
@@ -2512,12 +2398,14 @@ function isNodeDone(node, progress) {
   if (node.type === 'kana') return (progress.completedLessons || []).includes(node.id)
   if (node.type === 'word') return (progress.completedWordBlocks || []).includes(node.id)
   if (node.type === 'grammar') return (progress.completedGrammar || []).includes(node.id)
+  if (node.type === 'chapter') return (progress.completedChapters || []).includes(node.id)
   return false
 }
 function pathNodeMeta(node) {
   if (node.type === 'kana') { const l = LESSONS.find(x => x.id === node.id); return { face: l.kana[0], label: l.title, kind: l.script } }
   if (node.type === 'word') { const b = WORD_BLOCKS.find(x => x.id === node.id); return { face: b.words[0].kanji, label: b.title, kind: 'Wörter' } }
   if (node.type === 'grammar') { const g = GRAMMAR.find(x => x.id === node.id); return { face: g.glyph, label: g.title, kind: 'Grammatik' } }
+  if (node.type === 'chapter') { const c = CHAPTER_BY_ID[node.id]; return { face: '物', label: c ? c.title : 'Geschichte', kind: 'Kapitel' } }
   if (node.type === 'review') return { face: '復', label: 'Wiederholung', kind: 'SRS' }
   return { face: '富', label: 'Gipfel', kind: 'Ziel' }
 }
@@ -2538,6 +2426,196 @@ const STATE_PALETTE = {
   current: ['#DA4A38', '#B23A2B'],
   review: ['#E8A020', '#BE8316'],
   locked: ['#E0DAC8', '#C7BFA9'],
+}
+
+// ─── Geschichts-Kapitel: Übungs-Schritte + Player ────────────────────────────
+
+// Auswahl-Übung (deckt tap/sign/listen/dialog/gap/tf ab): Reiz + Optionen + Auflösung.
+function ChoiceStep({ step, onSolved }) {
+  const { awardXp } = useContext(ProgressCtx)
+  const [ans, setAns] = useState(null)
+  const revealed = ans != null
+
+  let options, answerValue, emojiOptions = false
+  if (step.kind === 'tap') { options = step.options.map(n => ({ value: n, emoji: n })); answerValue = step.answer; emojiOptions = true }
+  else if (step.kind === 'listen') { options = step.options.map(o => ({ value: o.label, label: o.label, emoji: o.emoji })); answerValue = step.answer }
+  else if (step.kind === 'tf') { options = [{ value: 'Ja' }, { value: 'Nein' }]; answerValue = step.answer ? 'Ja' : 'Nein' }
+  else { options = step.options.map(o => ({ value: o })); answerValue = step.answer }
+
+  useEffect(() => { if (step.kind === 'listen') speak(step.say) }, []) // eslint-disable-line
+
+  const choose = (v) => { if (revealed) return; setAns(v); if (v === answerValue) awardXp(XP_PER_CARD); onSolved() }
+
+  return (
+    <div style={{ textAlign: 'center' }}>
+      {step.kind === 'sign' && (
+        <div style={{ display: 'inline-block', background: '#1E4368', color: '#fff', borderRadius: 10, padding: '14px 26px', marginBottom: 14 }}>
+          <span style={{ fontSize: 34, fontFamily: "'Noto Serif JP', serif" }}>{step.sign}</span>
+        </div>
+      )}
+      {step.kind === 'listen' && (
+        <button onClick={() => speak(step.say)} style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 50, width: 76, height: 76, fontSize: 34, cursor: 'pointer', margin: '0 auto 14px' }}>🔊</button>
+      )}
+      {step.kind === 'dialog' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, textAlign: 'left' }}>
+          <Emoji name={step.emoji} size={48} />
+          <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 12, padding: '10px 14px', flex: 1 }}>
+            <span style={{ fontSize: 20, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{step.line}</span>
+          </div>
+        </div>
+      )}
+      {step.kind === 'tf' && (
+        <div style={{ marginBottom: 12 }}>
+          <Emoji name={step.emoji} size={72} />
+          <div style={{ fontSize: 26, fontFamily: "'Noto Serif JP', serif", color: C.sumi, marginTop: 8 }}>{step.jp}</div>
+        </div>
+      )}
+      {step.kind === 'gap' && (
+        <div style={{ fontSize: 28, fontFamily: "'Noto Serif JP', serif", color: C.sumi, marginBottom: 12 }}>
+          {step.text.split('＿').map((part, i, arr) => (
+            <span key={i}>{part}{i < arr.length - 1 && <span style={{ display: 'inline-block', minWidth: 34, borderBottom: `2px solid ${C.shu}`, color: C.shu }}>＿</span>}</span>
+          ))}
+        </div>
+      )}
+
+      <p style={{ fontWeight: 500, marginBottom: 14 }}>{step.prompt}</p>
+
+      <div style={{ display: emojiOptions ? 'flex' : 'grid', gridTemplateColumns: step.kind === 'tf' ? '1fr 1fr' : '1fr', gap: 10, justifyContent: 'center' }}>
+        {options.map(o => {
+          const correct = o.value === answerValue, chosen = o.value === ans
+          const bc = !revealed ? C.washiDark : correct ? C.matcha : chosen ? C.shu : C.washiDark
+          return (
+            <button key={o.value} onClick={() => choose(o.value)} disabled={revealed}
+              style={{
+                padding: emojiOptions ? 10 : '12px 14px', borderRadius: 10, border: `2px solid ${bc}`,
+                background: !revealed ? '#fff' : correct ? `${C.matcha}20` : chosen ? `${C.shu}20` : '#fff',
+                cursor: revealed ? 'default' : 'pointer', flex: emojiOptions ? 1 : undefined,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                fontSize: /[぀-ヿ一-龯]/.test(o.value) ? 18 : 15,
+                fontFamily: /[぀-ヿ一-龯]/.test(o.value) ? "'Noto Serif JP', serif" : 'inherit',
+                fontWeight: 600, color: C.sumi,
+              }}>
+              {o.emoji && <Emoji name={o.emoji} size={emojiOptions ? 52 : 26} />}
+              {!emojiOptions && <span>{o.label || o.value}</span>}
+            </button>
+          )
+        })}
+      </div>
+
+      {revealed && (
+        <p style={{ marginTop: 14, fontWeight: 600, color: ans === answerValue ? C.matcha : C.shu }}>
+          {ans === answerValue ? '✓ Richtig!' : `✗ Richtig: ${answerValue}`}
+          {step.tr && <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 4 }}>{step.line || step.sign} — „{step.tr}"</span>}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// Satzbau-Übung: Wort-Kacheln in die richtige Reihenfolge tippen.
+function BuildStep({ step, onSolved }) {
+  const { awardXp } = useContext(ProgressCtx)
+  const [pool, setPool] = useState(() => shuffled(step.tiles.map((t, i) => ({ t, id: i }))))
+  const [line, setLine] = useState([])
+  const [result, setResult] = useState(null)
+
+  const add = (tile) => { if (result != null) return; setPool(p => p.filter(x => x.id !== tile.id)); setLine(l => [...l, tile]) }
+  const back = (tile) => { if (result != null) return; setLine(l => l.filter(x => x.id !== tile.id)); setPool(p => [...p, tile]) }
+  const check = () => { const ok = line.map(x => x.t).join('') === step.answer.join(''); setResult(ok); if (ok) awardXp(XP_PER_CARD); onSolved() }
+
+  const tileStyle = (filled) => ({
+    padding: '8px 12px', borderRadius: 8, border: `2px solid ${filled ? C.indigo : C.washiDark}`,
+    background: filled ? `${C.indigo}10` : '#fff', fontSize: 20, fontFamily: "'Noto Serif JP', serif",
+    color: C.sumi, cursor: result != null ? 'default' : 'pointer',
+  })
+
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <p style={{ fontWeight: 500, marginBottom: 14 }}>{step.prompt}</p>
+      <div style={{ minHeight: 52, border: `2px dashed ${C.washiDark}`, borderRadius: 10, padding: 8, marginBottom: 14, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
+        {line.length === 0 && <span style={{ color: C.textMuted, fontSize: 13 }}>Tippe die Wörter der Reihe nach an</span>}
+        {line.map(tile => <button key={tile.id} onClick={() => back(tile)} style={tileStyle(true)}>{tile.t}</button>)}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 14 }}>
+        {pool.map(tile => <button key={tile.id} onClick={() => add(tile)} style={tileStyle(false)}>{tile.t}</button>)}
+      </div>
+      {result == null ? (
+        <Btn onClick={check} variant={line.length === step.tiles.length ? 'primary' : 'ghost'} style={{ width: '100%', opacity: line.length === step.tiles.length ? 1 : 0.5 }}>
+          Prüfen
+        </Btn>
+      ) : (
+        <p style={{ fontWeight: 600, color: result ? C.matcha : C.shu }}>
+          {result ? '✓ Richtig!' : '✗ Nicht ganz'}
+          <span style={{ display: 'block', fontWeight: 400, fontSize: 14, color: C.sumi, marginTop: 4, fontFamily: "'Noto Serif JP', serif" }}>{step.answer.join('')}</span>
+          <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted }}>„{step.tr}"</span>
+        </p>
+      )}
+    </div>
+  )
+}
+
+// Spielt ein Geschichts-Kapitel: Erzählbeats + abwechslungsreiche Übungen.
+function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
+  const [step, setStep] = useState(0)
+  const [solved, setSolved] = useState(false)
+  const [finished, setFinished] = useState(false)
+  const steps = chapter.steps
+  const cur = steps[step]
+  const total = steps.length
+  const isStory = cur.kind === 'story'
+  const canContinue = isStory || solved
+  const isLastStep = step === total - 1
+  const progress = Math.round(((finished ? total : step) / total) * 100)
+
+  const advance = () => { if (isLastStep) { setFinished(true); return } setStep(s => s + 1); setSolved(false) }
+
+  let content
+  if (finished) {
+    content = (
+      <div style={{ textAlign: 'center', padding: '8px 0' }}>
+        <Emoji name="party" size={72} />
+        <h2 style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.matcha, margin: '10px 0 8px' }}>Kapitel geschafft!</h2>
+        <p style={{ lineHeight: 1.6 }}>„{chapter.title}" – du hast das Gelernte angewendet und die Geschichte erlebt.</p>
+      </div>
+    )
+  } else if (isStory) {
+    content = (
+      <div style={{ textAlign: 'center', padding: '8px 0' }}>
+        <Emoji name={cur.emoji} size={88} />
+        <p style={{ fontSize: 16, color: C.sumi, lineHeight: 1.7, marginTop: 16 }}>{cur.text}</p>
+      </div>
+    )
+  } else if (cur.kind === 'build') {
+    content = <BuildStep key={step} step={cur} onSolved={() => setSolved(true)} />
+  } else {
+    content = <ChoiceStep key={step} step={cur} onSolved={() => setSolved(true)} />
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
+      <div style={{ padding: '12px 16px', background: '#fff', borderBottom: `1px solid ${C.washiDark}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted }}>✕</button>
+          <div style={{ flex: 1, height: 6, background: C.washiDark, borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: C.shu, borderRadius: 3, transition: 'width 0.3s' }} />
+          </div>
+          <span style={{ fontSize: 12, color: C.textMuted }}>📖 {chapter.title}</span>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>{content}</div>
+
+      <div style={{ padding: '16px 20px', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
+        {finished ? (
+          <Btn onClick={onComplete} style={{ width: '100%' }}>Abschließen ✓</Btn>
+        ) : (
+          <Btn onClick={advance} style={{ width: '100%', opacity: canContinue ? 1 : 0.5 }} variant={canContinue ? 'primary' : 'ghost'}>
+            {isStory ? 'Weiter →' : (isLastStep ? 'Kapitel abschließen →' : 'Weiter →')}
+          </Btn>
+        )}
+      </div>
+    </div>
+  )
 }
 
 // Das Reise-Tagebuch: alle bisher freigeschalteten Geschichts-Kapitel am Stück.
@@ -2585,7 +2663,7 @@ function StoryJournal({ progress, onClose }) {
 }
 
 function ReiseScreen() {
-  const { progress, completeLesson, completeWordBlock, completeGrammar } = useContext(ProgressCtx)
+  const { progress, completeLesson, completeWordBlock, completeGrammar, completeChapter } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
   const [showStory, setShowStory] = useState(false)
   const currentRef = useRef(null)
@@ -2657,6 +2735,14 @@ function ReiseScreen() {
         <div style={{ position: 'fixed', inset: 0, background: C.washi, zIndex: 100, overflow: 'auto' }}>
           <SRSQuiz onClose={close} />
         </div>
+      )
+    }
+    if (active.type === 'chapter') {
+      const chapter = CHAPTER_BY_ID[active.id]
+      const already = (progress.completedChapters || []).includes(active.id)
+      return (
+        <ChapterPlayer chapter={chapter} alreadyDone={already} onClose={close}
+          onComplete={() => { if (!already) completeChapter(active.id, XP_PER_CHAPTER); close() }} />
       )
     }
   }
@@ -2821,7 +2907,7 @@ function ReiseScreen() {
 export default function TabiApp() {
   const [tab, setTab] = useState('reise')
   const { user, logout } = useAuth()
-  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, reviewCard, scheduleNew, reset } = useProgress(user?.uid)
+  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, reviewCard, scheduleNew, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
 
   // Neu gelernte Kana/Wörter in den Wiederholungsplan einplanen (und bereits
@@ -2843,7 +2929,7 @@ export default function TabiApp() {
   }
 
   return (
-    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, completeWordBlock, completeGrammar, reviewCard, reset }}>
+    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, reviewCard, reset }}>
     <div style={{
       maxWidth: 480, margin: '0 auto', height: '100vh',
       display: 'flex', flexDirection: 'column', position: 'relative',

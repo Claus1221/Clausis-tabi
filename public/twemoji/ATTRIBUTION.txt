@@ -1,0 +1,4 @@
+Diese Icons stammen aus Twemoji (https://github.com/jdecked/twemoji).
+Grafiken: Copyright Twitter, Inc. und weitere Mitwirkende.
+Lizenz: CC-BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
+Verwendet in Tabi für die Reise-Geschichts-Szenen.

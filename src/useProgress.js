@@ -7,6 +7,7 @@ const DEFAULT = {
   completedLessons: [],    // IDs abgeschlossener Kana-Lektionen, z.B. ['h1','h2']
   completedWordBlocks: [], // IDs abgeschlossener Wort-Blöcke, z.B. ['wb1']
   completedGrammar: [],    // IDs gelesener Grammatik-Themen, z.B. ['g1']
+  completedChapters: [],   // IDs abgeschlossener Geschichts-Kapitel, z.B. ['c1']
   xpByDate: {},            // { 'YYYY-MM-DD': XP }  → XP heute, Streak, Wochenchart
   srs: {},                 // { '山': { ease, interval, reps, due } }  → Wiederholungsplan
 }
@@ -152,6 +153,16 @@ export function useProgress(uid) {
     )
   }
 
+  // Ein Geschichts-Kapitel als abgeschlossen markieren + XP gutschreiben.
+  const completeChapter = async (chapterId, xp = 0) => {
+    if (!uid || !db) return
+    await setDoc(
+      ref(),
+      { completedChapters: arrayUnion(chapterId), xpByDate: { [localDate()]: increment(xp) } },
+      { merge: true },
+    )
+  }
+
   // Eine SRS-Karte bewerten → nächste Fälligkeit per SM-2 berechnen & speichern.
   const reviewCard = async (key, quality) => {
     if (!uid || !db) return
@@ -178,8 +189,8 @@ export function useProgress(uid) {
   // Kompletter Reset auf 0 (überschreibt das Dokument).
   const reset = async () => {
     if (!uid || !db) return
-    await setDoc(ref(), { completedLessons: [], completedWordBlocks: [], completedGrammar: [], xpByDate: {}, srs: {} })
+    await setDoc(ref(), { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], xpByDate: {}, srs: {} })
   }
 
-  return { progress, loading, awardXp, completeLesson, completeWordBlock, completeGrammar, reviewCard, scheduleNew, reset }
+  return { progress, loading, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, reviewCard, scheduleNew, reset }
 }
