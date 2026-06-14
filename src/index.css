@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700;800&family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -17,14 +17,23 @@
   --shu-light: #E8695A;
   --text: #211F1B;
   --text-muted: #6B6660;
+
+  --font-display: 'Shippori Mincho', 'Noto Serif JP', serif;
+  --font-body: 'Noto Sans JP', system-ui, sans-serif;
+
+  /* Geschichtete, tinten-getönte Schatten statt flachem Grau */
+  --shadow-card: 0 1px 2px rgba(33,31,27,0.05), 0 6px 16px -8px rgba(33,31,27,0.14);
+  --shadow-float: 0 2px 6px rgba(33,31,27,0.08), 0 18px 40px -16px rgba(33,31,27,0.28);
 }
 
 html, body {
   height: 100%;
-  background: var(--washi);
+  background-color: var(--washi);
   color: var(--text);
-  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #root {
@@ -36,6 +45,22 @@ button {
   font-family: inherit;
 }
 
+::selection {
+  background: rgba(218, 74, 56, 0.22);
+  color: var(--sumi);
+}
+
+/* ── Washi-Papier: warme Tiefe + feines Faserkorn ────────────────────────────
+   Liegt auf der App-Hülle, damit es hinter den weißen Karten durchscheint. */
+.app-shell {
+  background-color: var(--washi);
+  background-image:
+    radial-gradient(110% 70% at 12% -8%, rgba(255,255,255,0.55), transparent 55%),
+    radial-gradient(120% 80% at 92% 108%, rgba(94,138,106,0.07), transparent 60%),
+    radial-gradient(90% 60% at 100% 0%, rgba(218,74,56,0.045), transparent 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E");
+}
+
 /* Genkouyoushi grid pattern */
 .genkou-bg {
   background-color: #fff;
@@ -44,3 +69,36 @@ button {
     linear-gradient(90deg, var(--washi-dark) 1px, transparent 1px);
   background-size: 40px 40px;
 }
+
+/* ── Bewegung: Inhalt „setzt sich wie Tinte" beim Tab-Wechsel ───────────────── */
+@keyframes tabiRise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.screen-enter {
+  animation: tabiRise 0.42s cubic-bezier(0.22, 0.68, 0.18, 1) both;
+}
+
+@keyframes hankoPress {
+  0%   { transform: scale(0.86) rotate(-6deg); opacity: 0; }
+  60%  { transform: scale(1.04) rotate(1.5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.hanko-in {
+  animation: hankoPress 0.55s cubic-bezier(0.34, 1.4, 0.5, 1) both;
+}
+
+.tabi-press:active { transform: translateY(1px); filter: brightness(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-enter, .hanko-in { animation: none; }
+}
+
+/* Schlanke, washi-getönte Scrollbar */
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--washi-dark);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover { background: #cfc7b0; }
