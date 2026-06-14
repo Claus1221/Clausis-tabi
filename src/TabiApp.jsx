@@ -154,6 +154,29 @@ function speak(text) {
   }
 }
 
+// Text in die Zwischenablage kopieren (mit Fallback für ältere Browser).
+async function copyText(text) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch (e) { /* Fallback unten */ }
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+    return true
+  } catch (e) {
+    return false
+  }
+}
+
 // Anzeige-Infos für eine SRS-Karte (Kana oder Wort-Kanji).
 function srsItemInfo(key) {
   const w = WORD_BY_KANJI[key]
@@ -1049,6 +1072,18 @@ function BlockQuiz({ words, onFinish }) {
 }
 
 function WordDetail({ word }) {
+  const [copied, setCopied] = useState(false)
+
+  const clip =
+    `${word.kanji}（${word.kana} / ${word.romaji}）— ${word.de}\n\n` +
+    `Beispielsatz:\n${word.ex.jp}\n${word.ex.kana}\n„${word.ex.de}"\n` +
+    `Erklärung: ${word.ex.note}`
+
+  const handleCopy = async () => {
+    const ok = await copyText(clip)
+    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1800) }
+  }
+
   return (
     <div>
       {/* Kanji + Lesung + Übersetzung */}
@@ -1077,6 +1112,17 @@ function WordDetail({ word }) {
           <p style={{ fontSize: 12, color: C.shu }}>💡 {word.ex.note}</p>
         </div>
       </Card>
+
+      {/* In die Zwischenablage kopieren (z. B. um eine KI zu fragen) */}
+      <button onClick={handleCopy}
+        style={{
+          width: '100%', marginTop: 12, padding: '11px 0', borderRadius: 8,
+          border: `1px solid ${copied ? C.matcha : C.washiDark}`,
+          background: copied ? `${C.matcha}15` : '#fff',
+          color: copied ? C.matcha : C.indigo, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+        }}>
+        {copied ? '✓ Kopiert' : '📋 Wort & Satz kopieren'}
+      </button>
     </div>
   )
 }
