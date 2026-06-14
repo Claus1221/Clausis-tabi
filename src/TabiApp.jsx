@@ -2206,7 +2206,7 @@ function RolePlay({ onClose }) {
   if (turn >= turns.length) return <UebenDone total={turns.length} onClose={onClose} />
   const t = turns[turn]
   const revealed = ans != null
-  const choose = (o) => { if (revealed) return; setAns(o); if (o === t.answer) awardXp(XP_PER_CARD) }
+  const choose = (o) => { if (revealed) return; setAns(o); speak(o); if (o === t.answer) awardXp(XP_PER_CARD) }
   const next = () => { setAns(null); setTurn(x => x + 1) }
 
   return (
@@ -2964,7 +2964,7 @@ function BuildStep({ step, onSolved }) {
   const [line, setLine] = useState([])
   const [result, setResult] = useState(null)
 
-  const add = (tile) => { if (result != null) return; setPool(p => p.filter(x => x.id !== tile.id)); setLine(l => [...l, tile]) }
+  const add = (tile) => { if (result != null) return; speak(tile.t); setPool(p => p.filter(x => x.id !== tile.id)); setLine(l => [...l, tile]) }
   const back = (tile) => { if (result != null) return; setLine(l => l.filter(x => x.id !== tile.id)); setPool(p => [...p, tile]) }
   const check = () => { const ok = line.map(x => x.t).join('') === step.answer.join(''); setResult(ok); if (ok) awardXp(XP_PER_CARD); onSolved() }
 
@@ -2989,11 +2989,14 @@ function BuildStep({ step, onSolved }) {
           Prüfen
         </Btn>
       ) : (
-        <p style={{ fontWeight: 600, color: result ? C.matcha : C.shu }}>
+        <div style={{ fontWeight: 600, color: result ? C.matcha : C.shu }}>
           {result ? '✓ Richtig!' : '✗ Nicht ganz'}
-          <span style={{ display: 'block', fontWeight: 400, fontSize: 14, color: C.sumi, marginTop: 4, fontFamily: "'Noto Serif JP', serif" }}>{step.answer.join('')}</span>
+          <span style={{ display: 'block', fontWeight: 400, fontSize: 14, color: C.sumi, marginTop: 4, fontFamily: "'Noto Serif JP', serif" }}>
+            {step.answer.join('')}
+            <button onClick={() => speak(step.answer.join(''))} style={{ background: 'none', border: 'none', fontSize: 15, cursor: 'pointer', marginLeft: 6 }}>🔊</button>
+          </span>
           <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted }}>„{step.tr}"</span>
-        </p>
+        </div>
       )}
     </div>
   )
