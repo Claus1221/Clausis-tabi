@@ -1,9 +1,28 @@
 import { useState, useRef, useEffect, createContext, useContext } from 'react'
 import { useAuth } from './AuthGate.jsx'
-import { useProgress } from './useProgress.js'
+import { useProgress, computeStats, weeklyXp } from './useProgress.js'
 
 // Fortschritt (aus Firestore) für alle Screens verfügbar machen.
-const ProgressCtx = createContext({ progress: { completedLessons: [] }, update: async () => {} })
+const ProgressCtx = createContext({
+  progress: { completedLessons: [], xpByDate: {} },
+  awardXp: async () => {},
+  completeLesson: async () => {},
+  reset: async () => {},
+})
+
+// XP-Belohnungen
+const XP_PER_KANA = 10  // pro Zeichen in einer abgeschlossenen Lektion
+const XP_PER_CARD = 5   // pro wiederholter SRS-Karte
+
+// Kana-Statistiken (als Funktionen, da LESSONS weiter unten definiert ist).
+function totalKanaCount() {
+  return new Set(LESSONS.flatMap(l => l.kana)).size
+}
+function completedKanaCount(completedLessons) {
+  const set = new Set()
+  LESSONS.filter(l => completedLessons.includes(l.id)).forEach(l => l.kana.forEach(k => set.add(k)))
+  return set.size
+}
 
 // ─── Color tokens ───────────────────────────────────────────────────────────
 const C = {
@@ -503,6 +522,7 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
 // ─── SRS Quiz ────────────────────────────────────────────────────────────────
 
 function SRSQuiz({ onClose }) {
+  const { awardXp } = useContext(ProgressCtx)
   const cards = Object.entries(KANA_DATA).map(([k, v]) => ({ char: k, ...v }))
   const [idx, setIdx] = useState(0)
   const [flipped, setFlipped] = useState(false)
@@ -547,7 +567,7 @@ function SRSQuiz({ onClose }) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
           {[['Nochmal', C.shu], ['Schwer', '#E8A020'], ['Gut', C.matcha], ['Leicht', C.indigo]].map(([label, color]) => (
-            <button key={label} onClick={() => { setFlipped(false); setIdx(i => i + 1); setDone(d => d + 1) }}
+            <button key={label} onClick={() => { awardXp(XP_PER_CARD); setFlipped(false); setIdx(i => i + 1); setDone(d => d + 1) }}
               style={{ padding: '10px 4px', borderRadius: 8, border: `2px solid ${color}`,
                 background: `${color}15`, color, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
               {label}
@@ -562,11 +582,11 @@ function SRSQuiz({ onClose }) {
 // ─── Screens ─────────────────────────────────────────────────────────────────
 
 function HeuteScreen() {
+  const { progress } = useContext(ProgressCtx)
+  const { streak, xpToday: xp, goal } = computeStats(progress)
+  const due = completedKanaCount(progress.completedLessons || [])
   const charOfDay = 'あ'
   const data = KANA_DATA[charOfDay]
-  const streak = 3
-  const xp = 180
-  const goal = 200
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
@@ -583,7 +603,7 @@ function HeuteScreen() {
         {[
           { label: 'Streak', value: `${streak} 🔥`, color: C.shu },
           { label: 'XP heute', value: `${xp}`, color: C.indigo },
-          { label: 'Fällig', value: '12', color: C.matcha },
+          { label: 'Zu üben', value: `${due}`, color: C.matcha },
         ].map(s => (
           <Card key={s.label} style={{ textAlign: 'center', padding: 12 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: s.color }}>{s.value}</div>
@@ -598,16 +618,18 @@ function HeuteScreen() {
           <svg width="56" height="56">
             <circle cx="28" cy="28" r="22" fill="none" stroke={C.washiDark} strokeWidth="5" />
             <circle cx="28" cy="28" r="22" fill="none" stroke={C.shu} strokeWidth="5"
-              strokeDasharray={`${2 * Math.PI * 22 * xp / goal} ${2 * Math.PI * 22}`}
+              strokeDasharray={`${2 * Math.PI * 22 * Math.min(xp / goal, 1)} ${2 * Math.PI * 22}`}
               strokeLinecap="round" transform="rotate(-90 28 28)" />
             <text x="28" y="33" textAnchor="middle" fontSize="13" fontWeight="700" fill={C.shu}>
-              {Math.round(xp / goal * 100)}%
+              {Math.min(Math.round(xp / goal * 100), 100)}%
             </text>
           </svg>
           <div>
             <div style={{ fontWeight: 600, marginBottom: 2 }}>Tagesziel</div>
             <div style={{ fontSize: 13, color: C.textMuted }}>{xp} / {goal} XP</div>
-            <div style={{ fontSize: 12, color: C.textMuted }}>noch {goal - xp} XP bis zum Ziel</div>
+            <div style={{ fontSize: 12, color: C.textMuted }}>
+              {xp >= goal ? 'Tagesziel erreicht 🎉' : `noch ${goal - xp} XP bis zum Ziel`}
+            </div>
           </div>
         </div>
       </Card>
@@ -655,7 +677,7 @@ function HeuteScreen() {
 }
 
 function LernenScreen() {
-  const { progress, update } = useContext(ProgressCtx)
+  const { progress, completeLesson } = useContext(ProgressCtx)
   const [activeLesson, setActiveLesson] = useState(null)
 
   // Lektionen aus dem gespeicherten Fortschritt ableiten:
@@ -670,7 +692,8 @@ function LernenScreen() {
 
   const handleComplete = (id) => {
     if (!completed.includes(id)) {
-      update({ completedLessons: [...completed, id] })
+      const lesson = LESSONS.find(l => l.id === id)
+      completeLesson(id, (lesson?.kana.length || 0) * XP_PER_KANA)
     }
     setActiveLesson(null)
   }
@@ -780,7 +803,7 @@ function UebenScreen() {
   if (mode === 'srs') return <SRSQuiz onClose={() => setMode(null)} />
 
   const exercises = [
-    { id: 'srs', icon: '🗂', title: 'SRS-Wiederholungen', sub: '12 Karten fällig', color: C.shu },
+    { id: 'srs', icon: '🗂', title: 'SRS-Wiederholungen', sub: 'Kana wiederholen (+XP)', color: C.shu },
     { id: 'erkennen', icon: '👁', title: 'Erkennen', sub: 'Zeichen → Bedeutung', color: C.indigo },
     { id: 'hoeren', icon: '👂', title: 'Hören', sub: 'Was hast du gehört?', color: C.matcha },
     { id: 'tippen', icon: '⌨️', title: 'Tippen', sub: 'Kana per Tastatur', color: '#8B6914' },
@@ -830,17 +853,39 @@ function UebenScreen() {
 }
 
 function FortschrittScreen() {
+  const { progress, reset } = useContext(ProgressCtx)
+  const stats = computeStats(progress)
+  const completed = progress.completedLessons || []
+  const kanaDone = completedKanaCount(completed)
+  const kanaTotal = totalKanaCount()
+  const kanaPct = kanaTotal ? Math.round(kanaDone / kanaTotal * 100) : 0
+
+  const week = weeklyXp(progress)
+  const weekTotal = week.reduce((a, d) => a + d.xp, 0)
+  const maxXP = Math.max(stats.goal, ...week.map(d => d.xp))
+
+  // Fertigkeiten aus echtem Fortschritt abgeleitet (0, solange nichts gelernt).
+  // Lesen/Schreiben hängen am Kana-Fortschritt; übrige Bereiche kommen später.
   const skills = [
-    { label: 'Lesen', value: 35, color: C.shu },
-    { label: 'Hören', value: 20, color: C.indigo },
-    { label: 'Schreiben', value: 15, color: C.matcha },
-    { label: 'Wortschatz', value: 25, color: '#8B6914' },
-    { label: 'Grammatik', value: 10, color: '#7B3FA0' },
+    { label: 'Lesen', value: kanaPct, color: C.shu },
+    { label: 'Schreiben', value: kanaPct, color: C.matcha },
+    { label: 'Hören', value: 0, color: C.indigo },
+    { label: 'Wortschatz', value: 0, color: '#8B6914' },
+    { label: 'Grammatik', value: 0, color: '#7B3FA0' },
   ]
 
-  const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-  const xpPerDay = [120, 180, 0, 200, 150, 80, 180]
-  const maxXP = 200
+  // Errungenschaften mit echten Bedingungen.
+  const achievements = [
+    { icon: '🔥', label: '3-Tage-Streak', sub: 'Bleib dran!', earned: stats.streak >= 3 },
+    { icon: '✍️', label: 'Erste Lektion', sub: 'Hiragana あいうえお', earned: completed.length >= 1 },
+    { icon: '🎓', label: 'Alle Hiragana', sub: `${kanaDone}/${kanaTotal} Zeichen`, earned: kanaDone >= kanaTotal && kanaTotal > 0 },
+  ]
+
+  const handleReset = () => {
+    if (window.confirm('Wirklich den gesamten Fortschritt auf 0 zurücksetzen? Das kann nicht rückgängig gemacht werden.')) {
+      reset()
+    }
+  }
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
@@ -848,26 +893,42 @@ function FortschrittScreen() {
         Fortschritt
       </h2>
 
+      {/* Gesamt-XP / Level */}
+      <Card style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: C.shu }}>{stats.totalXp}</div>
+          <div style={{ fontSize: 11, color: C.textMuted }}>XP gesamt</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: C.indigo }}>{stats.level}</div>
+          <div style={{ fontSize: 11, color: C.textMuted }}>Level</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: C.matcha }}>{stats.streak} 🔥</div>
+          <div style={{ fontSize: 11, color: C.textMuted }}>Streak</div>
+        </div>
+      </Card>
+
       {/* XP Bar chart */}
       <Card style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 12, fontWeight: 600, letterSpacing: 1 }}>
           XP DIESE WOCHE
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: 80 }}>
-          {days.map((d, i) => (
-            <div key={d} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          {week.map((d, i) => (
+            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <div style={{
-                width: '100%', background: xpPerDay[i] > 0 ? C.shu : C.washiDark,
+                width: '100%', background: d.xp > 0 ? C.shu : C.washiDark,
                 borderRadius: '3px 3px 0 0',
-                height: `${Math.round(xpPerDay[i] / maxXP * 60)}px`,
-                minHeight: xpPerDay[i] > 0 ? 4 : 2,
+                height: `${Math.round(d.xp / maxXP * 60)}px`,
+                minHeight: d.xp > 0 ? 4 : 2,
               }} />
-              <span style={{ fontSize: 10, color: C.textMuted }}>{d}</span>
+              <span style={{ fontSize: 10, color: C.textMuted }}>{d.label}</span>
             </div>
           ))}
         </div>
         <div style={{ marginTop: 8, fontSize: 13, color: C.textMuted }}>
-          Gesamt diese Woche: <strong style={{ color: C.sumi }}>910 XP</strong>
+          Gesamt diese Woche: <strong style={{ color: C.sumi }}>{weekTotal} XP</strong>
         </div>
       </Card>
 
@@ -890,27 +951,35 @@ function FortschrittScreen() {
       </Card>
 
       {/* Achievements */}
-      <Card>
+      <Card style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 12, fontWeight: 600, letterSpacing: 1 }}>
           ERRUNGENSCHAFTEN
         </div>
-        {[
-          { icon: '🔥', label: '3-Tage-Streak', sub: 'Bleib dran!' },
-          { icon: '✍️', label: 'Erste Lektion', sub: 'Hiragana あいうえお' },
-          { icon: '📚', label: '8 Vokabeln', sub: 'Überlebens-Kanji' },
-        ].map((a, i) => (
+        {achievements.map((a, i) => (
           <div key={i} style={{
             display: 'flex', gap: 12, alignItems: 'center',
-            padding: '10px 0', borderBottom: i < 2 ? `1px solid ${C.washiDark}` : 'none',
+            padding: '10px 0', borderBottom: i < achievements.length - 1 ? `1px solid ${C.washiDark}` : 'none',
+            opacity: a.earned ? 1 : 0.4,
           }}>
-            <div style={{ fontSize: 24 }}>{a.icon}</div>
+            <div style={{ fontSize: 24, filter: a.earned ? 'none' : 'grayscale(1)' }}>{a.earned ? a.icon : '🔒'}</div>
             <div>
               <div style={{ fontWeight: 600, fontSize: 14 }}>{a.label}</div>
-              <div style={{ fontSize: 12, color: C.textMuted }}>{a.sub}</div>
+              <div style={{ fontSize: 12, color: C.textMuted }}>{a.earned ? a.sub : 'Noch nicht erreicht'}</div>
             </div>
           </div>
         ))}
       </Card>
+
+      {/* Reset */}
+      <div style={{ textAlign: 'center', marginBottom: 8 }}>
+        <button onClick={handleReset}
+          style={{
+            background: 'none', border: `1px solid ${C.washiDark}`, borderRadius: 8,
+            padding: '8px 16px', fontSize: 12, color: C.textMuted, cursor: 'pointer',
+          }}>
+          Fortschritt zurücksetzen
+        </button>
+      </div>
     </div>
   )
 }
@@ -920,7 +989,8 @@ function FortschrittScreen() {
 export default function TabiApp() {
   const [tab, setTab] = useState('heute')
   const { user, logout } = useAuth()
-  const { progress, update } = useProgress(user?.uid)
+  const { progress, awardXp, completeLesson, reset } = useProgress(user?.uid)
+  const { level } = computeStats(progress)
 
   const screens = {
     heute: <HeuteScreen />,
@@ -930,7 +1000,7 @@ export default function TabiApp() {
   }
 
   return (
-    <ProgressCtx.Provider value={{ progress, update }}>
+    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, reset }}>
     <div style={{
       maxWidth: 480, margin: '0 auto', height: '100vh',
       display: 'flex', flexDirection: 'column', position: 'relative',
@@ -955,7 +1025,7 @@ export default function TabiApp() {
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
           <div style={{ background: `${C.shu}15`, borderRadius: 12, padding: '3px 10px', fontSize: 12, color: C.shu, fontWeight: 600 }}>
-            Level 2
+            Level {level}
           </div>
           <button onClick={logout} title={`Abmelden (${user?.email || ''})`}
             style={{
