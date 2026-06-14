@@ -7,4 +7,5 @@ dist
 Tabi-Sitzung-Zusammenfassung-*.md
 .claude/
 .playwright-mcp/
-tabi-local.png
+# Test-Screenshots im Projektstamm (App-Bilder liegen in public/ oder src/)
+/*.png

@@ -1,4 +1,9 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, createContext, useContext } from 'react'
+import { useAuth } from './AuthGate.jsx'
+import { useProgress } from './useProgress.js'
+
+// Fortschritt (aus Firestore) für alle Screens verfügbar machen.
+const ProgressCtx = createContext({ progress: { completedLessons: [] }, update: async () => {} })
 
 // ─── Color tokens ───────────────────────────────────────────────────────────
 const C = {
@@ -650,18 +655,23 @@ function HeuteScreen() {
 }
 
 function LernenScreen() {
-  const [lessons, setLessons] = useState(LESSONS)
+  const { progress, update } = useContext(ProgressCtx)
   const [activeLesson, setActiveLesson] = useState(null)
 
+  // Lektionen aus dem gespeicherten Fortschritt ableiten:
+  // - done  = ID ist in completedLessons
+  // - locked = die vorherige Lektion ist noch nicht abgeschlossen
+  const completed = progress.completedLessons || []
+  const lessons = LESSONS.map((l, i) => ({
+    ...l,
+    done: completed.includes(l.id),
+    locked: i === 0 ? false : !completed.includes(LESSONS[i - 1].id),
+  }))
+
   const handleComplete = (id) => {
-    setLessons(prev => {
-      const idx = prev.findIndex(l => l.id === id)
-      return prev.map((l, i) => {
-        if (l.id === id) return { ...l, done: true }
-        if (i === idx + 1) return { ...l, locked: false }
-        return l
-      })
-    })
+    if (!completed.includes(id)) {
+      update({ completedLessons: [...completed, id] })
+    }
     setActiveLesson(null)
   }
 
@@ -909,6 +919,8 @@ function FortschrittScreen() {
 
 export default function TabiApp() {
   const [tab, setTab] = useState('heute')
+  const { user, logout } = useAuth()
+  const { progress, update } = useProgress(user?.uid)
 
   const screens = {
     heute: <HeuteScreen />,
@@ -918,6 +930,7 @@ export default function TabiApp() {
   }
 
   return (
+    <ProgressCtx.Provider value={{ progress, update }}>
     <div style={{
       maxWidth: 480, margin: '0 auto', height: '100vh',
       display: 'flex', flexDirection: 'column', position: 'relative',
@@ -940,10 +953,17 @@ export default function TabiApp() {
           <div style={{ fontSize: 17, fontWeight: 700, fontFamily: "'Noto Serif JP', serif", color: C.sumi, lineHeight: 1 }}>Tabi</div>
           <div style={{ fontSize: 10, color: C.textMuted, lineHeight: 1 }}>旅 · Japanisch für Reisende</div>
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
           <div style={{ background: `${C.shu}15`, borderRadius: 12, padding: '3px 10px', fontSize: 12, color: C.shu, fontWeight: 600 }}>
             Level 2
           </div>
+          <button onClick={logout} title={`Abmelden (${user?.email || ''})`}
+            style={{
+              background: 'none', border: `1px solid ${C.washiDark}`, borderRadius: 12,
+              padding: '3px 10px', fontSize: 12, color: C.textMuted, cursor: 'pointer',
+            }}>
+            Abmelden
+          </button>
         </div>
       </div>
 
@@ -954,5 +974,6 @@ export default function TabiApp() {
 
       <TabBar active={tab} setActive={setTab} />
     </div>
+    </ProgressCtx.Provider>
   )
 }
