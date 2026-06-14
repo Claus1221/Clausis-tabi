@@ -358,44 +358,78 @@ const GRAMMAR = [
 
 // ─── Durchgehende Geschichte ─────────────────────────────────────────────────
 // Eine fortlaufende Reise-Erzählung: pro Station ein Kapitel. Es baut auf dem
-// auf, was man gelernt hat, und wendet es an (ab den Wort-/Grammatik-Stationen
-// mit echten japanischen Sätzen). Wird am Ende jeder Lektion gezeigt und im
-// Reise-„Tagebuch" gesammelt. Schlüssel = Stations-ID (h1.., k1.., wb1.., g1..).
+// auf, was man gelernt hat, und wendet es AKTIV an: jede Station hat eine
+// `scene` (Illustration + Übersetzungsfrage), die man am Lektionsende erlebt.
+// scene = { art, ask (jp), kana, answer (de), options }. Schlüssel = Stations-ID.
 const STORY = {
-  h1: { de: 'Dein Flugzeug landet in Japan. Müde, aber voller Vorfreude trittst du hinaus. Über dem Gate leuchten fremde Zeichen – あ、い、う… Deine Reise beginnt.' },
-  h2: { de: 'Am Bahnhof suchst du den richtigen Zug. Überall Hiragana. Langsam erkennst du Silben wieder: か、き、く… Die ersten Schilder ergeben Sinn!' },
-  h3: { de: 'Im Zug gleitet die Landschaft vorbei. Leise übst du die Laute, die du kennst – さ、し、す… Eine alte Frau gegenüber lächelt dir zu.' },
-  h4: { de: 'Du steigst in einer kleinen Stadt aus. た、ち、つ… Die Zeichen werden vertrauter, fast wie alte Bekannte.' },
-  h5: { de: 'Vor einem Lädchen liest du die Speisekarte – noch nicht alles, aber immer mehr. な、に、ぬ… Dein Magen knurrt.' },
-  h6: { de: 'Ein Wegweiser zeigt zu den Bergen. は、ひ、ふ… Du entzifferst ihn fast mühelos und folgst der Richtung.' },
-  h7: { de: 'Am Ortsrand endet das Pflaster. ま、み、む… Vor dir öffnet sich weites, grünes Land.' },
-  h8: { de: 'Ein schmaler Pfad führt bergauf. や、ゆ、よ… Fast alle Hiragana sitzen jetzt.' },
-  h9: { de: 'Vögel rufen über dir. ら、り、る… Du liest ein Schild am Wegrand laut vor – und verstehst es.' },
-  h10: { de: 'わ、を、ん – die letzten Hiragana! Du kannst jetzt alles lesen, was in Hiragana geschrieben steht. Ein kleiner Triumph.' },
-  wb1: { de: 'Vor dir ragt ein Berg auf, ein Fluss glitzert im Tal. Endlich kannst du benennen, was du siehst:', jp: 'これは山です。', kana: 'これはやまです。', tr: 'Das ist ein Berg.' },
-  g1: { de: 'Du lernst, worüber du sprichst zu markieren – mit は. Über den Berg vor dir sagst du:', jp: '山は高いです。', kana: 'やまはたかいです。', tr: 'Der Berg ist hoch.' },
-  g2: { de: 'Mit です sagst du höflich, was etwas ist. Du zeigst auf das Wasser:', jp: 'これは川です。', kana: 'これはかわです。', tr: 'Das ist ein Fluss.' },
-  k1: { de: 'Auf einem Wegweiser stehen kantigere Zeichen – Katakana. ア、イ、ウ… für Wörter aus aller Welt.' },
-  k2: { de: 'カ、キ、ク… An einem Automaten erkennst du ein Wort: コーヒー – Kaffee! Du gönnst dir eine Pause.' },
-  k3: { de: 'サ、シ、ス… An einer Hütte hängt eine Karte mit Namen in Katakana.' },
-  k4: { de: 'タ、チ、ツ… Ein anderer Wanderer grüßt dich freundlich auf dem Pfad.' },
-  k5: { de: 'ナ、ニ、ヌ… Du liest jetzt beide Schriften, mal langsam, mal schon flüssig.' },
-  wb2: { de: 'Ein Hund läuft über den Weg, Vögel fliegen auf, im Fluss blitzt ein Fisch. Tiere überall:', jp: '犬が走ります。', kana: 'いぬがはしります。', tr: 'Der Hund rennt.' },
-  g3: { de: 'Mit が betonst du, WER etwas tut. Eine Katze schleicht heran:', jp: '猫が好きです。', kana: 'ねこがすきです。', tr: 'Ich mag Katzen.' },
-  g4: { de: 'Am Fluss holt ein Fischer seinen Fang ein. Mit を zeigst du das Objekt einer Handlung:', jp: '魚を食べます。', kana: 'さかなをたべます。', tr: 'Ich esse Fisch.' },
-  k6: { de: 'ハ、ヒ、フ… Der Weg wird steiler, der Atem schwerer.' },
-  k7: { de: 'マ、ミ、ム… Dein Rücken schmerzt, doch du gehst weiter, Schritt für Schritt.' },
-  k8: { de: 'ヤ、ユ、ヨ… Kühler Nebel zieht den Hang herauf.' },
-  k9: { de: 'ラ、リ、ル… Aus dem Grau taucht eine kleine Schutzhütte auf.' },
-  k10: { de: 'ワ、ヲ、ン – alle Katakana! Beide Schriften beherrschst du nun. Niemand kann dich mehr aufhalten.' },
-  wb3: { de: 'Nach dem langen Aufstieg spürst du jeden Teil deines Körpers:', jp: '足が痛いです。', kana: 'あしがいたいです。', tr: 'Meine Füße tun weh.' },
-  g5: { de: 'Du denkst an Ziel und Weg. に zeigt wohin, で womit:', jp: '家に帰ります。', kana: 'いえにかえります。', tr: 'Ich gehe nach Hause.' },
-  g6: { de: 'An einer kalten Quelle rastest du. Höfliche Verben enden auf ます:', jp: '水を飲みます。', kana: 'みずをのみます。', tr: 'Ich trinke Wasser.' },
-  wb4: { de: 'Im letzten Dorf vor dem Gipfel pulsiert der Alltag: Menschen, Häuser, ein vorbeifahrendes Auto.', jp: '車で行きます。', kana: 'くるまでいきます。', tr: 'Ich fahre mit dem Auto.' },
-  g7: { de: 'Nachts am Lager beschreibst du, was du siehst – mit Adjektiven:', jp: '星はきれいです。', kana: 'ほしはきれいです。', tr: 'Die Sterne sind schön.' },
-  g8: { de: 'Ein Mitwanderer dreht sich zu dir. Mit か wird aus einer Aussage eine Frage:', jp: '水を飲みますか。', kana: 'みずをのみますか。', tr: 'Trinkst du Wasser?' },
-  g9: { de: 'Im Morgenlicht erhebt sich vor dir der berühmteste Berg des Landes. の verbindet zwei Nomen:', jp: '日本の山。', kana: 'にほんのやま。', tr: 'Japans Berg.' },
-  g10: { de: 'Du verstehst jetzt, wie ein ganzer Satz gebaut ist – Subjekt, Objekt, Verb am Ende. Worte fügen sich zusammen:', jp: '猫が魚を食べます。', kana: 'ねこがさかなをたべます。', tr: 'Die Katze frisst den Fisch.' },
+  h1: { de: 'Dein Flugzeug landet in Japan. Müde, aber voller Vorfreude trittst du hinaus. Über dem Gate leuchten fremde Zeichen – あ、い、う… Deine Reise beginnt.',
+    scene: { art: 'airplane', ask: '飛行機', kana: 'ひこうき', answer: 'Flugzeug', options: ['Flugzeug', 'Zug', 'Schiff'] } },
+  h2: { de: 'Am Bahnhof suchst du den richtigen Zug. Überall Hiragana. Langsam erkennst du Silben wieder: か、き、く… Die ersten Schilder ergeben Sinn!',
+    scene: { art: 'station', ask: '駅', kana: 'えき', answer: 'Bahnhof', options: ['Bahnhof', 'Flughafen', 'Hafen'] } },
+  h3: { de: 'Im Zug gleitet die Landschaft vorbei. Leise übst du die Laute, die du kennst – さ、し、す… Eine alte Frau gegenüber lächelt dir zu.',
+    scene: { art: 'train', ask: '電車', kana: 'でんしゃ', answer: 'Zug', options: ['Zug', 'Bus', 'Boot'] } },
+  h4: { de: 'Du steigst in einer kleinen Stadt aus. た、ち、つ… Die Zeichen werden vertrauter, fast wie alte Bekannte.',
+    scene: { art: 'town', ask: '町', kana: 'まち', answer: 'Stadt', options: ['Stadt', 'Berg', 'Fluss'] } },
+  h5: { de: 'Vor einem Lädchen liest du die Speisekarte – noch nicht alles, aber immer mehr. な、に、ぬ… Dein Magen knurrt.',
+    scene: { art: 'tea', ask: 'お茶', kana: 'おちゃ', answer: 'Tee', options: ['Tee', 'Wasser', 'Reis'] } },
+  h6: { de: 'Ein Wegweiser zeigt zu den Bergen. は、ひ、ふ… Du entzifferst ihn fast mühelos und folgst der Richtung.',
+    scene: { art: 'mountain', ask: '山', kana: 'やま', answer: 'Berg', options: ['Berg', 'Fluss', 'Meer'] } },
+  h7: { de: 'Am Ortsrand endet das Pflaster. ま、み、む… Vor dir öffnet sich weites, grünes Land.',
+    scene: { art: 'sky', ask: '空', kana: 'そら', answer: 'Himmel', options: ['Himmel', 'Meer', 'Wald'] } },
+  h8: { de: 'Ein schmaler Pfad führt bergauf. や、ゆ、よ… Fast alle Hiragana sitzen jetzt.',
+    scene: { art: 'path', ask: '道', kana: 'みち', answer: 'Weg', options: ['Weg', 'Tür', 'Brücke'] } },
+  h9: { de: 'Vögel rufen über dir. ら、り、る… Du liest ein Schild am Wegrand laut vor – und verstehst es.',
+    scene: { art: 'bird', ask: '鳥', kana: 'とり', answer: 'Vogel', options: ['Vogel', 'Fisch', 'Hund'] } },
+  h10: { de: 'わ、を、ん – die letzten Hiragana! Du kannst jetzt alles lesen, was in Hiragana geschrieben steht. Ein kleiner Triumph.',
+    scene: { art: 'torii', ask: '日本', kana: 'にほん', answer: 'Japan', options: ['Japan', 'China', 'Korea'] } },
+  wb1: { de: 'Vor dir ragt ein Berg auf, ein Fluss glitzert im Tal. Endlich kannst du benennen, was du siehst:', jp: 'これは山です。', kana: 'これはやまです。', tr: 'Das ist ein Berg.',
+    scene: { art: 'mountain', ask: 'これは山です。', kana: 'これはやまです。', answer: 'Das ist ein Berg.', options: ['Das ist ein Berg.', 'Das ist ein Fluss.', 'Das ist der Himmel.'] } },
+  g1: { de: 'Du lernst, worüber du sprichst zu markieren – mit は. Über den Berg vor dir sagst du:', jp: '山は高いです。', kana: 'やまはたかいです。', tr: 'Der Berg ist hoch.',
+    scene: { art: 'mountain', ask: '山は高いです。', kana: 'やまはたかいです。', answer: 'Der Berg ist hoch.', options: ['Der Berg ist hoch.', 'Der Berg ist schön.', 'Der Fluss ist hoch.'] } },
+  g2: { de: 'Mit です sagst du höflich, was etwas ist. Du zeigst auf das Wasser:', jp: 'これは川です。', kana: 'これはかわです。', tr: 'Das ist ein Fluss.',
+    scene: { art: 'river', ask: 'これは川です。', kana: 'これはかわです。', answer: 'Das ist ein Fluss.', options: ['Das ist ein Fluss.', 'Das ist ein Berg.', 'Das ist ein See.'] } },
+  k1: { de: 'Auf einem Wegweiser stehen kantigere Zeichen – Katakana. ア、イ、ウ… für Wörter aus aller Welt.',
+    scene: { art: 'town', ask: 'ホテル', kana: 'ホテル', answer: 'Hotel', options: ['Hotel', 'Bahnhof', 'Laden'] } },
+  k2: { de: 'カ、キ、ク… An einem Automaten erkennst du ein Wort: コーヒー – Kaffee! Du gönnst dir eine Pause.',
+    scene: { art: 'coffee', ask: 'コーヒー', kana: 'コーヒー', answer: 'Kaffee', options: ['Kaffee', 'Tee', 'Milch'] } },
+  k3: { de: 'サ、シ、ス… An einer Hütte hängt eine Karte mit Namen in Katakana.',
+    scene: { art: 'town', ask: 'レストラン', kana: 'レストラン', answer: 'Restaurant', options: ['Restaurant', 'Hotel', 'Bahnhof'] } },
+  k4: { de: 'タ、チ、ツ… Ein anderer Wanderer grüßt dich freundlich auf dem Pfad.',
+    scene: { art: 'car', ask: 'タクシー', kana: 'タクシー', answer: 'Taxi', options: ['Taxi', 'Bus', 'Zug'] } },
+  k5: { de: 'ナ、ニ、ヌ… Du liest jetzt beide Schriften, mal langsam, mal schon flüssig.',
+    scene: { art: 'tea', ask: 'パン', kana: 'パン', answer: 'Brot', options: ['Brot', 'Reis', 'Fisch'] } },
+  wb2: { de: 'Ein Hund läuft über den Weg, Vögel fliegen auf, im Fluss blitzt ein Fisch. Tiere überall:', jp: '犬が走ります。', kana: 'いぬがはしります。', tr: 'Der Hund rennt.',
+    scene: { art: 'animal', ask: '犬が走ります。', kana: 'いぬがはしります。', answer: 'Der Hund rennt.', options: ['Der Hund rennt.', 'Die Katze rennt.', 'Der Hund schläft.'] } },
+  g3: { de: 'Mit が betonst du, WER etwas tut. Eine Katze schleicht heran:', jp: '猫が好きです。', kana: 'ねこがすきです。', tr: 'Ich mag Katzen.',
+    scene: { art: 'animal', ask: '猫が好きです。', kana: 'ねこがすきです。', answer: 'Ich mag Katzen.', options: ['Ich mag Katzen.', 'Ich mag Hunde.', 'Ich sehe eine Katze.'] } },
+  g4: { de: 'Am Fluss holt ein Fischer seinen Fang ein. Mit を zeigst du das Objekt einer Handlung:', jp: '魚を食べます。', kana: 'さかなをたべます。', tr: 'Ich esse Fisch.',
+    scene: { art: 'fish', ask: '魚を食べます。', kana: 'さかなをたべます。', answer: 'Ich esse Fisch.', options: ['Ich esse Fisch.', 'Ich sehe Fisch.', 'Ich kaufe Fisch.'] } },
+  k6: { de: 'ハ、ヒ、フ… Der Weg wird steiler, der Atem schwerer.',
+    scene: { art: 'path', ask: '地図', kana: 'ちず', answer: 'Karte', options: ['Karte', 'Buch', 'Brief'] } },
+  k7: { de: 'マ、ミ、ム… Dein Rücken schmerzt, doch du gehst weiter, Schritt für Schritt.',
+    scene: { art: 'sky', ask: '雨', kana: 'あめ', answer: 'Regen', options: ['Regen', 'Schnee', 'Wind'] } },
+  k8: { de: 'ヤ、ユ、ヨ… Kühler Nebel zieht den Hang herauf.',
+    scene: { art: 'mountain', ask: '森', kana: 'もり', answer: 'Wald', options: ['Wald', 'Berg', 'Meer'] } },
+  k9: { de: 'ラ、リ、ル… Aus dem Grau taucht eine kleine Schutzhütte auf.',
+    scene: { art: 'river', ask: '水', kana: 'みず', answer: 'Wasser', options: ['Wasser', 'Tee', 'Milch'] } },
+  k10: { de: 'ワ、ヲ、ン – alle Katakana! Beide Schriften beherrschst du nun. Niemand kann dich mehr aufhalten.',
+    scene: { art: 'torii', ask: '日本語', kana: 'にほんご', answer: 'Japanisch', options: ['Japanisch', 'Englisch', 'Chinesisch'] } },
+  wb3: { de: 'Nach dem langen Aufstieg spürst du jeden Teil deines Körpers:', jp: '足が痛いです。', kana: 'あしがいたいです。', tr: 'Meine Füße tun weh.',
+    scene: { art: 'body', ask: '足が痛いです。', kana: 'あしがいたいです。', answer: 'Meine Füße tun weh.', options: ['Meine Füße tun weh.', 'Meine Augen tun weh.', 'Meine Füße sind groß.'] } },
+  g5: { de: 'Du denkst an Ziel und Weg. に zeigt wohin, で womit:', jp: '家に帰ります。', kana: 'いえにかえります。', tr: 'Ich gehe nach Hause.',
+    scene: { art: 'home', ask: '家に帰ります。', kana: 'いえにかえります。', answer: 'Ich gehe nach Hause.', options: ['Ich gehe nach Hause.', 'Ich gehe zur Stadt.', 'Ich bin zu Hause.'] } },
+  g6: { de: 'An einer kalten Quelle rastest du. Höfliche Verben enden auf ます:', jp: '水を飲みます。', kana: 'みずをのみます。', tr: 'Ich trinke Wasser.',
+    scene: { art: 'river', ask: '水を飲みます。', kana: 'みずをのみます。', answer: 'Ich trinke Wasser.', options: ['Ich trinke Wasser.', 'Ich trinke Tee.', 'Ich sehe Wasser.'] } },
+  wb4: { de: 'Im letzten Dorf vor dem Gipfel pulsiert der Alltag: Menschen, Häuser, ein vorbeifahrendes Auto.', jp: '車で行きます。', kana: 'くるまでいきます。', tr: 'Ich fahre mit dem Auto.',
+    scene: { art: 'car', ask: '車で行きます。', kana: 'くるまでいきます。', answer: 'Ich fahre mit dem Auto.', options: ['Ich fahre mit dem Auto.', 'Ich gehe zu Fuß.', 'Ich fahre mit dem Zug.'] } },
+  g7: { de: 'Nachts am Lager beschreibst du, was du siehst – mit Adjektiven:', jp: '星はきれいです。', kana: 'ほしはきれいです。', tr: 'Die Sterne sind schön.',
+    scene: { art: 'night', ask: '星はきれいです。', kana: 'ほしはきれいです。', answer: 'Die Sterne sind schön.', options: ['Die Sterne sind schön.', 'Der Mond ist schön.', 'Die Sterne sind hell.'] } },
+  g8: { de: 'Ein Mitwanderer dreht sich zu dir. Mit か wird aus einer Aussage eine Frage:', jp: '水を飲みますか。', kana: 'みずをのみますか。', tr: 'Trinkst du Wasser?',
+    scene: { art: 'river', ask: '水を飲みますか。', kana: 'みずをのみますか。', answer: 'Trinkst du Wasser?', options: ['Trinkst du Wasser?', 'Ich trinke Wasser.', 'Trinkst du Tee?'] } },
+  g9: { de: 'Im Morgenlicht erhebt sich vor dir der berühmteste Berg des Landes. の verbindet zwei Nomen:', jp: '日本の山。', kana: 'にほんのやま。', tr: 'Japans Berg.',
+    scene: { art: 'mountain', ask: '日本の山。', kana: 'にほんのやま。', answer: 'Japans Berg.', options: ['Japans Berg.', 'Japans Fluss.', 'Ein hoher Berg.'] } },
+  g10: { de: 'Du verstehst jetzt, wie ein ganzer Satz gebaut ist – Subjekt, Objekt, Verb am Ende. Worte fügen sich zusammen:', jp: '猫が魚を食べます。', kana: 'ねこがさかなをたべます。', tr: 'Die Katze frisst den Fisch.',
+    scene: { art: 'fish', ask: '猫が魚を食べます。', kana: 'ねこがさかなをたべます。', answer: 'Die Katze frisst den Fisch.', options: ['Die Katze frisst den Fisch.', 'Der Fisch frisst die Katze.', 'Die Katze sieht den Fisch.'] } },
   fuji: { de: 'Du stehst auf dem Gipfel. Unter dir liegt das ganze Land, das dir vor Wochen noch völlig fremd war – und jetzt kannst du es lesen, benennen, verstehen. 旅は終わりました。Die Reise ist zu Ende. Eine neue beginnt.', jp: 'おめでとうございます！', kana: 'おめでとうございます！', tr: 'Herzlichen Glückwunsch!' },
 }
 
@@ -494,10 +528,156 @@ function Btn({ children, onClick, variant = 'primary', style }) {
   )
 }
 
-// Ein Geschichts-Kapitel (am Lektionsende). Baut auf Gelerntem auf und wendet es an.
-function StoryBeat({ id }) {
+// Flache Illustrationen für die Geschichts-Szenen (viewBox 240×120).
+function storyArt(name) {
+  const wrap = (bg, kids) => (
+    <svg viewBox="0 0 240 120" width="100%" style={{ display: 'block' }} aria-hidden="true">
+      <rect width="240" height="120" fill={bg} />
+      {kids}
+    </svg>
+  )
+  switch (name) {
+    case 'airplane': return wrap('#DCE7EE', <>
+      <ellipse cx="55" cy="28" rx="22" ry="8" fill="#fff" opacity="0.8" />
+      <ellipse cx="186" cy="24" rx="18" ry="7" fill="#fff" opacity="0.8" />
+      <ellipse cx="120" cy="66" rx="68" ry="15" fill="#1E4368" />
+      <polygon points="118,66 168,42 150,66" fill="#16314D" />
+      <polygon points="118,70 150,96 108,74" fill="#16314D" />
+      <polygon points="58,66 42,52 66,62" fill="#1E4368" />
+      <circle cx="182" cy="66" r="6" fill="#DA4A38" />
+      <circle cx="96" cy="64" r="3" fill="#DCE7EE" /><circle cx="114" cy="64" r="3" fill="#DCE7EE" /><circle cx="132" cy="64" r="3" fill="#DCE7EE" /><circle cx="150" cy="64" r="3" fill="#DCE7EE" />
+    </>)
+    case 'station': return wrap('#DCE7EE', <>
+      <rect y="92" width="240" height="28" fill="#E6DEC9" />
+      <rect x="46" y="42" width="148" height="52" rx="6" fill="#5E8A6A" />
+      <rect x="46" y="42" width="148" height="15" fill="#4A7257" />
+      <text x="120" y="82" textAnchor="middle" fontSize="24" fontFamily="'Noto Serif JP', serif" fill="#fff">駅</text>
+      <rect x="150" y="60" width="36" height="28" rx="3" fill="#DCE7EE" />
+    </>)
+    case 'train': return wrap('#DCE7EE', <>
+      <rect y="98" width="240" height="6" fill="#9A8D6E" />
+      <rect x="34" y="40" width="172" height="58" rx="12" fill="#1E4368" />
+      <rect x="44" y="50" width="152" height="22" rx="4" fill="#DCE7EE" />
+      <rect x="34" y="40" width="16" height="58" rx="8" fill="#DA4A38" />
+      <circle cx="74" cy="102" r="7" fill="#3a3a38" /><circle cx="166" cy="102" r="7" fill="#3a3a38" />
+    </>)
+    case 'town': return wrap('#DCE7EE', <>
+      <rect y="92" width="240" height="28" fill="#CFE0C4" />
+      <rect x="34" y="58" width="44" height="36" fill="#EFE7D6" /><polygon points="30,58 56,38 82,58" fill="#DA4A38" /><rect x="50" y="74" width="12" height="20" fill="#8A6E4B" />
+      <rect x="100" y="50" width="44" height="44" fill="#E6DEC9" /><polygon points="96,50 122,30 148,50" fill="#1E4368" /><rect x="116" y="72" width="12" height="22" fill="#8A6E4B" />
+      <rect x="166" y="62" width="40" height="32" fill="#EFE7D6" /><polygon points="162,62 186,44 210,62" fill="#5E8A6A" />
+    </>)
+    case 'tea': return wrap('#EFEADF', <>
+      <ellipse cx="120" cy="104" rx="50" ry="7" fill="#D8CDB5" />
+      <path d="M88,64 h56 v14 a28,28 0 0 1 -56,0 z" fill="#fff" stroke="#C9BFA6" strokeWidth="2" />
+      <path d="M144,70 a13,13 0 0 1 0,22" fill="none" stroke="#C9BFA6" strokeWidth="4" />
+      <ellipse cx="116" cy="78" rx="20" ry="5" fill="#6E9A78" />
+      <path d="M104,56 q5,-8 0,-16 M120,56 q5,-8 0,-16 M136,56 q5,-8 0,-16" stroke="#B7AE97" strokeWidth="2.5" fill="none" />
+    </>)
+    case 'mountain': return wrap('#DCE7EE', <>
+      <rect y="92" width="240" height="28" fill="#CFE0C4" />
+      <polygon points="0,96 52,58 104,96" fill="#A8B6BC" />
+      <polygon points="58,96 120,28 182,96" fill="#8FA0A8" />
+      <polygon points="100,54 120,28 140,54 130,58 120,50 110,58" fill="#F4F2EC" />
+    </>)
+    case 'sky': return wrap('#DCE7EE', <>
+      <circle cx="192" cy="34" r="20" fill="#E8B84B" />
+      <ellipse cx="70" cy="48" rx="34" ry="13" fill="#fff" opacity="0.9" />
+      <ellipse cx="128" cy="76" rx="40" ry="14" fill="#fff" opacity="0.75" />
+    </>)
+    case 'path': return wrap('#CFE0C4', <>
+      <path d="M96,120 C140,95 80,80 120,55 C150,35 100,25 120,0" fill="none" stroke="#E0D6BC" strokeWidth="22" strokeLinecap="round" />
+      <path d="M96,120 C140,95 80,80 120,55 C150,35 100,25 120,0" fill="none" stroke="#C2B894" strokeWidth="2" strokeDasharray="2 8" />
+      <polygon points="44,66 30,96 58,96" fill="#5E8A6A" /><rect x="42" y="96" width="4" height="10" fill="#7A6242" />
+      <polygon points="200,72 188,98 212,98" fill="#5E8A6A" /><rect x="198" y="98" width="4" height="9" fill="#7A6242" />
+    </>)
+    case 'bird': return wrap('#DCE7EE', <>
+      <path d="M60,40 q12,-12 24,0 q12,-12 24,0" fill="none" stroke="#1E4368" strokeWidth="3.5" strokeLinecap="round" />
+      <ellipse cx="138" cy="74" rx="26" ry="17" fill="#5E8A6A" />
+      <circle cx="162" cy="64" r="10" fill="#5E8A6A" />
+      <circle cx="165" cy="62" r="2" fill="#211F1B" />
+      <polygon points="170,63 184,66 170,70" fill="#E8B84B" />
+      <polygon points="128,72 106,60 126,82" fill="#4A7257" />
+    </>)
+    case 'torii': return wrap('#DCE7EE', <>
+      <rect y="96" width="240" height="24" fill="#CFE0C4" />
+      <rect x="80" y="40" width="10" height="60" fill="#DA4A38" />
+      <rect x="150" y="40" width="10" height="60" fill="#DA4A38" />
+      <rect x="64" y="32" width="112" height="11" fill="#B23A2B" />
+      <rect x="74" y="48" width="92" height="7" fill="#DA4A38" />
+    </>)
+    case 'coffee': return wrap('#EFEADF', <>
+      <rect x="84" y="56" width="62" height="46" rx="6" fill="#fff" stroke="#C9BFA6" strokeWidth="2" />
+      <path d="M146,64 a14,14 0 0 1 0,24" fill="none" stroke="#C9BFA6" strokeWidth="4" />
+      <rect x="90" y="62" width="50" height="14" rx="3" fill="#6F4E37" />
+      <path d="M100,50 q5,-8 0,-16 M120,50 q5,-8 0,-16" stroke="#B7AE97" strokeWidth="2.5" fill="none" />
+    </>)
+    case 'car': return wrap('#DCE7EE', <>
+      <rect y="96" width="240" height="24" fill="#9A8D6E" />
+      <path d="M64,90 v-22 q0,-6 6,-6 h16 l14,-16 q3,-4 8,-4 h28 q5,0 8,4 l12,16 h14 q6,0 6,6 v22 z" fill="#DA4A38" />
+      <rect x="96" y="50" width="44" height="16" rx="3" fill="#DCE7EE" />
+      <circle cx="92" cy="92" r="11" fill="#2c2c2a" /><circle cx="162" cy="92" r="11" fill="#2c2c2a" />
+    </>)
+    case 'river': return wrap('#CFE0C4', <>
+      <path d="M0,36 q60,-12 120,0 t120,0 v22 q-60,12 -120,0 t-120,0 z" fill="#7FB0D6" />
+      <path d="M0,58 q60,-12 120,0 t120,0 v26 q-60,12 -120,0 t-120,0 z" fill="#5E97C2" />
+      <path d="M30,50 q8,-3 16,0 M120,64 q8,-3 16,0 M186,50 q8,-3 16,0" stroke="#fff" strokeWidth="2" fill="none" opacity="0.7" />
+    </>)
+    case 'animal': return wrap('#CFE0C4', <>
+      <rect y="100" width="240" height="20" fill="#BBD0B4" />
+      <ellipse cx="116" cy="78" rx="40" ry="19" fill="#B98B5E" />
+      <circle cx="158" cy="62" r="16" fill="#B98B5E" />
+      <polygon points="150,50 145,36 159,48" fill="#9A7048" />
+      <circle cx="163" cy="60" r="2.4" fill="#211F1B" />
+      <circle cx="171" cy="66" r="3" fill="#211F1B" />
+      <rect x="90" y="92" width="5" height="14" fill="#9A7048" /><rect x="138" y="92" width="5" height="14" fill="#9A7048" />
+      <path d="M78,72 q-16,-6 -10,8" fill="none" stroke="#B98B5E" strokeWidth="6" strokeLinecap="round" />
+    </>)
+    case 'fish': return wrap('#7FB0D6', <>
+      <ellipse cx="120" cy="60" rx="44" ry="24" fill="#DA8A4A" />
+      <polygon points="76,60 50,44 50,76" fill="#C2702F" />
+      <circle cx="150" cy="54" r="3.4" fill="#211F1B" />
+      <path d="M118,36 q8,-12 18,-6" fill="none" stroke="#C2702F" strokeWidth="4" />
+      <circle cx="58" cy="30" r="4" fill="#fff" opacity="0.6" /><circle cx="46" cy="40" r="2.6" fill="#fff" opacity="0.6" />
+    </>)
+    case 'body': return wrap('#EFEADF', <>
+      <circle cx="120" cy="34" r="13" fill="#E8C9A0" />
+      <rect x="108" y="48" width="24" height="40" rx="8" fill="#1E4368" />
+      <rect x="112" y="86" width="8" height="28" fill="#5A4632" /><rect x="120" y="86" width="8" height="28" fill="#5A4632" />
+      <rect x="97" y="52" width="8" height="30" rx="4" fill="#1E4368" /><rect x="135" y="52" width="8" height="30" rx="4" fill="#1E4368" />
+    </>)
+    case 'night': return wrap('#2A3A55', <>
+      <circle cx="192" cy="34" r="15" fill="#F4F2EC" />
+      <circle cx="186" cy="30" r="13" fill="#2A3A55" />
+      <g fill="#E8B84B">
+        <circle cx="40" cy="32" r="2.4" /><circle cx="78" cy="54" r="1.8" /><circle cx="110" cy="28" r="2.2" /><circle cx="150" cy="60" r="1.8" /><circle cx="64" cy="80" r="2" /><circle cx="130" cy="84" r="2.2" /><circle cx="30" cy="64" r="1.6" />
+      </g>
+    </>)
+    case 'home': return wrap('#DCE7EE', <>
+      <rect y="96" width="240" height="24" fill="#CFE0C4" />
+      <rect x="86" y="56" width="68" height="40" fill="#EFE7D6" />
+      <polygon points="78,56 120,28 162,56" fill="#DA4A38" />
+      <rect x="112" y="72" width="18" height="24" fill="#8A6E4B" />
+      <rect x="94" y="62" width="14" height="12" fill="#7FB0D6" />
+    </>)
+    default: return wrap('#EFEADF', <>
+      <rect x="60" y="34" width="120" height="64" rx="6" fill="#fff" stroke="#C9BFA6" strokeWidth="2" />
+      <path d="M76,52 h88 M76,66 h88 M76,80 h60" stroke="#C9BFA6" strokeWidth="3" />
+    </>)
+  }
+}
+
+// Eine aktiv erlebte Geschichts-Szene (am Lektionsende): Erzählung + Illustration
+// + kleine Übersetzungsfrage. Baut auf Gelerntem auf und wendet es an.
+function StoryScene({ id }) {
+  const { awardXp } = useContext(ProgressCtx)
   const s = STORY[id]
+  const [ans, setAns] = useState(null)
   if (!s) return null
+  const sc = s.scene
+  const revealed = ans != null
+  const choose = (o) => { if (revealed || !sc) return; setAns(o); if (o === sc.answer) awardXp(XP_PER_CARD) }
+
   return (
     <div style={{
       background: '#fff', borderRadius: 12, padding: '14px 16px', marginTop: 18,
@@ -505,13 +685,42 @@ function StoryBeat({ id }) {
     }}>
       <div style={{ fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>📖 DEINE REISE</div>
       <p style={{ fontSize: 14, color: C.sumi, lineHeight: 1.65, margin: 0 }}>{s.de}</p>
-      {s.jp && (
-        <div style={{ marginTop: 10, background: `${C.indigo}0D`, borderRadius: 8, padding: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{s.jp}</span>
-            <button onClick={() => speak(s.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🔊</button>
+      {sc ? (
+        <>
+          <div style={{ marginTop: 10, border: `1px solid ${C.washiDark}`, borderRadius: 8, overflow: 'hidden' }}>
+            {storyArt(sc.art)}
           </div>
-          {s.kana && <div style={{ fontSize: 12, color: C.textMuted }}>{s.kana}</div>}
+          <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div>
+              <span style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{sc.ask}</span>
+              {sc.kana && sc.kana !== sc.ask && <span style={{ fontSize: 12, color: C.textMuted, marginLeft: 8 }}>{sc.kana}</span>}
+            </div>
+            <button onClick={() => speak(sc.ask)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🔊</button>
+          </div>
+          <p style={{ fontSize: 13, color: C.textMuted, margin: '8px 0' }}>Was bedeutet das?</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+            {sc.options.map(o => {
+              const correct = o === sc.answer, chosen = o === ans
+              return (
+                <button key={o} onClick={() => choose(o)} disabled={revealed}
+                  style={{
+                    padding: '10px 12px', borderRadius: 8, border: '2px solid', textAlign: 'left',
+                    borderColor: !revealed ? C.washiDark : correct ? C.matcha : chosen ? C.shu : C.washiDark,
+                    background: !revealed ? '#fff' : correct ? `${C.matcha}20` : chosen ? `${C.shu}20` : '#fff',
+                    fontSize: 14, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
+                  }}>{o}</button>
+              )
+            })}
+          </div>
+          {revealed && (
+            <p style={{ marginTop: 8, fontSize: 13, color: ans === sc.answer ? C.matcha : C.shu, fontWeight: 600 }}>
+              {ans === sc.answer ? '✓ Richtig!' : `✗ ${sc.ask} = ${sc.answer}`}
+            </p>
+          )}
+        </>
+      ) : s.jp && (
+        <div style={{ marginTop: 10, background: `${C.indigo}0D`, borderRadius: 8, padding: 10 }}>
+          <span style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{s.jp}</span>
           <div style={{ fontSize: 14, color: C.indigo }}>„{s.tr}"</div>
         </div>
       )}
@@ -824,7 +1033,7 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
             }}>{k}</span>
           ))}
         </div>
-        <StoryBeat id={lesson.id} />
+        <StoryScene id={lesson.id} />
       </div>
     )
   } else {
@@ -1482,7 +1691,7 @@ function BlockCourse({ block, onComplete, onClose }) {
         <p style={{ lineHeight: 1.6, marginBottom: 16 }}>
           Du hast <strong>{words.length} Wörter</strong> gelernt. Die Kanji kommen ab jetzt in deinen Wiederholungen vor.
         </p>
-        <StoryBeat id={block.id} />
+        <StoryScene id={block.id} />
       </div>
     )
   } else {
@@ -1771,7 +1980,7 @@ function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
           Du hast <strong>{topic.title}</strong> verstanden und angewendet.
         </p>
         <div style={{ fontSize: 48, fontFamily: "'Noto Serif JP', serif", color: C.shu }}>{topic.glyph}</div>
-        <StoryBeat id={topic.id} />
+        <StoryScene id={topic.id} />
       </div>
     )
   }
