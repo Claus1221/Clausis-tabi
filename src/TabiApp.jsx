@@ -2214,6 +2214,22 @@ function FortschrittScreen() {
   )
 }
 
+// Furigana-Rendering: „漢字(かんじ)" → <ruby>漢字<rt>かんじ</rt></ruby>.
+function renderFuri(s) {
+  const re = /([一-龯々〆ヶ]+)\(([^)]+)\)/g
+  const out = []
+  let last = 0, m, i = 0
+  while ((m = re.exec(s)) !== null) {
+    if (m.index > last) out.push(<span key={i++}>{s.slice(last, m.index)}</span>)
+    out.push(<ruby key={i++}>{m[1]}<rt style={{ fontSize: '0.5em', color: '#6B6660', fontWeight: 400 }}>{m[2]}</rt></ruby>)
+    last = m.index + m[0].length
+  }
+  if (last < s.length) out.push(<span key={i++}>{s.slice(last)}</span>)
+  return out
+}
+// Lesbare Klammern für die Sprachausgabe entfernen (Kanji bleiben stehen).
+function furiPlain(s) { return s.replace(/\([^)]*\)/g, '') }
+
 // ─── Geschichts-Kapitel (eine Episode pro Welt) ──────────────────────────────
 // Jede Episode führt zuerst die NEUEN Wörter ein (intro: Bild+Schrift+Audio,
 // Deutsch nur einmal) und übt sie dann per ABRUF OHNE deutsche Krücke. Step-Typen:
@@ -2225,7 +2241,7 @@ function FortschrittScreen() {
 // Deutsch erscheint bei pic/audio/pic_choice ERST im Feedback (Feld `de`).
 const CHAPTERS = [
   { id: 'c1', title: 'Ankunft in Japan', steps: [
-    { kind: 'story', emoji: 'airplane', text: 'Dein Flugzeug setzt zur Landung an. Unter dir liegt Japan. Du atmest tief durch – die Reise beginnt.' },
+    { kind: 'story', emoji: 'airplane', jp: '日本(にほん)に着(つ)きました。', text: 'Du bist in Japan angekommen – die Reise beginnt.' },
     { kind: 'intro', emoji: 'airplane', jp: '飛行機', reading: 'ひこうき', de: 'Flugzeug' },
     { kind: 'intro', emoji: 'station', jp: '駅', reading: 'えき', de: 'Bahnhof' },
     { kind: 'intro', emoji: 'train', jp: '電車', reading: 'でんしゃ', de: 'Zug' },
@@ -2233,20 +2249,20 @@ const CHAPTERS = [
     { kind: 'audio', say: 'でんしゃ', options: ['電車', '駅', '飛行機'], answer: '電車', de: 'Zug' },
     { kind: 'pic_choice', jp: '駅', options: ['station', 'airplane', 'train'], answer: 'station', de: 'Bahnhof' },
     { kind: 'dialog', emoji: 'oldwoman', line: 'こんにちは。', prompt: 'Eine alte Frau grüßt dich. Was antwortest du?', options: ['こんにちは。', 'さようなら。', 'ありがとう。'], answer: 'こんにちは。', tr: 'Hallo / Guten Tag.' },
-    { kind: 'story', emoji: 'train', text: 'Du findest den richtigen Zug. Die Türen schließen mit einer höflichen Melodie. Deine Reise rollt los.' },
+    { kind: 'story', emoji: 'train', jp: '電車(でんしゃ)に乗(の)ります。', text: 'Du steigst in den Zug. Deine Reise rollt los.' },
   ] },
   { id: 'c2', title: 'Durch die Stadt', steps: [
-    { kind: 'story', emoji: 'city', text: 'Der Zug hält in einer kleinen Stadt. Du schlenderst durch enge Gassen voller Schilder.' },
+    { kind: 'story', emoji: 'city', jp: '町(まち)を歩(ある)きます。', text: 'Der Zug hält in einer kleinen Stadt. Du gehst durch die Gassen.' },
     { kind: 'intro', emoji: 'tea', jp: 'お茶', reading: 'おちゃ', de: 'Tee' },
     { kind: 'intro', emoji: 'mountain', jp: '山', reading: 'やま', de: 'Berg' },
     { kind: 'pic', emoji: 'tea', options: ['お茶', '山', '空'], answer: 'お茶', de: 'Tee' },
     { kind: 'pic_choice', jp: '山', options: ['mountain', 'wave', 'city'], answer: 'mountain', de: 'Berg' },
     { kind: 'trace', char: '山', reading: 'やま', de: 'Berg' },
     { kind: 'dialog', emoji: 'person', line: 'いらっしゃいませ！', prompt: 'Der Händler begrüßt dich. Du möchtest Tee. Was sagst du?', options: ['お茶、おねがいします。', 'さようなら。', 'こんばんは。'], answer: 'お茶、おねがいします。', tr: 'Tee, bitte.' },
-    { kind: 'story', emoji: 'tea', text: 'Mit einer Tasse Tee in der Hand verlässt du die Stadt. Vor dir: grüne Hügel.' },
+    { kind: 'story', emoji: 'tea', jp: 'お茶(ちゃ)を飲(の)みます。', text: 'Du trinkst einen Tee. Vor dir: grüne Hügel.' },
   ] },
   { id: 'c3', title: 'In die Natur', steps: [
-    { kind: 'story', emoji: 'mountain', text: 'Der Weg führt in die Berge. Ein Fluss glitzert im Tal, der Himmel ist weit.' },
+    { kind: 'story', emoji: 'mountain', jp: '山(やま)が見(み)えます。', text: 'Der Weg führt in die Berge. Ein Fluss glitzert im Tal.' },
     { kind: 'intro', emoji: 'river', jp: '川', reading: 'かわ', de: 'Fluss' },
     { kind: 'intro', emoji: 'sun', jp: '空', reading: 'そら', de: 'Himmel' },
     { kind: 'pic', emoji: 'river', options: ['川', '山', '空'], answer: '川', de: 'Fluss' },
@@ -2254,10 +2270,10 @@ const CHAPTERS = [
     { kind: 'build', prompt: 'Bilde den Satz: „Das ist ein Berg."', tiles: ['これ', 'は', '山', 'です'], answer: ['これ', 'は', '山', 'です'], tr: 'これは山です。' },
     { kind: 'gap', text: 'これ＿山です。', prompt: 'Welche Partikel markiert das Thema?', options: ['は', 'を', 'が'], answer: 'は', hint: 'は markiert das Thema.' },
     { kind: 'trace', char: '川', reading: 'かわ', de: 'Fluss' },
-    { kind: 'story', emoji: 'river', text: 'Du benennst, was du siehst – Berg, Fluss, Himmel. Die fremde Welt wird langsam deine.' },
+    { kind: 'story', emoji: 'river', jp: 'これは川(かわ)です。空(そら)は青(あお)いです。', text: 'Das ist ein Fluss. Der Himmel ist blau.' },
   ] },
   { id: 'c4', title: 'Begegnungen', steps: [
-    { kind: 'story', emoji: 'dog', text: 'Auf dem Wanderweg begegnest du Tieren – und kantigeren Zeichen: Katakana, für Wörter aus aller Welt.' },
+    { kind: 'story', emoji: 'dog', jp: '犬(いぬ)が走(はし)ります。', text: 'Tiere überall – und neue, kantige Zeichen: Katakana.' },
     { kind: 'intro', emoji: 'dog', jp: '犬', reading: 'いぬ', de: 'Hund' },
     { kind: 'intro', emoji: 'fish', jp: '魚', reading: 'さかな', de: 'Fisch' },
     { kind: 'pic', emoji: 'dog', options: ['犬', '猫', '魚'], answer: '犬', de: 'Hund' },
@@ -2265,10 +2281,10 @@ const CHAPTERS = [
     { kind: 'sign', sign: 'コーヒー', prompt: 'An einem Automaten: コーヒー. Das ist…', options: ['Kaffee', 'Tee', 'Milch'], answer: 'Kaffee' },
     { kind: 'build', prompt: 'Bilde: „Der Hund rennt."', tiles: ['犬', 'が', '走ります'], answer: ['犬', 'が', '走ります'], tr: '犬が走ります。' },
     { kind: 'gap', text: '魚＿食べます。', prompt: 'Welche Partikel markiert das Objekt?', options: ['を', 'が', 'に'], answer: 'を', hint: 'を markiert das Objekt.' },
-    { kind: 'story', emoji: 'fish', text: 'Am Fluss winkt dir ein Fischer zu. Du verstehst immer mehr von dem, was um dich herum geschieht.' },
+    { kind: 'story', emoji: 'fish', jp: '魚(さかな)を見(み)ます。', text: 'Am Fluss winkt dir ein Fischer zu.' },
   ] },
   { id: 'c5', title: 'Der Aufstieg', steps: [
-    { kind: 'story', emoji: 'person', text: 'Der Aufstieg wird hart. Du spürst jeden Muskel – und übst die Wörter dafür.' },
+    { kind: 'story', emoji: 'person', jp: '山(やま)を登(のぼ)ります。', text: 'Der Aufstieg wird hart. Du spürst jeden Muskel.' },
     { kind: 'intro', emoji: 'eye', jp: '目', reading: 'め', de: 'Auge' },
     { kind: 'intro', emoji: 'hand', jp: '手', reading: 'て', de: 'Hand' },
     { kind: 'pic', emoji: 'eye', options: ['目', '手', '耳'], answer: '目', de: 'Auge' },
@@ -2276,17 +2292,17 @@ const CHAPTERS = [
     { kind: 'trace', char: '目', reading: 'め', de: 'Auge' },
     { kind: 'build', prompt: 'Bilde: „Ich trinke Wasser."', tiles: ['水', 'を', '飲みます'], answer: ['水', 'を', '飲みます'], tr: '水を飲みます。' },
     { kind: 'gap', text: '家＿帰ります。', prompt: 'Welche Partikel zeigt das Ziel (wohin)?', options: ['に', 'で', 'を'], answer: 'に', hint: 'に zeigt Ziel/Richtung.' },
-    { kind: 'story', emoji: 'mountain', text: 'Erschöpft erreichst du eine Hütte. Morgen wartet der Gipfel.' },
+    { kind: 'story', emoji: 'mountain', jp: '足(あし)が痛(いた)いです。', text: 'Erschöpft erreichst du eine Hütte. Morgen wartet der Gipfel.' },
   ] },
   { id: 'c6', title: 'Zum Gipfel', steps: [
-    { kind: 'story', emoji: 'fuji', text: 'Der letzte Morgen. Vor dir ragt der berühmteste Berg Japans auf.' },
+    { kind: 'story', emoji: 'fuji', jp: '日本(にほん)の山(やま)です。', text: 'Der letzte Morgen. Vor dir ragt der berühmteste Berg Japans auf.' },
     { kind: 'intro', emoji: 'japan', jp: '日本', reading: 'にほん', de: 'Japan' },
     { kind: 'pic_choice', jp: '日本', options: ['japan', 'mountain', 'torii'], answer: 'japan', de: 'Japan' },
     { kind: 'build', prompt: 'Bilde: „Die Katze frisst den Fisch."', tiles: ['猫', 'が', '魚', 'を', '食べます'], answer: ['猫', 'が', '魚', 'を', '食べます'], tr: '猫が魚を食べます。' },
     { kind: 'gap', text: '星＿きれいです。', prompt: 'Welche Partikel markiert das Thema „die Sterne"?', options: ['は', 'を', 'が'], answer: 'は', hint: 'は markiert das Thema.' },
     { kind: 'dialog', emoji: 'person', line: '水を飲みますか？', prompt: 'Ein Mitwanderer fragt. Du hast Durst. Antworte höflich:', options: ['はい、飲みます。', 'いいえ、飲みません。', 'こんにちは。'], answer: 'はい、飲みます。', tr: 'Ja, ich trinke.' },
     { kind: 'tf', emoji: 'fuji', jp: '日本の山です。', prompt: 'Stimmt es zum Bild?', answer: true },
-    { kind: 'story', emoji: 'party', text: 'Du stehst auf dem Gipfel. おめでとうございます！Du kannst dieses Land jetzt lesen, hören und sprechen. 旅は終わりました – eine neue Reise beginnt.' },
+    { kind: 'story', emoji: 'party', jp: 'おめでとうございます！旅(たび)は終(お)わりました。', text: 'Du stehst auf dem Gipfel. Eine neue Reise beginnt.' },
   ] },
 ]
 const CHAPTER_BY_ID = Object.fromEntries(CHAPTERS.map(c => [c.id, c]))
@@ -2639,8 +2655,14 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
   } else if (cur.kind === 'story') {
     content = (
       <div style={{ textAlign: 'center', padding: '8px 0' }}>
-        <Emoji name={cur.emoji} size={88} />
-        <p style={{ fontSize: 16, color: C.sumi, lineHeight: 1.7, marginTop: 16 }}>{cur.text}</p>
+        <Emoji name={cur.emoji} size={80} />
+        {cur.jp && (
+          <div style={{ marginTop: 16, fontSize: 24, fontFamily: "'Noto Serif JP', serif", lineHeight: 2.1, color: C.sumi }}>
+            {renderFuri(cur.jp)}
+            <button onClick={() => speak(furiPlain(cur.jp))} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, marginLeft: 6, verticalAlign: 'middle' }}>🔊</button>
+          </div>
+        )}
+        {cur.text && <p style={{ fontSize: cur.jp ? 13 : 16, color: cur.jp ? C.textMuted : C.sumi, lineHeight: 1.6, marginTop: cur.jp ? 10 : 16 }}>{cur.text}</p>}
       </div>
     )
   } else if (cur.kind === 'intro') {
