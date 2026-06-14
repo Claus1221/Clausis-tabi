@@ -191,7 +191,10 @@ function learnedWordKanji(completedBlocks) {
 
 // ─── Grammatik-Themen ────────────────────────────────────────────────────────
 // Jedes Thema: Glyphe, Titel, Kurzbeschreibung, Erklärungs-Abschnitte (body),
-// Beispiele (jp/kana/de). Themen schalten der Reihe nach frei.
+// Beispiele (jp/kana/de + antippbare tokens) und Anwendungs-Übungen (exercises).
+// Beispiel-Tokens: { t: Text, r: Lesung, de: Bedeutung, b: Aufbau } – Tokens ohne
+// „de" (z. B. 。) sind nicht antippbar. Übung: { q: Satz mit ＿, a: Lösung,
+// options: [..], hint: Erklärung }. Themen schalten der Reihe nach frei.
 const GRAMMAR = [
   {
     id: 'g1', glyph: 'は', title: 'は – das Thema', summary: 'Worüber gesprochen wird (gelesen „wa")',
@@ -200,8 +203,14 @@ const GRAMMAR = [
       { h: 'Muster', text: '〈Thema〉 は 〈Aussage〉。  →  oft „A は B です" = „A ist B".' },
     ],
     examples: [
-      { jp: 'これは水です。', kana: 'これはみずです。', de: 'Das ist Wasser.' },
-      { jp: '山は高いです。', kana: 'やまはたかいです。', de: 'Der Berg ist hoch.' },
+      { jp: 'これは水です。', kana: 'これはみずです。', de: 'Das ist Wasser.', tokens: [
+        { t: 'これ', r: 'これ', de: 'das / dies', b: 'Demonstrativpronomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
+      { jp: '山は高いです。', kana: 'やまはたかいです。', de: 'Der Berg ist hoch.', tokens: [
+        { t: '山', r: 'やま', de: 'Berg', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '高い', r: 'たかい', de: 'hoch', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '山＿高いです。', a: 'は', options: ['は', 'を', 'に'], hint: 'は markiert das Thema: „Was den Berg betrifft – hoch."' },
+      { q: 'これ＿水です。', a: 'は', options: ['は', 'が', 'で'], hint: 'A は B です = „A ist B".' },
     ],
   },
   {
@@ -212,8 +221,14 @@ const GRAMMAR = [
       { h: 'Vergangenheit', text: '„でした" = „war".' },
     ],
     examples: [
-      { jp: '猫です。', kana: 'ねこです。', de: 'Es ist eine Katze.' },
-      { jp: '水ではありません。', kana: 'みずではありません。', de: 'Es ist kein Wasser.' },
+      { jp: '猫です。', kana: 'ねこです。', de: 'Es ist eine Katze.', tokens: [
+        { t: '猫', r: 'ねこ', de: 'Katze', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
+      { jp: '水ではありません。', kana: 'みずではありません。', de: 'Es ist kein Wasser.', tokens: [
+        { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'ではありません', de: 'ist nicht', b: 'Verneinung von です' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '猫＿。 (Es ist eine Katze.)', a: 'です', options: ['です', 'ます', 'を'], hint: 'Nomen + です = „ist".' },
+      { q: '水＿。 (Es ist kein Wasser.)', a: 'ではありません', options: ['ではありません', 'です', 'でした'], hint: 'Verneinung von です = ではありません.' },
     ],
   },
   {
@@ -223,8 +238,14 @@ const GRAMMAR = [
       { h: 'は vs が', text: 'は hebt das Thema hervor („was X betrifft …"), が betont das Subjekt selbst („gerade DIESES").' },
     ],
     examples: [
-      { jp: '犬が走ります。', kana: 'いぬがはしります。', de: 'Der Hund rennt.' },
-      { jp: '猫が好きです。', kana: 'ねこがすきです。', de: 'Ich mag Katzen.' },
+      { jp: '犬が走ります。', kana: 'いぬがはしります。', de: 'Der Hund rennt.', tokens: [
+        { t: '犬', r: 'いぬ', de: 'Hund', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '走ります', r: 'はしります', de: 'rennen', b: 'Verb, höflich' }, { t: '。' } ] },
+      { jp: '猫が好きです。', kana: 'ねこがすきです。', de: 'Ich mag Katzen.', tokens: [
+        { t: '猫', r: 'ねこ', de: 'Katze', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Partikel bei 好き' }, { t: '好き', r: 'すき', de: 'mögen', b: 'な-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '犬＿走ります。', a: 'が', options: ['が', 'を', 'は'], hint: 'Das Subjekt (der Hund) wird mit が markiert.' },
+      { q: '猫＿好きです。', a: 'が', options: ['が', 'を', 'に'], hint: 'Bei 好き steht das Gemochte mit が.' },
     ],
   },
   {
@@ -234,8 +255,14 @@ const GRAMMAR = [
       { h: 'Muster', text: '〈Objekt〉 を 〈Verb〉。' },
     ],
     examples: [
-      { jp: '水を飲みます。', kana: 'みずをのみます。', de: 'Ich trinke Wasser.' },
-      { jp: '魚を食べます。', kana: 'さかなをたべます。', de: 'Ich esse Fisch.' },
+      { jp: '水を飲みます。', kana: 'みずをのみます。', de: 'Ich trinke Wasser.', tokens: [
+        { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'を', r: 'o', de: '(Objekt)', b: 'Objektpartikel' }, { t: '飲みます', r: 'のみます', de: 'trinken', b: 'Verb, höflich' }, { t: '。' } ] },
+      { jp: '魚を食べます。', kana: 'さかなをたべます。', de: 'Ich esse Fisch.', tokens: [
+        { t: '魚', r: 'さかな', de: 'Fisch', b: 'Nomen' }, { t: 'を', r: 'o', de: '(Objekt)', b: 'Objektpartikel' }, { t: '食べます', r: 'たべます', de: 'essen', b: 'Verb, höflich' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '水＿飲みます。', a: 'を', options: ['を', 'が', 'は'], hint: 'Das Objekt vor dem Verb → を.' },
+      { q: '魚＿食べます。', a: 'を', options: ['を', 'に', 'で'], hint: 'Was gegessen wird, ist das Objekt → を.' },
     ],
   },
   {
@@ -245,8 +272,14 @@ const GRAMMAR = [
       { h: 'で', text: 'で zeigt den Ort einer Handlung („wo") oder das Mittel („womit").' },
     ],
     examples: [
-      { jp: '家に帰ります。', kana: 'いえにかえります。', de: 'Ich gehe nach Hause. (Ziel)' },
-      { jp: '車で行きます。', kana: 'くるまでいきます。', de: 'Ich fahre mit dem Auto. (Mittel)' },
+      { jp: '家に帰ります。', kana: 'いえにかえります。', de: 'Ich gehe nach Hause. (Ziel)', tokens: [
+        { t: '家', r: 'いえ', de: 'Haus / Zuhause', b: 'Nomen' }, { t: 'に', de: '(Richtung)', b: 'Richtungspartikel (wohin)' }, { t: '帰ります', r: 'かえります', de: 'zurückkehren', b: 'Verb, höflich' }, { t: '。' } ] },
+      { jp: '車で行きます。', kana: 'くるまでいきます。', de: 'Ich fahre mit dem Auto. (Mittel)', tokens: [
+        { t: '車', r: 'くるま', de: 'Auto', b: 'Nomen' }, { t: 'で', de: '(Mittel)', b: 'Partikel: womit' }, { t: '行きます', r: 'いきます', de: 'gehen / fahren', b: 'Verb, höflich' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '家＿帰ります。', a: 'に', options: ['に', 'で', 'を'], hint: 'Ziel/Richtung („wohin") → に.' },
+      { q: '車＿行きます。', a: 'で', options: ['で', 'に', 'を'], hint: 'Mittel („womit") → で.' },
     ],
   },
   {
@@ -257,8 +290,14 @@ const GRAMMAR = [
       { text: 'Beispiel 飲む (trinken) → 飲みます / 飲みません / 飲みました.' },
     ],
     examples: [
-      { jp: '水を飲みます。', kana: 'みずをのみます。', de: 'Ich trinke Wasser.' },
-      { jp: '水を飲みません。', kana: 'みずをのみません。', de: 'Ich trinke kein Wasser.' },
+      { jp: '水を飲みます。', kana: 'みずをのみます。', de: 'Ich trinke Wasser.', tokens: [
+        { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'を', r: 'o', de: '(Objekt)', b: 'Objektpartikel' }, { t: '飲みます', r: 'のみます', de: 'trinke', b: 'ます-Form (Gegenwart)' }, { t: '。' } ] },
+      { jp: '水を飲みません。', kana: 'みずをのみません。', de: 'Ich trinke kein Wasser.', tokens: [
+        { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'を', r: 'o', de: '(Objekt)', b: 'Objektpartikel' }, { t: '飲みません', r: 'のみません', de: 'trinke nicht', b: 'verneinte ます-Form' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '水を飲み＿。 (Ich trinke nicht.)', a: 'ません', options: ['ません', 'ます', 'ました'], hint: 'Verneinung: 〜ません.' },
+      { q: '水を飲み＿。 (Ich trank.)', a: 'ました', options: ['ました', 'ます', 'ません'], hint: 'Vergangenheit: 〜ました.' },
     ],
   },
   {
@@ -268,8 +307,14 @@ const GRAMMAR = [
       { h: 'な-Adjektive', text: 'brauchen な vor einem Nomen (きれいな花 = eine schöne Blume). Am Satzende ebenfalls mit です.' },
     ],
     examples: [
-      { jp: '山は高いです。', kana: 'やまはたかいです。', de: 'Der Berg ist hoch. (い-Adjektiv)' },
-      { jp: '星はきれいです。', kana: 'ほしはきれいです。', de: 'Die Sterne sind schön. (な-Adjektiv)' },
+      { jp: '山は高いです。', kana: 'やまはたかいです。', de: 'Der Berg ist hoch. (い-Adjektiv)', tokens: [
+        { t: '山', r: 'やま', de: 'Berg', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '高い', r: 'たかい', de: 'hoch', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
+      { jp: '星はきれいです。', kana: 'ほしはきれいです。', de: 'Die Sterne sind schön. (な-Adjektiv)', tokens: [
+        { t: '星', r: 'ほし', de: 'Stern', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: 'きれい', de: 'schön', b: 'な-Adjektiv (am Satzende ohne な)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '山は＿です。 (hoch)', a: '高い', options: ['高い', '高', '高く'], hint: 'い-Adjektiv bleibt vor です unverändert: 高い.' },
+      { q: '星は＿です。 (schön)', a: 'きれい', options: ['きれい', 'きれいな', 'きれく'], hint: 'な-Adjektiv am Satzende ohne な: きれい です.' },
     ],
   },
   {
@@ -279,8 +324,14 @@ const GRAMMAR = [
       { h: 'Muster', text: '〈Aussage〉 か。' },
     ],
     examples: [
-      { jp: '猫ですか。', kana: 'ねこですか。', de: 'Ist es eine Katze?' },
-      { jp: '水を飲みますか。', kana: 'みずをのみますか。', de: 'Trinkst du Wasser?' },
+      { jp: '猫ですか。', kana: 'ねこですか。', de: 'Ist es eine Katze?', tokens: [
+        { t: '猫', r: 'ねこ', de: 'Katze', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: 'か', de: '(Frage)', b: 'Fragepartikel' }, { t: '。' } ] },
+      { jp: '水を飲みますか。', kana: 'みずをのみますか。', de: 'Trinkst du Wasser?', tokens: [
+        { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'を', r: 'o', de: '(Objekt)', b: 'Objektpartikel' }, { t: '飲みます', r: 'のみます', de: 'trinken', b: 'Verb, höflich' }, { t: 'か', de: '(Frage)', b: 'Fragepartikel' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '猫です＿。 (Ist es eine Katze?)', a: 'か', options: ['か', 'は', 'を'], hint: 'か am Satzende macht die Frage.' },
+      { q: '水を飲みます＿。 (Trinkst du Wasser?)', a: 'か', options: ['か', 'は', 'です'], hint: 'Auch nach ます: 〜ますか = Frage.' },
     ],
   },
   {
@@ -289,8 +340,14 @@ const GRAMMAR = [
       { text: 'の verbindet zwei Nomen. „A の B" bedeutet meist „Bs A" bzw. „das B von A".' },
     ],
     examples: [
-      { jp: '私の犬。', kana: 'わたしのいぬ。', de: 'Mein Hund. (私 = ich)' },
-      { jp: '日本の車。', kana: 'にほんのくるま。', de: 'Ein japanisches Auto. (日本 = Japan)' },
+      { jp: '私の犬。', kana: 'わたしのいぬ。', de: 'Mein Hund. (私 = ich)', tokens: [
+        { t: '私', r: 'わたし', de: 'ich', b: 'Nomen' }, { t: 'の', de: 'von / -s', b: 'Verbindungspartikel (Besitz)' }, { t: '犬', r: 'いぬ', de: 'Hund', b: 'Nomen' }, { t: '。' } ] },
+      { jp: '日本の車。', kana: 'にほんのくるま。', de: 'Ein japanisches Auto. (日本 = Japan)', tokens: [
+        { t: '日本', r: 'にほん', de: 'Japan', b: 'Nomen' }, { t: 'の', de: 'von / -s', b: 'Verbindungspartikel' }, { t: '車', r: 'くるま', de: 'Auto', b: 'Nomen' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '私＿犬。 (mein Hund)', a: 'の', options: ['の', 'は', 'が'], hint: 'A の B = „Bs A": 私 の 犬.' },
+      { q: '日本＿車。 (japanisches Auto)', a: 'の', options: ['の', 'に', 'で'], hint: 'の verbindet die zwei Nomen.' },
     ],
   },
   {
@@ -300,7 +357,12 @@ const GRAMMAR = [
       { text: 'Weil Partikel die Rolle jedes Wortes anzeigen, ist die Reihenfolge flexibler als im Deutschen – das Verb bleibt aber hinten.' },
     ],
     examples: [
-      { jp: '猫が魚を食べます。', kana: 'ねこがさかなをたべます。', de: 'Die Katze frisst den Fisch.' },
+      { jp: '猫が魚を食べます。', kana: 'ねこがさかなをたべます。', de: 'Die Katze frisst den Fisch.', tokens: [
+        { t: '猫', r: 'ねこ', de: 'Katze', b: 'Subjekt' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '魚', r: 'さかな', de: 'Fisch', b: 'Objekt' }, { t: 'を', r: 'o', de: '(Objekt)', b: 'Objektpartikel' }, { t: '食べます', r: 'たべます', de: 'essen', b: 'Verb (am Ende!)' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '„Die Katze frisst den Fisch." – Welcher Satz ist korrekt?', a: '猫が魚を食べます。', options: ['猫が魚を食べます。', '魚が猫を食べます。', '食べます猫が魚を。'], hint: 'Subjekt(が) – Objekt(を) – Verb am Ende.' },
+      { q: 'Wo steht im japanischen Satz das Verb?', a: 'am Ende', options: ['am Ende', 'am Anfang', 'in der Mitte'], hint: 'SOV: Das Verb steht (fast) immer am Satzende.' },
     ],
   },
 ]
@@ -1468,21 +1530,129 @@ function BlockPath() {
 
 // ─── Grammatik-Lernpfad ──────────────────────────────────────────────────────
 
-function ExampleRow({ ex }) {
+// Beispielsatz mit antippbaren Wörtern (Bedeutung + Aufbau als Tooltip).
+function TappableSentence({ ex }) {
+  const [active, setActive] = useState(null)
+  const tokens = ex.tokens || null
+  const tk = tokens && active != null ? tokens[active] : null
+
   return (
-    <div style={{ padding: '8px 0', borderBottom: `1px solid ${C.washiDark}` }}>
+    <div style={{ padding: '6px 0', borderBottom: `1px solid ${C.washiDark}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-        <div style={{ fontSize: 19, fontFamily: "'Noto Serif JP', serif" }}>{ex.jp}</div>
-        <button onClick={() => speak(ex.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, flexShrink: 0 }}>🔊</button>
+        <div style={{ fontSize: 26, fontFamily: "'Noto Serif JP', serif", lineHeight: 1.5 }}>
+          {tokens ? tokens.map((t, i) => {
+            if (!t.de) return <span key={i}>{t.t}</span>
+            const on = active === i
+            return (
+              <span key={i} onClick={() => setActive(on ? null : i)}
+                style={{
+                  cursor: 'pointer', borderRadius: 4, padding: '0 1px',
+                  borderBottom: `2px dotted ${on ? C.shu : `${C.indigo}66`}`,
+                  background: on ? `${C.shu}22` : 'transparent',
+                }}>{t.t}</span>
+            )
+          }) : ex.jp}
+        </div>
+        <button onClick={() => speak(ex.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}>🔊</button>
       </div>
-      <div style={{ fontSize: 12, color: C.textMuted }}>{ex.kana}</div>
-      <div style={{ fontSize: 14, color: C.indigo }}>„{ex.de}"</div>
+      <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>{ex.kana}</div>
+      <div style={{ fontSize: 15, color: C.indigo }}>„{ex.de}"</div>
+
+      {tokens && (tk ? (
+        <div style={{ background: `${C.indigo}10`, border: `1px solid ${C.indigo}30`, borderRadius: 8, padding: 10, marginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.sumi }}>{tk.t}</span>
+            {tk.r && tk.r !== tk.t && <span style={{ fontSize: 13, color: C.textMuted }}>{tk.r}</span>}
+          </div>
+          <div style={{ fontSize: 14, color: C.indigo, fontWeight: 600 }}>{tk.de}</div>
+          <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>Aufbau: {tk.b}</div>
+        </div>
+      ) : (
+        <div style={{ fontSize: 11, color: C.textMuted, fontStyle: 'italic', marginTop: 6 }}>
+          💡 Tippe ein Wort für Bedeutung & Aufbau
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const HAS_JP = /[぀-ヿ一-龯]/
+
+// Eine Anwendungs-Übung: Lücke füllen, Lösung wählen, Erklärung sehen.
+function GrammarExercise({ ex, idx, total, onNext, isLast }) {
+  const { awardXp } = useContext(ProgressCtx)
+  const [ans, setAns] = useState(null)
+  const revealed = ans != null
+  const correct = ans === ex.a
+
+  const choose = (o) => {
+    if (revealed) return
+    setAns(o)
+    if (o === ex.a) awardXp(XP_PER_CARD)
+  }
+
+  const shown = revealed ? ex.q.replace('＿', ex.a) : ex.q
+
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <p style={{ color: C.textMuted, fontSize: 13, marginBottom: 12 }}>Anwenden · {idx} / {total}</p>
+
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 24, fontFamily: "'Noto Serif JP', serif", lineHeight: 1.6, color: C.sumi }}>
+          {revealed ? shown : ex.q.split('＿').map((part, i, arr) => (
+            <span key={i}>{part}{i < arr.length - 1 && (
+              <span style={{ display: 'inline-block', minWidth: 36, borderBottom: `2px solid ${C.shu}`, color: C.shu }}>＿</span>
+            )}</span>
+          ))}
+        </div>
+      </Card>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {ex.options.map(o => {
+          const isCorrect = o === ex.a
+          const isChosen = o === ans
+          return (
+            <button key={o} onClick={() => choose(o)} disabled={revealed}
+              style={{
+                padding: '14px 8px', borderRadius: 8, border: '2px solid',
+                borderColor: !revealed ? C.washiDark : isCorrect ? C.matcha : isChosen ? C.shu : C.washiDark,
+                background: !revealed ? '#fff' : isCorrect ? `${C.matcha}20` : isChosen ? `${C.shu}20` : '#fff',
+                fontSize: HAS_JP.test(o) ? 20 : 14,
+                fontFamily: HAS_JP.test(o) ? "'Noto Serif JP', serif" : 'inherit',
+                fontWeight: 600, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
+              }}>{o}</button>
+          )
+        })}
+      </div>
+
+      {revealed && (
+        <>
+          <p style={{ marginTop: 12, color: correct ? C.matcha : C.shu, fontWeight: 600 }}>
+            {correct ? '✓ Richtig!' : `✗ Richtig: ${ex.a}`}
+          </p>
+          <div style={{ background: `${C.indigo}10`, border: `1px solid ${C.indigo}30`, borderRadius: 8, padding: 10, marginTop: 8, fontSize: 13, color: C.sumi }}>
+            💡 {ex.hint}
+          </div>
+          <Btn onClick={onNext} style={{ marginTop: 12, width: '100%' }}>
+            {isLast ? 'Übungen abschließen →' : 'Nächste Übung →'}
+          </Btn>
+        </>
+      )}
     </div>
   )
 }
 
 function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
+  const exercises = topic.exercises || []
+  const totalSteps = 1 + exercises.length + 1 // Erklärung + Übungen + Abschluss
+  const [step, setStep] = useState(0)
   const [copied, setCopied] = useState(false)
+
+  const isIntro = step === 0
+  const isExercise = step >= 1 && step <= exercises.length
+  const isDone = step === totalSteps - 1
+  const progress = Math.round((step / (totalSteps - 1)) * 100)
+
   const clip =
     `Grammatik: ${topic.title}\n\n` +
     topic.body.map(s => (s.h ? `${s.h}: ` : '') + s.text).join('\n') +
@@ -1493,31 +1663,24 @@ function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
     if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1800) }
   }
 
-  return (
-    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
-      <div style={{ padding: '12px 16px', background: '#fff', borderBottom: `1px solid ${C.washiDark}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted }}>✕</button>
-        <h3 style={{ fontSize: 14, fontFamily: "'Noto Serif JP', serif", color: C.indigo }}>Grammatik</h3>
-      </div>
-
-      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+  let content = null
+  if (isIntro) {
+    content = (
+      <>
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
           <div style={{ fontSize: 48, fontFamily: "'Noto Serif JP', serif", color: C.shu }}>{topic.glyph}</div>
           <h2 style={{ fontSize: 20, color: C.indigo, marginTop: 4 }}>{topic.title}</h2>
         </div>
-
         {topic.body.map((s, i) => (
           <div key={i} style={{ marginBottom: 12 }}>
             {s.h && <div style={{ fontSize: 12, color: C.shu, fontWeight: 700, marginBottom: 2 }}>{s.h}</div>}
             <p style={{ fontSize: 14, color: C.sumi, lineHeight: 1.6 }}>{s.text}</p>
           </div>
         ))}
-
         <Card style={{ marginTop: 8 }}>
           <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>BEISPIELE</div>
-          {topic.examples.map((ex, i) => <ExampleRow key={i} ex={ex} />)}
+          {topic.examples.map((ex, i) => <TappableSentence key={i} ex={ex} />)}
         </Card>
-
         <button onClick={handleCopy}
           style={{
             width: '100%', marginTop: 12, padding: '11px 0', borderRadius: 8,
@@ -1527,13 +1690,57 @@ function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
           }}>
           {copied ? '✓ Kopiert' : '📋 Thema kopieren'}
         </button>
+      </>
+    )
+  } else if (isExercise) {
+    content = (
+      <GrammarExercise
+        key={step}
+        ex={exercises[step - 1]}
+        idx={step}
+        total={exercises.length}
+        isLast={step === exercises.length}
+        onNext={() => setStep(s => s + 1)}
+      />
+    )
+  } else {
+    content = (
+      <div style={{ textAlign: 'center', padding: '8px 0' }}>
+        <div style={{ fontSize: 56, marginBottom: 12 }}>🎉</div>
+        <h2 style={{ fontSize: 22, fontFamily: "'Noto Serif JP', serif", color: C.matcha, marginBottom: 8 }}>Geschafft!</h2>
+        <p style={{ lineHeight: 1.6, marginBottom: 8 }}>
+          Du hast <strong>{topic.title}</strong> verstanden und angewendet.
+        </p>
+        <div style={{ fontSize: 48, fontFamily: "'Noto Serif JP', serif", color: C.shu }}>{topic.glyph}</div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
+      <div style={{ padding: '12px 16px', background: '#fff', borderBottom: `1px solid ${C.washiDark}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted }}>✕</button>
+          <div style={{ flex: 1, height: 6, background: C.washiDark, borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: C.shu, borderRadius: 3, transition: 'width 0.3s' }} />
+          </div>
+          <h3 style={{ fontSize: 13, fontFamily: "'Noto Serif JP', serif", color: C.indigo }}>{topic.glyph}</h3>
+        </div>
       </div>
 
-      <div style={{ padding: '16px 20px', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
-        <Btn onClick={onDone} style={{ width: '100%' }} variant={alreadyDone ? 'ghost' : 'primary'}>
-          {alreadyDone ? 'Gelesen ✓ – Schließen' : 'Verstanden ✓'}
-        </Btn>
-      </div>
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>{content}</div>
+
+      {!isExercise && (
+        <div style={{ padding: '16px 20px', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
+          {isIntro && exercises.length > 0 ? (
+            <Btn onClick={() => setStep(1)} style={{ width: '100%' }}>Anwenden – Übungen starten →</Btn>
+          ) : (
+            <Btn onClick={onDone} style={{ width: '100%' }} variant={alreadyDone && isIntro ? 'ghost' : 'primary'}>
+              {isDone ? 'Verstanden ✓' : alreadyDone ? 'Gelesen ✓ – Schließen' : 'Verstanden ✓'}
+            </Btn>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -1990,9 +2197,6 @@ const PATH = [
   { type: 'goal', id: 'fuji' },
 ]
 
-const WORLD_TINTS = ['#E9EFEA', '#E7ECEF', '#EBEFE6', '#ECEAEF', '#EFEDE6', '#E7EEF1']
-const GROUND_TINTS = ['#D7E0CE', '#CBD7C8', '#D9E0CB', '#D3CFDC', '#E0DBC8', '#CCD9D8']
-
 // Kleine flache Landschafts-Motive (Bäume, Torii) als SVG-Gruppen.
 function sceneTree(x, baseY, s, key, c1 = '#5E8A6A', c2 = '#6E9A78') {
   return (
@@ -2012,6 +2216,43 @@ function sceneTorii(x, y, s, key) {
       <rect x={x - 17 * s} y={y} width={34 * s} height={4 * s} fill="#DA4A38" />
     </g>
   )
+}
+
+// Ein durchgängiger, vertikaler Bergrücken (gewundene Silhouette) für den Hintergrund.
+function verticalRidge(side, H, base, amp, period, phase, color, key, W = 400) {
+  let d = side === 'L' ? `M0,0 L${base},0` : `M${W},0 L${W - base},0`
+  for (let yy = 0; yy <= H; yy += 34) {
+    const o = base + amp * Math.sin(yy / period + phase)
+    d += ` L${side === 'L' ? o : W - o},${yy}`
+  }
+  d += side === 'L' ? ` L0,${H} Z` : ` L${W},${H} Z`
+  return <path key={key} d={d} fill={color} />
+}
+
+// Durchgängige Tal-Landschaft über die volle Höhe H (für den Parallax-Hintergrund).
+function buildBackdrop(H) {
+  const W = 400
+  const els = [<rect key="sky" x="0" y="0" width={W} height={H} fill="url(#tabiSky)" />]
+  // ferne, blasse Rücken
+  els.push(verticalRidge('L', H, 96, 26, 560, 0.0, '#D3DBD7', 'fl'))
+  els.push(verticalRidge('R', H, 96, 26, 600, 1.4, '#D3DBD7', 'fr'))
+  // nahe, grüne Rücken
+  els.push(verticalRidge('L', H, 58, 36, 360, 0.6, '#C0D2B9', 'nl'))
+  els.push(verticalRidge('R', H, 58, 36, 380, 2.1, '#C0D2B9', 'nr'))
+  // Bäume entlang der nahen Rücken
+  let k = 0
+  for (let yy = 70; yy < H - 40; yy += 188, k++) {
+    const lx = 58 + 36 * Math.sin(yy / 360 + 0.6)
+    els.push(sceneTree(lx + 16, yy, 0.8, `btl${k}`, '#5E8A6A', '#6E9A78'))
+    const rx = W - (58 + 36 * Math.sin((yy + 94) / 380 + 2.1))
+    els.push(sceneTree(rx - 16, yy + 94, 0.7, `btr${k}`, '#5E8A6A', '#6E9A78'))
+  }
+  // wenige, weiche Wolken
+  let c = 0
+  for (let yy = 240; yy < H; yy += 820, c++) {
+    els.push(<ellipse key={`bc${c}`} cx={c % 2 ? 255 : 150} cy={yy} rx="32" ry="9" fill="#FFFFFF" opacity="0.4" />)
+  }
+  return els
 }
 
 function isNodeDone(node, progress) {
@@ -2050,9 +2291,26 @@ function ReiseScreen() {
   const { progress, completeLesson, completeWordBlock, completeGrammar } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
   const currentRef = useRef(null)
+  const wrapRef = useRef(null)
+  const backdropRef = useRef(null)
 
   useEffect(() => {
     try { currentRef.current?.scrollIntoView({ block: 'center' }) } catch (e) { /* egal */ }
+    // Nächsten scrollbaren Vorfahren finden und leichten Parallax aufsetzen.
+    let el = wrapRef.current
+    while (el && el.scrollHeight <= el.clientHeight + 4) el = el.parentElement
+    if (!el) return
+    let raf = 0
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        if (backdropRef.current) backdropRef.current.style.transform = `translateY(${el.scrollTop * 0.1}px)`
+      })
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => { el.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
   }, [])
 
   // Fällige Wiederholungen (für Checkpoint-Status).
@@ -2137,23 +2395,14 @@ function ReiseScreen() {
   const road = roadPath(laid.map(n => [n.x, n.y]))
   const goal = laid[laid.length - 1]
 
-  // Landschaft: pro Welt ein Boden-Hügel mit Bäumen, Wolken, Torii am Start.
-  const scenery = []
-  bands.forEach((b, i) => {
-    const gy = b.bottom - 4
-    scenery.push(<path key={`grd${i}`} d={`M0,${b.bottom + 1} L0,${gy - 14} Q80,${gy - 30} 160,${gy - 14} T320,${gy - 14} L320,${b.bottom + 1} Z`} fill={GROUND_TINTS[i % GROUND_TINTS.length]} />)
-    scenery.push(sceneTree(32, gy - 18, 1, `t${i}a`))
-    scenery.push(sceneTree(292, gy - 24, 0.85, `t${i}b`))
-    if (i % 2 === 0) scenery.push(sceneTree(72, gy - 12, 0.7, `t${i}c`, '#6E9A78', '#83AE8A'))
-    if (i % 2 === 1) scenery.push(sceneTree(250, gy - 10, 0.65, `t${i}d`, '#6E9A78', '#83AE8A'))
-    if (i > 0) scenery.push(<ellipse key={`cl${i}`} cx={i % 2 ? 240 : 80} cy={b.top + 24} rx="24" ry="8" fill="#FFFFFF" opacity="0.55" />)
-  })
-  if (laid[0]) scenery.push(sceneTorii(256, laid[0].y - 28, 0.7, 'torii'))
+  // Durchgängiger Parallax-Hintergrund (eine Tal-Landschaft über die volle Höhe).
+  const backdropH = trackH + 80
+  const backdrop = buildBackdrop(backdropH)
 
   return (
-    <div style={{ paddingBottom: 8 }}>
+    <div ref={wrapRef} style={{ paddingBottom: 8 }}>
       {/* Intro + Gesamtfortschritt */}
-      <div style={{ padding: '16px 16px 12px' }}>
+      <div style={{ padding: '16px 16px 12px', position: 'relative', zIndex: 1 }}>
         <h2 style={{ fontSize: 20, fontFamily: "'Noto Serif JP', serif", color: C.indigo, marginBottom: 4 }}>
           Deine Reise 旅
         </h2>
@@ -2171,23 +2420,32 @@ function ReiseScreen() {
 
       {/* Karte */}
       <div style={{ position: 'relative', width: '100%', height: trackH, overflow: 'hidden' }}>
-        {/* Welten-Bänder */}
-        {bands.map(b => (
-          <div key={b.idx} style={{ position: 'absolute', left: 0, right: 0, top: b.top, height: b.bottom - b.top, background: WORLD_TINTS[b.idx % WORLD_TINTS.length] }} />
-        ))}
+        {/* Durchgängiger Parallax-Hintergrund */}
+        <div ref={backdropRef} aria-hidden="true" style={{ position: 'absolute', top: -40, left: 0, right: 0, height: backdropH, zIndex: 0, willChange: 'transform' }}>
+          <svg width="100%" height={backdropH} viewBox={`0 0 400 ${backdropH}`} preserveAspectRatio="none" style={{ display: 'block' }}>
+            <defs>
+              <linearGradient id="tabiSky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#DCE7EE" />
+                <stop offset="0.5" stopColor="#E7EDE6" />
+                <stop offset="1" stopColor="#EEEADF" />
+              </linearGradient>
+            </defs>
+            {backdrop}
+          </svg>
+        </div>
 
         {/* Fuji hinter dem Gipfel */}
         {goal && (
-          <svg width="180" height="120" viewBox="0 0 180 120" style={{ position: 'absolute', left: '50%', top: goal.y - 96, transform: 'translateX(-50%)', opacity: 0.9 }} aria-hidden="true">
-            <polygon points="40,110 90,18 140,110" fill="#C7D2DC" />
-            <polygon points="72,46 90,18 108,46 98,52 90,44 82,52" fill="#F2F0EA" />
+          <svg width="180" height="120" viewBox="0 0 180 120" style={{ position: 'absolute', left: '50%', top: goal.y - 96, transform: 'translateX(-50%)', opacity: 0.95, zIndex: 1 }} aria-hidden="true">
+            <polygon points="40,110 90,18 140,110" fill="#B7C4D0" />
+            <polygon points="72,46 90,18 108,46 98,52 90,44 82,52" fill="#F4F2EC" />
           </svg>
         )}
 
         {/* zentrierte Spur mit Weg + Stationen */}
-        <div style={{ position: 'relative', width: 320, margin: '0 auto', height: trackH }}>
+        <div style={{ position: 'relative', zIndex: 1, width: 320, margin: '0 auto', height: trackH }}>
           <svg width="320" height={trackH} viewBox={`0 0 320 ${trackH}`} style={{ position: 'absolute', left: 0, top: 0 }} aria-hidden="true">
-            {scenery}
+            {laid[0] && sceneTorii(258, laid[0].y - 30, 0.72, 'torii')}
             <path d={road} fill="none" stroke="#D7CEB6" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" />
             <path d={road} fill="none" stroke="#EFEBE0" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
             <path d={road} fill="none" stroke="#C2B894" strokeWidth="2" strokeDasharray="1 9" strokeLinecap="round" />
