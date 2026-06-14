@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/Clausis-tabi/sw.js', { scope: '/Clausis-tabi/' })})}
