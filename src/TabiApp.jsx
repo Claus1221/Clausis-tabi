@@ -1488,7 +1488,7 @@ function WordDetail({ word }) {
       {/* Kanji + Lesung + Übersetzung */}
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
         <div style={{ fontSize: 80, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi, lineHeight: 1 }}>{word.kanji}</div>
-        <button onClick={() => speak(word.kanji)}
+        <button onClick={() => speak(word.kana)}
           style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 20, padding: '4px 14px', fontSize: 13, cursor: 'pointer', color: C.indigo, margin: '10px 0 6px' }}>
           🔊 Anhören
         </button>
