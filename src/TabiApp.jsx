@@ -580,7 +580,7 @@ function TabBar({ active, setActive }) {
               background: C.shu, opacity: on ? 1 : 0, transform: on ? 'scale(1)' : 'scale(0.3)',
               transition: 'opacity 0.25s ease, transform 0.25s ease',
             }} />
-            <span style={{ fontSize: 20, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", transform: on ? 'translateY(-1px)' : 'none', transition: 'transform 0.25s ease' }}>{t.label}</span>
+            <span style={{ fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", transform: on ? 'translateY(-1px)' : 'none', transition: 'transform 0.25s ease' }}>{t.label}</span>
             <span style={{ fontSize: 10, fontWeight: on ? 700 : 500, letterSpacing: 0.2 }}>{t.sub}</span>
           </button>
         )
@@ -650,7 +650,7 @@ function StrokeDisplay({ char }) {
         <line x1="0" y1={V / 2} x2={V} y2={V / 2} stroke={C.washiDark} strokeWidth="0.6" strokeDasharray="3,3" />
         {/* Geist-Zeichen */}
         <text x={V / 2} y={V * 0.8} textAnchor="middle" fontSize={V * 0.85}
-          fontFamily="'Shippori Mincho', 'Noto Serif JP', serif" fill="#EFEBE0" style={{ userSelect: 'none' }}>{char}</text>
+          fontFamily="'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif" fill="#EFEBE0" style={{ userSelect: 'none' }}>{char}</text>
 
         {/* Striche bis showCount */}
         {strokes.slice(0, showCount).map((d, i) => {
@@ -767,7 +767,7 @@ function DrawCanvas({ char }) {
         <div style={{
           position: 'absolute', top: 0, left: 0, width: size, height: size,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: size * 0.7, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif",
+          fontSize: size * 0.7, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
           color: C.washiDark, pointerEvents: 'none', userSelect: 'none',
           lineHeight: 1,
         }}>{char}</div>
@@ -833,7 +833,7 @@ function QuizStep({ kana, onFinish }) {
       <p style={{ color: C.textMuted, fontSize: 13, marginBottom: 8 }}>
         Kurzer Check · {qi + 1} / {quiz.length}
       </p>
-      <div style={{ fontSize: 72, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", marginBottom: 20, color: C.sumi }}>
+      <div style={{ fontSize: 72, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", marginBottom: 20, color: C.sumi }}>
         {cur.char}
       </div>
       <p style={{ marginBottom: 16, fontWeight: 500 }}>Welche Lesung ist richtig?</p>
@@ -883,7 +883,7 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
     content = (
       <div style={{ textAlign: 'center', padding: '8px 0' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>🗾</div>
-        <h2 style={{ fontSize: 22, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo, marginBottom: 8 }}>
+        <h2 style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo, marginBottom: 8 }}>
           {lesson.title}
         </h2>
         <p style={{ color: C.textMuted, lineHeight: 1.6, marginBottom: 16 }}>
@@ -904,7 +904,7 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
     content = (
       <div style={{ textAlign: 'center', padding: '8px 0' }}>
         <div style={{ fontSize: 56, marginBottom: 12 }}>🎉</div>
-        <h2 style={{ fontSize: 22, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.matcha, marginBottom: 8 }}>
+        <h2 style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.matcha, marginBottom: 8 }}>
           よくできました！
         </h2>
         <p style={{ color: C.textMuted, marginBottom: 4 }}>Sehr gut gemacht!</p>
@@ -915,7 +915,7 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
           {kana.map(k => (
             <span key={k} style={{
-              fontSize: 28, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif",
+              fontSize: 28, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
               background: `${C.matcha}20`, borderRadius: 8, padding: '4px 12px',
             }}>{k}</span>
           ))}
@@ -939,7 +939,7 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
         // Explain
         content = (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 88, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif",
+            <div style={{ fontSize: 88, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
               color: C.sumi, lineHeight: 1, marginBottom: 12 }}>{char}</div>
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 16 }}>
               <div style={{ textAlign: 'center' }}>
@@ -974,7 +974,7 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
         content = (
           <div>
             <p style={{ textAlign: 'center', color: C.textMuted, fontSize: 13, marginBottom: 12 }}>
-              Strichreihenfolge für <strong style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", fontSize: 20 }}>{char}</strong>
+              Strichreihenfolge für <strong style={{ fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", fontSize: 20 }}>{char}</strong>
             </p>
             <StrokeDisplay char={char} />
             <p style={{ textAlign: 'center', fontSize: 12, color: C.textMuted, marginTop: 10 }}>
@@ -987,7 +987,7 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
         content = (
           <div>
             <p style={{ textAlign: 'center', color: C.textMuted, fontSize: 13, marginBottom: 12 }}>
-              Schreibe <strong style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", fontSize: 20 }}>{char}</strong> nach
+              Schreibe <strong style={{ fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", fontSize: 20 }}>{char}</strong> nach
             </p>
             <DrawCanvas char={char} />
             <p style={{ textAlign: 'center', fontSize: 12, color: C.textMuted, marginTop: 8 }}>
@@ -1022,7 +1022,7 @@ function LessonPlayer({ lesson, onComplete, onClose }) {
           </div>
           <span style={{ fontSize: 12, color: C.textMuted }}>{step}/{totalSteps}</span>
         </div>
-        <h3 style={{ fontSize: 14, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo }}>
+        <h3 style={{ fontSize: 14, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo }}>
           {lesson.title}
         </h3>
       </div>
@@ -1068,7 +1068,9 @@ function SRSQuiz({ onClose }) {
       ...completedKanaList(progress.completedLessons || []),
       ...learnedWordKanji(progress.completedWordBlocks || []),
     ]
-    return dueKana(progress, learned)
+    // Gemischt, damit nicht jede Sitzung im selben Schema (a, e, i, o, u …)
+    // abgefragt wird – sonst lernt man die Reihenfolge statt der Karten.
+    return shuffled(dueKana(progress, learned))
   })
   const [queue, setQueue] = useState(deck)   // Arbeits-Warteschlange (kann wachsen)
   const [flipped, setFlipped] = useState(false)
@@ -1140,7 +1142,7 @@ function SRSQuiz({ onClose }) {
         )}
         <button onClick={() => speak(item)} title="Anhören"
           style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}>🔊</button>
-        <div style={{ fontSize: item.length > 1 ? 52 : 80, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", marginBottom: 12 }}>{item}</div>
+        <div style={{ fontSize: item.length > 1 ? 52 : 80, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", marginBottom: 12 }}>{item}</div>
         {flipped ? (
           <>
             <div style={{ fontSize: 22, fontWeight: 700, color: C.indigo, marginBottom: 4 }}>{info.reading}</div>
@@ -1249,7 +1251,7 @@ function PracticeQuiz({ mode, onClose }) {
       <Card style={{ textAlign: 'center', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 16 }}>
         {mode === 'erkennen' ? (
           <>
-            <div style={{ fontSize: 80, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", marginBottom: 4 }}>{cur.char}</div>
+            <div style={{ fontSize: 80, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", marginBottom: 4 }}>{cur.char}</div>
             <div style={{ fontSize: 13, color: C.textMuted }}>Welche Lesung?</div>
           </>
         ) : (
@@ -1276,7 +1278,7 @@ function PracticeQuiz({ mode, onClose }) {
                 borderColor: !revealed ? C.washiDark : isCorrect ? C.matcha : isChosen ? C.shu : C.washiDark,
                 background: !revealed ? '#fff' : isCorrect ? `${C.matcha}20` : isChosen ? `${C.shu}20` : '#fff',
                 fontSize: mode === 'erkennen' ? 18 : 28,
-                fontFamily: mode === 'erkennen' ? 'inherit' : "'Shippori Mincho', 'Noto Serif JP', serif",
+                fontFamily: mode === 'erkennen' ? 'inherit' : "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
                 fontWeight: 600, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
               }}>{label}</button>
           )
@@ -1311,7 +1313,7 @@ function HeuteScreen() {
     <div style={{ padding: '16px 16px 0' }}>
       {/* Greeting */}
       <div style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo }}>
+        <h1 style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo }}>
           おはようございます 👋
         </h1>
         <p style={{ color: C.textMuted, fontSize: 13 }}>Guten Morgen! Bereit zum Lernen?</p>
@@ -1363,7 +1365,7 @@ function HeuteScreen() {
             width: 70, height: 70, background: '#fafaf8',
             border: `1px solid ${C.washiDark}`, borderRadius: 8,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 52, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif",
+            fontSize: 52, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
           }}>{charOfDay}</div>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: C.indigo }}>{data.romaji}</div>
@@ -1392,7 +1394,7 @@ function PhraseList() {
             <Card key={i} style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", fontSize: 17, marginBottom: 2 }}>{p.jp}</div>
+                  <div style={{ fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", fontSize: 17, marginBottom: 2 }}>{p.jp}</div>
                   <div style={{ fontSize: 12, color: C.textMuted }}>{p.romaji}</div>
                   <div style={{ fontSize: 13, color: C.indigo, marginTop: 2 }}>{p.de}</div>
                 </div>
@@ -1427,7 +1429,7 @@ function BlockQuiz({ words, onFinish }) {
   return (
     <div style={{ textAlign: 'center' }}>
       <p style={{ color: C.textMuted, fontSize: 13, marginBottom: 8 }}>Quiz · {qi + 1} / {quiz.length}</p>
-      <div style={{ fontSize: 72, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", marginBottom: 4, color: C.sumi }}>{cur.kanji}</div>
+      <div style={{ fontSize: 72, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", marginBottom: 4, color: C.sumi }}>{cur.kanji}</div>
       <div style={{ fontSize: 14, color: C.textMuted, marginBottom: 16 }}>{cur.kana}</div>
       <p style={{ marginBottom: 16, fontWeight: 500 }}>Was bedeutet das?</p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -1485,12 +1487,12 @@ function WordDetail({ word }) {
     <div>
       {/* Kanji + Lesung + Übersetzung */}
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 80, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi, lineHeight: 1 }}>{word.kanji}</div>
+        <div style={{ fontSize: 80, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi, lineHeight: 1 }}>{word.kanji}</div>
         <button onClick={() => speak(word.kanji)}
           style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 20, padding: '4px 14px', fontSize: 13, cursor: 'pointer', color: C.indigo, margin: '10px 0 6px' }}>
           🔊 Anhören
         </button>
-        <div style={{ fontSize: 22, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo }}>{word.kana}
+        <div style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo }}>{word.kana}
           <span style={{ fontSize: 14, color: C.textMuted, fontFamily: 'inherit' }}> · {word.romaji}</span>
         </div>
         <div style={{ fontSize: 18, color: C.sumi, marginTop: 4 }}>{word.de}</div>
@@ -1503,7 +1505,7 @@ function WordDetail({ word }) {
           <button onClick={() => speak(word.ex.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🔊</button>
         </div>
 
-        <div style={{ fontSize: 32, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", lineHeight: 1.5, marginBottom: 8 }}>
+        <div style={{ fontSize: 32, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", lineHeight: 1.5, marginBottom: 8 }}>
           {word.ex.tokens.map((t, i) => {
             if (!t.de) return <span key={i}>{t.t}</span>
             const active = activeTok === i
@@ -1524,7 +1526,7 @@ function WordDetail({ word }) {
         {tk ? (
           <div style={{ background: `${C.indigo}10`, border: `1px solid ${C.indigo}30`, borderRadius: 8, padding: 12 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
-              <span style={{ fontSize: 24, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi }}>{tk.t}</span>
+              <span style={{ fontSize: 24, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi }}>{tk.t}</span>
               {tk.r && tk.r !== tk.t && <span style={{ fontSize: 14, color: C.textMuted }}>{tk.r}</span>}
             </div>
             <div style={{ fontSize: 15, color: C.indigo, fontWeight: 600 }}>{tk.de}</div>
@@ -1566,14 +1568,14 @@ function BlockCourse({ block, onComplete, onClose }) {
     content = (
       <div style={{ textAlign: 'center', padding: '8px 0' }}>
         <div style={{ fontSize: 52, marginBottom: 12 }}>{block.theme}</div>
-        <h2 style={{ fontSize: 22, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo, marginBottom: 8 }}>{block.title}</h2>
+        <h2 style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo, marginBottom: 8 }}>{block.title}</h2>
         <p style={{ color: C.textMuted, lineHeight: 1.6, marginBottom: 16 }}>
           In diesem Block lernst du {words.length} Wörter mit Kanji, Lesung und je einem Beispielsatz.
           Am Ende gibt es ein kurzes Quiz.
         </p>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
           {words.map(w => (
-            <span key={w.kanji} style={{ fontSize: 28, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", background: `${C.indigo}12`, borderRadius: 8, padding: '4px 12px' }}>{w.kanji}</span>
+            <span key={w.kanji} style={{ fontSize: 28, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", background: `${C.indigo}12`, borderRadius: 8, padding: '4px 12px' }}>{w.kanji}</span>
           ))}
         </div>
       </div>
@@ -1584,7 +1586,7 @@ function BlockCourse({ block, onComplete, onClose }) {
     content = (
       <div style={{ textAlign: 'center', padding: '8px 0' }}>
         <div style={{ fontSize: 56, marginBottom: 12 }}>🎉</div>
-        <h2 style={{ fontSize: 22, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.matcha, marginBottom: 8 }}>Block geschafft!</h2>
+        <h2 style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.matcha, marginBottom: 8 }}>Block geschafft!</h2>
         <p style={{ lineHeight: 1.6, marginBottom: 16 }}>
           Du hast <strong>{words.length} Wörter</strong> gelernt. Die Kanji kommen ab jetzt in deinen Wiederholungen vor.
         </p>
@@ -1604,7 +1606,7 @@ function BlockCourse({ block, onComplete, onClose }) {
           </div>
           <span style={{ fontSize: 12, color: C.textMuted }}>{step}/{totalSteps}</span>
         </div>
-        <h3 style={{ fontSize: 14, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo }}>{block.theme} {block.title}</h3>
+        <h3 style={{ fontSize: 14, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo }}>{block.theme} {block.title}</h3>
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>{content}</div>
@@ -1703,7 +1705,7 @@ function TappableSentence({ ex }) {
   return (
     <div style={{ padding: '6px 0', borderBottom: `1px solid ${C.washiDark}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-        <div style={{ fontSize: 26, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", lineHeight: 1.5 }}>
+        <div style={{ fontSize: 26, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", lineHeight: 1.5 }}>
           {tokens ? tokens.map((t, i) => {
             if (!t.de) return <span key={i}>{t.t}</span>
             const on = active === i
@@ -1725,7 +1727,7 @@ function TappableSentence({ ex }) {
       {tokens && (tk ? (
         <div style={{ background: `${C.indigo}10`, border: `1px solid ${C.indigo}30`, borderRadius: 8, padding: 10, marginTop: 8 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 22, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi }}>{tk.t}</span>
+            <span style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi }}>{tk.t}</span>
             {tk.r && tk.r !== tk.t && <span style={{ fontSize: 13, color: C.textMuted }}>{tk.r}</span>}
           </div>
           <div style={{ fontSize: 14, color: C.indigo, fontWeight: 600 }}>{tk.de}</div>
@@ -1762,7 +1764,7 @@ function GrammarExercise({ ex, idx, total, onNext, isLast }) {
       <p style={{ color: C.textMuted, fontSize: 13, marginBottom: 12 }}>Anwenden · {idx} / {total}</p>
 
       <Card style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 24, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", lineHeight: 1.6, color: C.sumi }}>
+        <div style={{ fontSize: 24, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", lineHeight: 1.6, color: C.sumi }}>
           {revealed ? shown : ex.q.split('＿').map((part, i, arr) => (
             <span key={i}>{part}{i < arr.length - 1 && (
               <span style={{ display: 'inline-block', minWidth: 36, borderBottom: `2px solid ${C.shu}`, color: C.shu }}>＿</span>
@@ -1782,7 +1784,7 @@ function GrammarExercise({ ex, idx, total, onNext, isLast }) {
                 borderColor: !revealed ? C.washiDark : isCorrect ? C.matcha : isChosen ? C.shu : C.washiDark,
                 background: !revealed ? '#fff' : isCorrect ? `${C.matcha}20` : isChosen ? `${C.shu}20` : '#fff',
                 fontSize: HAS_JP.test(o) ? 20 : 14,
-                fontFamily: HAS_JP.test(o) ? "'Shippori Mincho', 'Noto Serif JP', serif" : 'inherit',
+                fontFamily: HAS_JP.test(o) ? "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif" : 'inherit',
                 fontWeight: 600, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
               }}>{o}</button>
           )
@@ -1832,7 +1834,7 @@ function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
     content = (
       <>
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <div style={{ fontSize: 48, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.shu }}>{topic.glyph}</div>
+          <div style={{ fontSize: 48, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.shu }}>{topic.glyph}</div>
           <h2 style={{ fontSize: 20, color: C.indigo, marginTop: 4 }}>{topic.title}</h2>
         </div>
         {topic.body.map((s, i) => (
@@ -1871,11 +1873,11 @@ function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
     content = (
       <div style={{ textAlign: 'center', padding: '8px 0' }}>
         <div style={{ fontSize: 56, marginBottom: 12 }}>🎉</div>
-        <h2 style={{ fontSize: 22, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.matcha, marginBottom: 8 }}>Geschafft!</h2>
+        <h2 style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.matcha, marginBottom: 8 }}>Geschafft!</h2>
         <p style={{ lineHeight: 1.6, marginBottom: 8 }}>
           Du hast <strong>{topic.title}</strong> verstanden und angewendet.
         </p>
-        <div style={{ fontSize: 48, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.shu }}>{topic.glyph}</div>
+        <div style={{ fontSize: 48, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.shu }}>{topic.glyph}</div>
       </div>
     )
   }
@@ -1888,7 +1890,7 @@ function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
           <div style={{ flex: 1, height: 6, background: C.washiDark, borderRadius: 3, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${progress}%`, background: C.shu, borderRadius: 3, transition: 'width 0.3s' }} />
           </div>
-          <h3 style={{ fontSize: 13, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo }}>{topic.glyph}</h3>
+          <h3 style={{ fontSize: 13, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo }}>{topic.glyph}</h3>
         </div>
       </div>
 
@@ -1953,7 +1955,7 @@ function GrammarPath() {
               width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
               background: t.done ? C.matcha : t.locked ? C.washiDark : C.shu,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: t.locked ? 18 : 22, color: '#fff', fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif",
+              fontSize: t.locked ? 18 : 22, color: '#fff', fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
               boxShadow: !t.locked && !t.done ? `0 0 0 4px ${C.shu}30` : 'none',
             }}>
               {t.done ? '✓' : t.locked ? '🔒' : t.glyph}
@@ -2013,7 +2015,7 @@ function LernenScreen() {
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
-      <h2 style={{ fontSize: 20, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo, marginBottom: 12 }}>
+      <h2 style={{ fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo, marginBottom: 12 }}>
         Lernen
       </h2>
 
@@ -2060,7 +2062,7 @@ function LernenScreen() {
               background: lesson.done ? C.matcha : lesson.locked ? C.washiDark : C.shu,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: lesson.done ? 22 : lesson.locked ? 18 : 24,
-              color: '#fff', fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif",
+              color: '#fff', fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
               boxShadow: !lesson.locked && !lesson.done ? `0 0 0 4px ${C.shu}30` : 'none',
             }}>
               {lesson.done ? '✓' : lesson.locked ? '🔒' : lesson.kana[0]}
@@ -2076,7 +2078,7 @@ function LernenScreen() {
                 cursor: lesson.locked ? 'not-allowed' : 'pointer',
                 opacity: lesson.locked ? 0.6 : 1,
               }}>
-              <div style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", fontSize: 18, marginBottom: 2 }}>
+              <div style={{ fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", fontSize: 18, marginBottom: 2 }}>
                 {lesson.title}
               </div>
               <div style={{ fontSize: 12, color: C.textMuted }}>
@@ -2152,7 +2154,7 @@ function TypeQuiz({ onClose }) {
     <div style={{ padding: 20 }}>
       <UebenHead title="Tippen" idx={idx} total={rounds.length} onClose={onClose} />
       <Card style={{ textAlign: 'center', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 80, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", marginBottom: 6 }}>{cur}</div>
+        <div style={{ fontSize: 80, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", marginBottom: 6 }}>{cur}</div>
         <button onClick={() => speak(cur)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}>🔊</button>
       </Card>
       <input ref={inputRef} value={val} onChange={e => setVal(e.target.value)} disabled={revealed}
@@ -2289,14 +2291,14 @@ function DialogHub({ onClose }) {
   return (
     <div style={{ padding: '16px 16px 24px' }}>
       <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 10 }}>← Üben</button>
-      <h2 style={{ fontSize: 20, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo, margin: '0 0 4px' }}>会話の道 · Gesprächspfad</h2>
+      <h2 style={{ fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo, margin: '0 0 4px' }}>会話の道 · Gesprächspfad</h2>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 16 }}>
         Echte Reise-Situationen. {doneCount}/{steps.length} gemeistert – jede Szene öffnet die nächste.
       </p>
       {DIALOGS.map((n, i) => {
         if (n.section) return (
           <div key={`s${i}`} style={{ margin: '18px 0 8px' }}>
-            <div style={{ fontSize: 16, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi }}>{n.section}</div>
+            <div style={{ fontSize: 16, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi }}>{n.section}</div>
             <div style={{ fontSize: 12, color: C.textMuted }}>{n.sub}</div>
           </div>
         )
@@ -2383,7 +2385,7 @@ function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 16 }}>
         <Emoji name={node.emoji} size={48} />
         <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 12, padding: '10px 14px', flex: 1 }}>
-          <div style={{ fontSize: 19, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi }}>{t.npc}</div>
+          <div style={{ fontSize: 19, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi }}>{t.npc}</div>
           {showDe && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>„{t.de}"</div>}
           <button onClick={() => speak(t.npc)} style={{ background: 'none', border: 'none', fontSize: 13, cursor: 'pointer', padding: '2px 0 0', color: C.textMuted }}>🔊 nochmal hören</button>
         </div>
@@ -2396,7 +2398,7 @@ function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
             <button key={o} onClick={() => choose(o)} disabled={revealed}
               style={{ padding: '12px 14px', borderRadius: 10, border: `2px solid ${!revealed ? C.washiDark : correct ? C.matcha : chosen ? C.shu : C.washiDark}`,
                 background: !revealed ? '#fff' : correct ? `${C.matcha}20` : chosen ? `${C.shu}20` : '#fff',
-                fontSize: 17, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi, cursor: revealed ? 'default' : 'pointer', textAlign: 'left' }}>{o}</button>
+                fontSize: 17, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi, cursor: revealed ? 'default' : 'pointer', textAlign: 'left' }}>{o}</button>
           )
         })}
       </div>
@@ -2437,7 +2439,7 @@ function UebenScreen() {
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
-      <h2 style={{ fontSize: 20, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo, marginBottom: 4 }}>
+      <h2 style={{ fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo, marginBottom: 4 }}>
         Üben
       </h2>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 20 }}>Wähle einen Übungstyp</p>
@@ -2550,7 +2552,7 @@ function FortschrittScreen() {
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
-      <h2 style={{ fontSize: 20, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo, marginBottom: 16 }}>
+      <h2 style={{ fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo, marginBottom: 16 }}>
         Fortschritt
       </h2>
 
@@ -2740,7 +2742,7 @@ function StoryLine({ tokens }) {
   const plain = tokens.map(t => t.t).join('')
   return (
     <div>
-      <div style={{ fontSize: 24, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", lineHeight: 2.1, color: C.sumi }}>
+      <div style={{ fontSize: 24, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", lineHeight: 2.1, color: C.sumi }}>
         {tokens.map((t, i) => {
           const hasKanji = /[一-龯々]/.test(t.t)
           const inner = hasKanji && t.r ? <ruby>{t.t}<rt style={{ fontSize: '0.5em', color: '#6B6660', fontWeight: 400 }}>{t.r}</rt></ruby> : t.t
@@ -2758,7 +2760,7 @@ function StoryLine({ tokens }) {
       {tk ? (
         <div style={{ background: `${C.indigo}10`, border: `1px solid ${C.indigo}30`, borderRadius: 8, padding: 10, marginTop: 10, textAlign: 'left', maxWidth: 300, margin: '10px auto 0' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 22, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi }}>{tk.t}</span>
+            <span style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi }}>{tk.t}</span>
             {tk.r && <span style={{ fontSize: 13, color: C.textMuted }}>{tk.r}</span>}
           </div>
           <div style={{ fontSize: 15, color: C.indigo, fontWeight: 600 }}>{tk.de}</div>
@@ -3029,31 +3031,31 @@ function ChoiceStep({ step, onSolved }) {
   return (
     <div style={{ textAlign: 'center' }}>
       {step.kind === 'pic' && <div style={{ marginBottom: 14 }}><Emoji name={step.emoji} size={76} /></div>}
-      {step.kind === 'pic_choice' && <div style={{ fontSize: 42, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi, marginBottom: 14 }}>{step.jp}</div>}
+      {step.kind === 'pic_choice' && <div style={{ fontSize: 42, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi, marginBottom: 14 }}>{step.jp}</div>}
       {step.kind === 'audio' && (
         <button onClick={() => speak(step.say)} style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 50, width: 76, height: 76, fontSize: 32, cursor: 'pointer', margin: '0 auto 14px' }}>🔊</button>
       )}
       {step.kind === 'sign' && (
         <div style={{ display: 'inline-block', background: '#1E4368', color: '#fff', borderRadius: 10, padding: '14px 26px', marginBottom: 14 }}>
-          <span style={{ fontSize: 34, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}>{step.sign}</span>
+          <span style={{ fontSize: 34, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif" }}>{step.sign}</span>
         </div>
       )}
       {step.kind === 'dialog' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, textAlign: 'left' }}>
           <Emoji name={step.emoji} size={48} />
           <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 12, padding: '10px 14px', flex: 1 }}>
-            <span style={{ fontSize: 20, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi }}>{step.line}</span>
+            <span style={{ fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi }}>{step.line}</span>
           </div>
         </div>
       )}
       {step.kind === 'tf' && (
         <div style={{ marginBottom: 12 }}>
           <Emoji name={step.emoji} size={72} />
-          <div style={{ fontSize: 26, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi, marginTop: 8 }}>{step.jp}</div>
+          <div style={{ fontSize: 26, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi, marginTop: 8 }}>{step.jp}</div>
         </div>
       )}
       {step.kind === 'gap' && (
-        <div style={{ fontSize: 28, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi, marginBottom: 12 }}>
+        <div style={{ fontSize: 28, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi, marginBottom: 12 }}>
           {step.text.split('＿').map((part, i, arr) => (
             <span key={i}>{part}{i < arr.length - 1 && <span style={{ display: 'inline-block', minWidth: 34, borderBottom: `2px solid ${C.shu}`, color: C.shu }}>＿</span>}</span>
           ))}
@@ -3074,7 +3076,7 @@ function ChoiceStep({ step, onSolved }) {
                 background: !revealed ? '#fff' : correct ? `${C.matcha}20` : chosen ? `${C.shu}20` : '#fff',
                 cursor: revealed ? 'default' : 'pointer', flex: emojiOptions ? 1 : undefined,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                fontSize: isJa ? 22 : 15, fontFamily: isJa ? "'Shippori Mincho', 'Noto Serif JP', serif" : 'inherit',
+                fontSize: isJa ? 22 : 15, fontFamily: isJa ? "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif" : 'inherit',
                 fontWeight: 600, color: C.sumi,
               }}>
               {o.emoji ? <Emoji name={o.emoji} size={52} /> : <span>{o.value}</span>}
@@ -3102,7 +3104,7 @@ function IntroStep({ step }) {
         <Emoji name={step.emoji} size={56} />
       </div>
       <div style={{ fontSize: 13, color: C.textMuted, marginTop: 12 }}>{step.reading}</div>
-      <div style={{ fontSize: 48, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi, lineHeight: 1.1 }}>{step.jp}</div>
+      <div style={{ fontSize: 48, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi, lineHeight: 1.1 }}>{step.jp}</div>
       <button onClick={() => speak(step.reading || step.jp)}
         style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6, background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, color: C.indigo, borderRadius: 20, padding: '7px 16px', fontSize: 14, cursor: 'pointer' }}>
         🔊 Anhören
@@ -3119,7 +3121,7 @@ function TraceStep({ step }) {
   return (
     <div style={{ textAlign: 'center' }}>
       <p style={{ fontWeight: 500, marginBottom: 4 }}>
-        Schreibe nach: <span style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", fontSize: 24 }}>{step.char}</span>
+        Schreibe nach: <span style={{ fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", fontSize: 24 }}>{step.char}</span>
       </p>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>{step.reading}{step.de ? ' · ' + step.de : ''}</p>
       <DrawCanvas char={step.char} />
@@ -3140,7 +3142,7 @@ function BuildStep({ step, onSolved }) {
 
   const tileStyle = (filled) => ({
     padding: '8px 12px', borderRadius: 8, border: `2px solid ${filled ? C.indigo : C.washiDark}`,
-    background: filled ? `${C.indigo}10` : '#fff', fontSize: 20, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif",
+    background: filled ? `${C.indigo}10` : '#fff', fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
     color: C.sumi, cursor: result != null ? 'default' : 'pointer',
   })
 
@@ -3161,7 +3163,7 @@ function BuildStep({ step, onSolved }) {
       ) : (
         <div style={{ fontWeight: 600, color: result ? C.matcha : C.shu }}>
           {result ? '✓ Richtig!' : '✗ Nicht ganz'}
-          <span style={{ display: 'block', fontWeight: 400, fontSize: 14, color: C.sumi, marginTop: 4, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}>
+          <span style={{ display: 'block', fontWeight: 400, fontSize: 14, color: C.sumi, marginTop: 4, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif" }}>
             {step.answer.join('')}
             <button onClick={() => speak(step.answer.join(''))} style={{ background: 'none', border: 'none', fontSize: 15, cursor: 'pointer', marginLeft: 6 }}>🔊</button>
           </span>
@@ -3192,7 +3194,7 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
     content = (
       <div style={{ textAlign: 'center', padding: '8px 0' }}>
         <Emoji name="party" size={72} />
-        <h2 style={{ fontSize: 22, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.matcha, margin: '10px 0 8px' }}>Kapitel geschafft!</h2>
+        <h2 style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.matcha, margin: '10px 0 8px' }}>Kapitel geschafft!</h2>
         <p style={{ lineHeight: 1.6 }}>„{chapter.title}" – du hast das Gelernte angewendet und die Geschichte erlebt.</p>
       </div>
     )
@@ -3204,7 +3206,7 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
         {cur.jp && (
           <div style={{ marginTop: 16 }}>
             {toks ? <StoryLine tokens={toks} /> : (
-              <div style={{ fontSize: 24, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", lineHeight: 2.1, color: C.sumi }}>
+              <div style={{ fontSize: 24, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", lineHeight: 2.1, color: C.sumi }}>
                 {renderFuri(cur.jp)}
                 <button onClick={() => speak(furiPlain(cur.jp))} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, marginLeft: 6, verticalAlign: 'middle' }}>🔊</button>
               </div>
@@ -3265,7 +3267,7 @@ function StoryJournal({ progress, onClose }) {
     <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
       <div style={{ padding: '12px 16px', background: '#fff', borderBottom: `1px solid ${C.washiDark}`, display: 'flex', alignItems: 'center', gap: 10 }}>
         <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted }}>✕</button>
-        <h3 style={{ fontSize: 15, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo }}>📖 Deine Geschichte</h3>
+        <h3 style={{ fontSize: 15, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo }}>📖 Deine Geschichte</h3>
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
         {beats.length === 0 ? (
@@ -3280,7 +3282,7 @@ function StoryJournal({ progress, onClose }) {
             {b.jp && (
               <div style={{ marginTop: 10, background: `${C.indigo}0D`, borderRadius: 8, padding: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 22, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi }}>{b.jp}</span>
+                  <span style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi }}>{b.jp}</span>
                   <button onClick={() => speak(b.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🔊</button>
                 </div>
                 {b.kana && <div style={{ fontSize: 12, color: C.textMuted }}>{b.kana}</div>}
@@ -3421,7 +3423,7 @@ function ReiseScreen() {
       {showStory && <StoryJournal progress={progress} onClose={() => setShowStory(false)} />}
       {/* Intro + Gesamtfortschritt */}
       <div style={{ padding: '16px 16px 12px', position: 'relative', zIndex: 1 }}>
-        <h2 style={{ fontSize: 20, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo, marginBottom: 4 }}>
+        <h2 style={{ fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo, marginBottom: 4 }}>
           Deine Reise 旅
         </h2>
         <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>
@@ -3481,7 +3483,7 @@ function ReiseScreen() {
           {headers.map((h, i) => (
             <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: h.y, textAlign: 'center' }}>
               <span style={{ display: 'inline-block', background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 16, padding: '4px 14px' }}>
-                <span style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", fontSize: 14, color: C.indigo, marginRight: 6 }}>{h.world}</span>
+                <span style={{ fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", fontSize: 14, color: C.indigo, marginRight: 6 }}>{h.world}</span>
                 <span style={{ fontSize: 11, color: C.textMuted }}>{h.sub}</span>
               </span>
             </div>
@@ -3504,7 +3506,7 @@ function ReiseScreen() {
                     boxShadow: n.state === 'current' ? `0 0 0 6px ${C.shu}28` : 'none',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0,
                   }}>
-                  <span style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", fontSize: isGoal ? 30 : 24, color: locked ? C.textMuted : '#fff', lineHeight: 1 }}>
+                  <span style={{ fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", fontSize: isGoal ? 30 : 24, color: locked ? C.textMuted : '#fff', lineHeight: 1 }}>
                     {locked ? '🔒' : meta.face}
                   </span>
                   {n.state === 'done' && (
@@ -3580,11 +3582,11 @@ export default function TabiApp() {
         <div className="hanko-in" style={{
           width: 34, height: 34, background: C.shu, borderRadius: 9,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 19, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: '#fff', fontWeight: 600, lineHeight: 1,
+          fontSize: 19, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: '#fff', fontWeight: 600, lineHeight: 1,
           boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.22), inset 0 -2px 5px rgba(120,20,10,0.32), 0 2px 6px rgba(218,74,56,0.34)',
         }}>旅</div>
         <div>
-          <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.sumi, lineHeight: 1, letterSpacing: 0.4 }}>Tabi</div>
+          <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi, lineHeight: 1, letterSpacing: 0.4 }}>Tabi</div>
           <div style={{ fontSize: 10, color: C.textMuted, lineHeight: 1.3, marginTop: 3, letterSpacing: 0.3 }}>旅 · Japanisch für Reisende</div>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>

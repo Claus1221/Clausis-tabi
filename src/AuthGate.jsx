@@ -30,7 +30,7 @@ function Shell({ children }) {
       <div style={{
         width: 64, height: 64, background: C.shu, borderRadius: 16,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 38, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: '#fff', marginBottom: 18,
+        fontSize: 38, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: '#fff', marginBottom: 18,
       }}>旅</div>
       {children}
     </div>
@@ -45,7 +45,7 @@ function Splash({ text }) {
 function LoginScreen({ onLogin, error, busy }) {
   return (
     <Shell>
-      <h1 style={{ fontSize: 26, fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif", color: C.indigo, margin: '0 0 4px' }}>
+      <h1 style={{ fontSize: 26, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo, margin: '0 0 4px' }}>
         Tabi 旅
       </h1>
       <p style={{ color: C.textMuted, fontSize: 14, margin: '0 0 28px' }}>
