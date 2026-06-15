@@ -410,83 +410,6 @@ const GRAMMAR = [
   },
 ]
 
-// ─── Durchgehende Geschichte ─────────────────────────────────────────────────
-// Eine fortlaufende Reise-Erzählung: pro Station ein Kapitel. Es baut auf dem
-// auf, was man gelernt hat, und wendet es AKTIV an: jede Station hat eine
-// `scene` (Illustration + Übersetzungsfrage), die man am Lektionsende erlebt.
-// scene = { art, ask (jp), kana, answer (de), options }. Schlüssel = Stations-ID.
-const STORY = {
-  h1: { de: 'Dein Flugzeug landet in Japan. Müde, aber voller Vorfreude trittst du hinaus. Über dem Gate leuchten fremde Zeichen – あ、い、う… Deine Reise beginnt.',
-    scene: { art: 'airplane', ask: '飛行機', kana: 'ひこうき', answer: 'Flugzeug', options: ['Flugzeug', 'Zug', 'Schiff'] } },
-  h2: { de: 'Am Bahnhof suchst du den richtigen Zug. Überall Hiragana. Langsam erkennst du Silben wieder: か、き、く… Die ersten Schilder ergeben Sinn!',
-    scene: { art: 'station', ask: '駅', kana: 'えき', answer: 'Bahnhof', options: ['Bahnhof', 'Flughafen', 'Hafen'] } },
-  h3: { de: 'Im Zug gleitet die Landschaft vorbei. Leise übst du die Laute, die du kennst – さ、し、す… Eine alte Frau gegenüber lächelt dir zu.',
-    scene: { art: 'train', ask: '電車', kana: 'でんしゃ', answer: 'Zug', options: ['Zug', 'Bus', 'Boot'] } },
-  h4: { de: 'Du steigst in einer kleinen Stadt aus. た、ち、つ… Die Zeichen werden vertrauter, fast wie alte Bekannte.',
-    scene: { art: 'town', ask: '町', kana: 'まち', answer: 'Stadt', options: ['Stadt', 'Berg', 'Fluss'] } },
-  h5: { de: 'Vor einem Lädchen liest du die Speisekarte – noch nicht alles, aber immer mehr. な、に、ぬ… Dein Magen knurrt.',
-    scene: { art: 'tea', ask: 'お茶', kana: 'おちゃ', answer: 'Tee', options: ['Tee', 'Wasser', 'Reis'] } },
-  h6: { de: 'Ein Wegweiser zeigt zu den Bergen. は、ひ、ふ… Du entzifferst ihn fast mühelos und folgst der Richtung.',
-    scene: { art: 'mountain', ask: '山', kana: 'やま', answer: 'Berg', options: ['Berg', 'Fluss', 'Meer'] } },
-  h7: { de: 'Am Ortsrand endet das Pflaster. ま、み、む… Vor dir öffnet sich weites, grünes Land.',
-    scene: { art: 'sky', ask: '空', kana: 'そら', answer: 'Himmel', options: ['Himmel', 'Meer', 'Wald'] } },
-  h8: { de: 'Ein schmaler Pfad führt bergauf. や、ゆ、よ… Fast alle Hiragana sitzen jetzt.',
-    scene: { art: 'path', ask: '道', kana: 'みち', answer: 'Weg', options: ['Weg', 'Tür', 'Brücke'] } },
-  h9: { de: 'Vögel rufen über dir. ら、り、る… Du liest ein Schild am Wegrand laut vor – und verstehst es.',
-    scene: { art: 'bird', ask: '鳥', kana: 'とり', answer: 'Vogel', options: ['Vogel', 'Fisch', 'Hund'] } },
-  h10: { de: 'わ、を、ん – die letzten Hiragana! Du kannst jetzt alles lesen, was in Hiragana geschrieben steht. Ein kleiner Triumph.',
-    scene: { art: 'torii', ask: '日本', kana: 'にほん', answer: 'Japan', options: ['Japan', 'China', 'Korea'] } },
-  wb1: { de: 'Vor dir ragt ein Berg auf, ein Fluss glitzert im Tal. Endlich kannst du benennen, was du siehst:', jp: 'これは山です。', kana: 'これはやまです。', tr: 'Das ist ein Berg.',
-    scene: { art: 'mountain', ask: 'これは山です。', kana: 'これはやまです。', answer: 'Das ist ein Berg.', options: ['Das ist ein Berg.', 'Das ist ein Fluss.', 'Das ist der Himmel.'] } },
-  g1: { de: 'Du lernst, worüber du sprichst zu markieren – mit は. Über den Berg vor dir sagst du:', jp: '山は高いです。', kana: 'やまはたかいです。', tr: 'Der Berg ist hoch.',
-    scene: { art: 'mountain', ask: '山は高いです。', kana: 'やまはたかいです。', answer: 'Der Berg ist hoch.', options: ['Der Berg ist hoch.', 'Der Berg ist schön.', 'Der Fluss ist hoch.'] } },
-  g2: { de: 'Mit です sagst du höflich, was etwas ist. Du zeigst auf das Wasser:', jp: 'これは川です。', kana: 'これはかわです。', tr: 'Das ist ein Fluss.',
-    scene: { art: 'river', ask: 'これは川です。', kana: 'これはかわです。', answer: 'Das ist ein Fluss.', options: ['Das ist ein Fluss.', 'Das ist ein Berg.', 'Das ist ein See.'] } },
-  k1: { de: 'Auf einem Wegweiser stehen kantigere Zeichen – Katakana. ア、イ、ウ… für Wörter aus aller Welt.',
-    scene: { art: 'town', ask: 'ホテル', kana: 'ホテル', answer: 'Hotel', options: ['Hotel', 'Bahnhof', 'Laden'] } },
-  k2: { de: 'カ、キ、ク… An einem Automaten erkennst du ein Wort: コーヒー – Kaffee! Du gönnst dir eine Pause.',
-    scene: { art: 'coffee', ask: 'コーヒー', kana: 'コーヒー', answer: 'Kaffee', options: ['Kaffee', 'Tee', 'Milch'] } },
-  k3: { de: 'サ、シ、ス… An einer Hütte hängt eine Karte mit Namen in Katakana.',
-    scene: { art: 'town', ask: 'レストラン', kana: 'レストラン', answer: 'Restaurant', options: ['Restaurant', 'Hotel', 'Bahnhof'] } },
-  k4: { de: 'タ、チ、ツ… Ein anderer Wanderer grüßt dich freundlich auf dem Pfad.',
-    scene: { art: 'car', ask: 'タクシー', kana: 'タクシー', answer: 'Taxi', options: ['Taxi', 'Bus', 'Zug'] } },
-  k5: { de: 'ナ、ニ、ヌ… Du liest jetzt beide Schriften, mal langsam, mal schon flüssig.',
-    scene: { art: 'tea', ask: 'パン', kana: 'パン', answer: 'Brot', options: ['Brot', 'Reis', 'Fisch'] } },
-  wb2: { de: 'Ein Hund läuft über den Weg, Vögel fliegen auf, im Fluss blitzt ein Fisch. Tiere überall:', jp: '犬が走ります。', kana: 'いぬがはしります。', tr: 'Der Hund rennt.',
-    scene: { art: 'animal', ask: '犬が走ります。', kana: 'いぬがはしります。', answer: 'Der Hund rennt.', options: ['Der Hund rennt.', 'Die Katze rennt.', 'Der Hund schläft.'] } },
-  g3: { de: 'Mit が betonst du, WER etwas tut. Eine Katze schleicht heran:', jp: '猫が好きです。', kana: 'ねこがすきです。', tr: 'Ich mag Katzen.',
-    scene: { art: 'animal', ask: '猫が好きです。', kana: 'ねこがすきです。', answer: 'Ich mag Katzen.', options: ['Ich mag Katzen.', 'Ich mag Hunde.', 'Ich sehe eine Katze.'] } },
-  g4: { de: 'Am Fluss holt ein Fischer seinen Fang ein. Mit を zeigst du das Objekt einer Handlung:', jp: '魚を食べます。', kana: 'さかなをたべます。', tr: 'Ich esse Fisch.',
-    scene: { art: 'fish', ask: '魚を食べます。', kana: 'さかなをたべます。', answer: 'Ich esse Fisch.', options: ['Ich esse Fisch.', 'Ich sehe Fisch.', 'Ich kaufe Fisch.'] } },
-  k6: { de: 'ハ、ヒ、フ… Der Weg wird steiler, der Atem schwerer.',
-    scene: { art: 'path', ask: '地図', kana: 'ちず', answer: 'Karte', options: ['Karte', 'Buch', 'Brief'] } },
-  k7: { de: 'マ、ミ、ム… Dein Rücken schmerzt, doch du gehst weiter, Schritt für Schritt.',
-    scene: { art: 'sky', ask: '雨', kana: 'あめ', answer: 'Regen', options: ['Regen', 'Schnee', 'Wind'] } },
-  k8: { de: 'ヤ、ユ、ヨ… Kühler Nebel zieht den Hang herauf.',
-    scene: { art: 'mountain', ask: '森', kana: 'もり', answer: 'Wald', options: ['Wald', 'Berg', 'Meer'] } },
-  k9: { de: 'ラ、リ、ル… Aus dem Grau taucht eine kleine Schutzhütte auf.',
-    scene: { art: 'river', ask: '水', kana: 'みず', answer: 'Wasser', options: ['Wasser', 'Tee', 'Milch'] } },
-  k10: { de: 'ワ、ヲ、ン – alle Katakana! Beide Schriften beherrschst du nun. Niemand kann dich mehr aufhalten.',
-    scene: { art: 'torii', ask: '日本語', kana: 'にほんご', answer: 'Japanisch', options: ['Japanisch', 'Englisch', 'Chinesisch'] } },
-  wb3: { de: 'Nach dem langen Aufstieg spürst du jeden Teil deines Körpers:', jp: '足が痛いです。', kana: 'あしがいたいです。', tr: 'Meine Füße tun weh.',
-    scene: { art: 'body', ask: '足が痛いです。', kana: 'あしがいたいです。', answer: 'Meine Füße tun weh.', options: ['Meine Füße tun weh.', 'Meine Augen tun weh.', 'Meine Füße sind groß.'] } },
-  g5: { de: 'Du denkst an Ziel und Weg. に zeigt wohin, で womit:', jp: '家に帰ります。', kana: 'いえにかえります。', tr: 'Ich gehe nach Hause.',
-    scene: { art: 'home', ask: '家に帰ります。', kana: 'いえにかえります。', answer: 'Ich gehe nach Hause.', options: ['Ich gehe nach Hause.', 'Ich gehe zur Stadt.', 'Ich bin zu Hause.'] } },
-  g6: { de: 'An einer kalten Quelle rastest du. Höfliche Verben enden auf ます:', jp: '水を飲みます。', kana: 'みずをのみます。', tr: 'Ich trinke Wasser.',
-    scene: { art: 'river', ask: '水を飲みます。', kana: 'みずをのみます。', answer: 'Ich trinke Wasser.', options: ['Ich trinke Wasser.', 'Ich trinke Tee.', 'Ich sehe Wasser.'] } },
-  wb4: { de: 'Im letzten Dorf vor dem Gipfel pulsiert der Alltag: Menschen, Häuser, ein vorbeifahrendes Auto.', jp: '車で行きます。', kana: 'くるまでいきます。', tr: 'Ich fahre mit dem Auto.',
-    scene: { art: 'car', ask: '車で行きます。', kana: 'くるまでいきます。', answer: 'Ich fahre mit dem Auto.', options: ['Ich fahre mit dem Auto.', 'Ich gehe zu Fuß.', 'Ich fahre mit dem Zug.'] } },
-  g7: { de: 'Nachts am Lager beschreibst du, was du siehst – mit Adjektiven:', jp: '星はきれいです。', kana: 'ほしはきれいです。', tr: 'Die Sterne sind schön.',
-    scene: { art: 'night', ask: '星はきれいです。', kana: 'ほしはきれいです。', answer: 'Die Sterne sind schön.', options: ['Die Sterne sind schön.', 'Der Mond ist schön.', 'Die Sterne sind hell.'] } },
-  g8: { de: 'Ein Mitwanderer dreht sich zu dir. Mit か wird aus einer Aussage eine Frage:', jp: '水を飲みますか。', kana: 'みずをのみますか。', tr: 'Trinkst du Wasser?',
-    scene: { art: 'river', ask: '水を飲みますか。', kana: 'みずをのみますか。', answer: 'Trinkst du Wasser?', options: ['Trinkst du Wasser?', 'Ich trinke Wasser.', 'Trinkst du Tee?'] } },
-  g9: { de: 'Im Morgenlicht erhebt sich vor dir der berühmteste Berg des Landes. の verbindet zwei Nomen:', jp: '日本の山。', kana: 'にほんのやま。', tr: 'Japans Berg.',
-    scene: { art: 'mountain', ask: '日本の山。', kana: 'にほんのやま。', answer: 'Japans Berg.', options: ['Japans Berg.', 'Japans Fluss.', 'Ein hoher Berg.'] } },
-  g10: { de: 'Du verstehst jetzt, wie ein ganzer Satz gebaut ist – Subjekt, Objekt, Verb am Ende. Worte fügen sich zusammen:', jp: '猫が魚を食べます。', kana: 'ねこがさかなをたべます。', tr: 'Die Katze frisst den Fisch.',
-    scene: { art: 'fish', ask: '猫が魚を食べます。', kana: 'ねこがさかなをたべます。', answer: 'Die Katze frisst den Fisch.', options: ['Die Katze frisst den Fisch.', 'Der Fisch frisst die Katze.', 'Die Katze sieht den Fisch.'] } },
-  fuji: { de: 'Du stehst auf dem Gipfel. Unter dir liegt das ganze Land, das dir vor Wochen noch völlig fremd war – und jetzt kannst du es lesen, benennen, verstehen. 旅は終わりました。Die Reise ist zu Ende. Eine neue beginnt.', jp: 'おめでとうございます！', kana: 'おめでとうございます！', tr: 'Herzlichen Glückwunsch!' },
-}
-
 // Japanisch vorlesen (Web Speech API).
 function speak(text) {
   if ('speechSynthesis' in window) {
@@ -3253,15 +3176,18 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
   )
 }
 
-// Das Reise-Tagebuch: alle bisher freigeschalteten Geschichts-Kapitel am Stück.
+// Das Reise-Tagebuch: alle bisher freigeschalteten Kapitel der Reise am Stück.
+// Erzählt die Geschichte aus den abgeschlossenen Kapiteln (c1–c6) nach – also
+// genau das, was man unterwegs erlebt hat, samt der dort gelernten Sätze.
 function StoryJournal({ progress, onClose }) {
   const beats = []
   PATH.forEach(n => {
-    if (!n.type || n.type === 'review' || n.type === 'goal') return
-    if (isNodeDone(n, progress) && STORY[n.id]) beats.push({ id: n.id, ...STORY[n.id] })
+    if (n.type !== 'chapter' || !isNodeDone(n, progress)) return
+    const c = CHAPTER_BY_ID[n.id]
+    if (!c) return
+    const story = c.steps.filter(s => s.kind === 'story')
+    if (story.length) beats.push({ id: c.id, title: c.title, story })
   })
-  const contentNodes = PATH.filter(n => n.type && n.type !== 'review' && n.type !== 'goal')
-  if (contentNodes.every(n => isNodeDone(n, progress)) && STORY.fuji) beats.push({ id: 'fuji', ...STORY.fuji })
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
@@ -3273,23 +3199,24 @@ function StoryJournal({ progress, onClose }) {
         {beats.length === 0 ? (
           <div style={{ textAlign: 'center', color: C.textMuted, marginTop: 40 }}>
             <div style={{ fontSize: 44, marginBottom: 12 }}>📖</div>
-            <p style={{ lineHeight: 1.6 }}>Noch keine Kapitel. Schließe Stationen auf deiner Reise ab – dann erzählt sich deine Geschichte hier Stück für Stück weiter.</p>
+            <p style={{ lineHeight: 1.6 }}>Noch keine Kapitel. Schließe ein Kapitel auf deiner Reise ab – dann erzählt sich deine Geschichte hier Stück für Stück weiter.</p>
           </div>
         ) : beats.map((b, i) => (
-          <div key={b.id} style={{ marginBottom: 18 }}>
+          <div key={b.id} style={{ marginBottom: 22 }}>
             <div style={{ fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>KAPITEL {i + 1}</div>
-            <p style={{ fontSize: 15, color: C.sumi, lineHeight: 1.7, margin: 0 }}>{b.de}</p>
-            {b.jp && (
-              <div style={{ marginTop: 10, background: `${C.indigo}0D`, borderRadius: 8, padding: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi }}>{b.jp}</span>
-                  <button onClick={() => speak(b.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🔊</button>
-                </div>
-                {b.kana && <div style={{ fontSize: 12, color: C.textMuted }}>{b.kana}</div>}
-                <div style={{ fontSize: 14, color: C.indigo }}>„{b.tr}"</div>
+            <h4 style={{ fontSize: 16, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo, margin: '0 0 10px' }}>{b.title}</h4>
+            {b.story.map((s, j) => (
+              <div key={j} style={{ marginBottom: 12 }}>
+                {s.jp && (
+                  <div style={{ background: `${C.indigo}0D`, borderRadius: 8, padding: 10, marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi, lineHeight: 1.9 }}>{renderFuri(s.jp)}</span>
+                    <button onClick={() => speak(furiPlain(s.jp))} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}>🔊</button>
+                  </div>
+                )}
+                {s.text && <p style={{ fontSize: 15, color: C.sumi, lineHeight: 1.7, margin: 0 }}>{s.text}</p>}
               </div>
-            )}
-            {i < beats.length - 1 && <div style={{ height: 1, background: C.washiDark, marginTop: 18 }} />}
+            ))}
+            {i < beats.length - 1 && <div style={{ height: 1, background: C.washiDark, marginTop: 16 }} />}
           </div>
         ))}
       </div>
