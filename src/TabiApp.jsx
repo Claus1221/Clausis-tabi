@@ -475,8 +475,7 @@ function Emoji({ name, size = 48, style }) {
 function TabBar({ active, setActive }) {
   const tabs = [
     { id: 'reise', label: '旅', sub: 'Reise' },
-    { id: 'heute', label: '今日', sub: 'Heute' },
-    { id: 'lernen', label: '学ぶ', sub: 'Lernen' },
+    { id: 'lernen', label: '辞書', sub: 'Bibliothek' },
     { id: 'ueben', label: '練習', sub: 'Üben' },
     { id: 'fortschritt', label: '進歩', sub: 'Fortschritt' },
   ]
@@ -1224,81 +1223,48 @@ function PracticeQuiz({ mode, onClose }) {
 
 // ─── Screens ─────────────────────────────────────────────────────────────────
 
-function HeuteScreen() {
+// Tagesstatus — war früher der „Heute"-Tab, jetzt eingebettet im Kopf der Reise.
+// Tagesziel-Ring + Streak + Link zu den fälligen Wiederholungen (→ Üben).
+function DailyStrip({ onReview }) {
   const { progress } = useContext(ProgressCtx)
   const { streak, xpToday: xp, goal } = computeStats(progress)
   const learnedAll = [...completedKanaList(progress.completedLessons || []), ...learnedWordKanji(progress.completedWordBlocks || [])]
   const due = dueKana(progress, learnedAll).length
-  const charOfDay = 'あ'
-  const data = KANA_DATA[charOfDay]
+  const pct = Math.min(xp / goal, 1)
 
   return (
-    <div style={{ padding: '16px 16px 0' }}>
-      {/* Greeting */}
-      <div style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo }}>
-          おはようございます 👋
-        </h1>
-        <p style={{ color: C.textMuted, fontSize: 13 }}>Guten Morgen! Bereit zum Lernen?</p>
-      </div>
-
-      {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
-        {[
-          { label: 'Streak', value: `${streak} 🔥`, color: C.shu },
-          { label: 'XP heute', value: `${xp}`, color: C.indigo },
-          { label: 'Zu üben', value: `${due}`, color: C.matcha },
-        ].map(s => (
-          <Card key={s.label} style={{ textAlign: 'center', padding: 12 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.textMuted }}>{s.label}</div>
-          </Card>
-        ))}
-      </div>
-
-      {/* Goal ring */}
-      <Card style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <svg width="56" height="56">
-            <circle cx="28" cy="28" r="22" fill="none" stroke={C.washiDark} strokeWidth="5" />
-            <circle cx="28" cy="28" r="22" fill="none" stroke={C.shu} strokeWidth="5"
-              strokeDasharray={`${2 * Math.PI * 22 * Math.min(xp / goal, 1)} ${2 * Math.PI * 22}`}
-              strokeLinecap="round" transform="rotate(-90 28 28)" />
-            <text x="28" y="33" textAnchor="middle" fontSize="13" fontWeight="700" fill={C.shu}>
-              {Math.min(Math.round(xp / goal * 100), 100)}%
-            </text>
-          </svg>
-          <div>
-            <div style={{ fontWeight: 600, marginBottom: 2 }}>Tagesziel</div>
-            <div style={{ fontSize: 13, color: C.textMuted }}>{xp} / {goal} XP</div>
-            <div style={{ fontSize: 12, color: C.textMuted }}>
-              {xp >= goal ? 'Tagesziel erreicht 🎉' : `noch ${goal - xp} XP bis zum Ziel`}
-            </div>
+    <Card style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <svg width="56" height="56" style={{ flexShrink: 0 }}>
+          <circle cx="28" cy="28" r="22" fill="none" stroke={C.washiDark} strokeWidth="5" />
+          <circle cx="28" cy="28" r="22" fill="none" stroke={C.shu} strokeWidth="5"
+            strokeDasharray={`${2 * Math.PI * 22 * pct} ${2 * Math.PI * 22}`}
+            strokeLinecap="round" transform="rotate(-90 28 28)" />
+          <text x="28" y="33" textAnchor="middle" fontSize="13" fontWeight="700" fill={C.shu}>
+            {Math.min(Math.round(xp / goal * 100), 100)}%
+          </text>
+        </svg>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 600, marginBottom: 2 }}>Tagesziel</div>
+          <div style={{ fontSize: 13, color: C.textMuted }}>{xp} / {goal} XP</div>
+          <div style={{ fontSize: 12, color: C.textMuted }}>
+            {xp >= goal ? 'erreicht 🎉' : `noch ${goal - xp} XP`}
           </div>
         </div>
-      </Card>
-
-      {/* Zeichen des Tages */}
-      <Card style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>
-          ZEICHEN DES TAGES
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: C.shu, lineHeight: 1 }}>{streak} 🔥</div>
+          <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 8 }}>Streak</div>
+          {due > 0 ? (
+            <button onClick={onReview} style={{
+              background: `${C.shu}14`, border: `1px solid ${C.shu}40`, borderRadius: 999,
+              padding: '4px 10px', fontSize: 12, fontWeight: 700, color: C.shu, cursor: 'pointer',
+            }}>{due} fällig →</button>
+          ) : (
+            <div style={{ fontSize: 11, color: C.textMuted }}>nichts fällig</div>
+          )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{
-            width: 70, height: 70, background: '#fafaf8',
-            border: `1px solid ${C.washiDark}`, borderRadius: 8,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 52, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
-          }}>{charOfDay}</div>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: C.indigo }}>{data.romaji}</div>
-            <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>Hiragana</div>
-            <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>💡 {data.tip}</div>
-          </div>
-        </div>
-      </Card>
-
-    </div>
+      </div>
+    </Card>
   )
 }
 
@@ -1549,73 +1515,8 @@ function BlockCourse({ block, onComplete, onClose }) {
   )
 }
 
-function BlockPath() {
-  const { progress, completeWordBlock } = useContext(ProgressCtx)
-  const [active, setActive] = useState(null)
-  const done = progress.completedWordBlocks || []
-
-  if (active) {
-    const block = WORD_BLOCKS.find(b => b.id === active)
-    return (
-      <BlockCourse
-        block={block}
-        onComplete={() => {
-          if (!done.includes(active)) completeWordBlock(active, block.words.length * XP_PER_WORD)
-          setActive(null)
-        }}
-        onClose={() => setActive(null)}
-      />
-    )
-  }
-
-  const blocks = WORD_BLOCKS.map((b, i) => ({
-    ...b,
-    done: done.includes(b.id),
-    locked: i === 0 ? false : !done.includes(WORD_BLOCKS[i - 1].id),
-  }))
-
-  return (
-    <div>
-      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 18 }}>
-        Wörter in 5er-Blöcken: Kanji, Hiragana, Bedeutung und Beispielsätze – mit Quiz am Schluss.
-      </p>
-
-      <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-        <div style={{ position: 'absolute', left: 28, top: 28, bottom: 28, width: 2, background: C.washiDark, zIndex: 0 }} />
-        {blocks.map((b, i) => (
-          <div key={b.id} style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            marginBottom: i < blocks.length - 1 ? 16 : 0, position: 'relative', zIndex: 1,
-          }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
-              background: b.done ? C.matcha : b.locked ? C.washiDark : C.shu,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 24, color: '#fff',
-              boxShadow: !b.locked && !b.done ? `0 0 0 4px ${C.shu}30` : 'none',
-            }}>
-              {b.done ? '✓' : b.locked ? '🔒' : b.theme}
-            </div>
-            <button onClick={() => !b.locked && setActive(b.id)} disabled={b.locked}
-              style={{
-                flex: 1, background: '#fff', border: '2px solid',
-                borderColor: b.done ? C.matcha : b.locked ? C.washiDark : C.shu,
-                borderRadius: 12, padding: '12px 14px', textAlign: 'left',
-                cursor: b.locked ? 'not-allowed' : 'pointer', opacity: b.locked ? 0.6 : 1,
-              }}>
-              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 2 }}>{b.title}</div>
-              <div style={{ fontSize: 12, color: C.textMuted }}>
-                {b.done ? 'Abgeschlossen ✓'
-                  : b.locked ? 'Noch gesperrt'
-                    : `${b.words.length} Wörter · ${b.words.map(w => w.kanji).join(' ')}`}
-              </div>
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
+// BlockPath/GrammarPath (parallele Lernpfade) entfernt — Fortschritt läuft über
+// die Reise; „Lernen" ist jetzt eine reine Nachschlage-Bibliothek (s. u.).
 
 // ─── Grammatik-Lernpfad ──────────────────────────────────────────────────────
 
@@ -1838,109 +1739,21 @@ function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
 const GRAMMAR_ORDER = ['g2', 'g1', 'g6', 'g3', 'g4', 'g5', 'g7', 'g8', 'g9', 'g10']
 const GRAMMAR_SEQ = GRAMMAR_ORDER.map(id => GRAMMAR.find(g => g.id === id))
 
-function GrammarPath() {
-  const { progress, completeGrammar } = useContext(ProgressCtx)
-  const [active, setActive] = useState(null)
-  const done = progress.completedGrammar || []
+// (GrammarPath entfernt — siehe GrammarLibrary weiter unten.)
 
-  if (active) {
-    const topic = GRAMMAR.find(t => t.id === active)
-    const already = done.includes(active)
-    return (
-      <GrammarLesson
-        topic={topic}
-        alreadyDone={already}
-        onDone={() => { if (!already) completeGrammar(active, XP_PER_GRAMMAR); setActive(null) }}
-        onClose={() => setActive(null)}
-      />
-    )
-  }
-
-  const topics = GRAMMAR_SEQ.map((t, i) => ({
-    ...t,
-    done: done.includes(t.id),
-    locked: i === 0 ? false : !done.includes(GRAMMAR_SEQ[i - 1].id),
-  }))
-
-  return (
-    <div>
-      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 18 }}>
-        Grammatik Schritt für Schritt: Partikel, です, Verben, Adjektive, Fragen und Satzbau.
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-        <div style={{ position: 'absolute', left: 28, top: 28, bottom: 28, width: 2, background: C.washiDark, zIndex: 0 }} />
-        {topics.map((t, i) => (
-          <div key={t.id} style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            marginBottom: i < topics.length - 1 ? 16 : 0, position: 'relative', zIndex: 1,
-          }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
-              background: t.done ? C.matcha : t.locked ? C.washiDark : C.shu,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: t.locked ? 18 : 22, color: '#fff', fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
-              boxShadow: !t.locked && !t.done ? `0 0 0 4px ${C.shu}30` : 'none',
-            }}>
-              {t.done ? '✓' : t.locked ? '🔒' : t.glyph}
-            </div>
-            <button onClick={() => !t.locked && setActive(t.id)} disabled={t.locked}
-              style={{
-                flex: 1, background: '#fff', border: '2px solid',
-                borderColor: t.done ? C.matcha : t.locked ? C.washiDark : C.shu,
-                borderRadius: 12, padding: '12px 14px', textAlign: 'left',
-                cursor: t.locked ? 'not-allowed' : 'pointer', opacity: t.locked ? 0.6 : 1,
-              }}>
-              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{t.title}</div>
-              <div style={{ fontSize: 12, color: C.textMuted }}>
-                {t.done ? 'Gelesen ✓' : t.locked ? 'Noch gesperrt' : t.summary}
-              </div>
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
+// „Lernen" ist jetzt eine reine Nachschlage-Bibliothek: alles frei einsehbar,
+// keine Sperren, kein XP. Gelernt/freigeschaltet wird auf der Reise.
 function LernenScreen() {
-  const { progress, completeLesson } = useContext(ProgressCtx)
-  const [activeLesson, setActiveLesson] = useState(null)
-  const [view, setView] = useState('kana') // 'kana' | 'woerter'
-
-  // Lektionen aus dem gespeicherten Fortschritt ableiten:
-  // - done  = ID ist in completedLessons
-  // - locked = die vorherige Lektion ist noch nicht abgeschlossen
-  const completed = progress.completedLessons || []
-  const lessons = LESSONS.map((l, i) => ({
-    ...l,
-    done: completed.includes(l.id),
-    locked: i === 0 ? false : !completed.includes(LESSONS[i - 1].id),
-  }))
-
-  const handleComplete = (id) => {
-    if (!completed.includes(id)) {
-      const lesson = LESSONS.find(l => l.id === id)
-      completeLesson(id, (lesson?.kana.length || 0) * XP_PER_KANA)
-    }
-    setActiveLesson(null)
-  }
-
-  if (activeLesson) {
-    const lesson = lessons.find(l => l.id === activeLesson)
-    return (
-      <LessonPlayer
-        lesson={lesson}
-        onComplete={() => handleComplete(activeLesson)}
-        onClose={() => setActiveLesson(null)}
-      />
-    )
-  }
+  const [view, setView] = useState('kana') // 'kana' | 'woerter' | 'grammatik' | 'phrasen'
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
-      <h2 style={{ fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo, marginBottom: 12 }}>
-        Lernen
+      <h2 style={{ fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo, marginBottom: 4 }}>
+        Bibliothek
       </h2>
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 16 }}>
+        Alles zum Nachschlagen – ohne Sperren, ohne Druck. Gelernt und freigeschaltet wird auf der Reise.
+      </p>
 
       {/* Umschalter Kana / Wörter / Grammatik / Phrasen */}
       <div style={{ display: 'flex', gap: 5, marginBottom: 18 }}>
@@ -1955,67 +1768,177 @@ function LernenScreen() {
         ))}
       </div>
 
-      {view === 'woerter' && <BlockPath />}
-      {view === 'grammatik' && <GrammarPath />}
+      {view === 'kana' && <KanaLibrary />}
+      {view === 'woerter' && <WordLibrary />}
+      {view === 'grammatik' && <GrammarLibrary />}
       {view === 'phrasen' && <PhraseList />}
+    </div>
+  )
+}
 
-      {view === 'kana' && (
-      <>
-      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 20 }}>
-        Schritt für Schritt durch Hiragana & Katakana
-      </p>
+// Vollbild-Nachschlageblatt (read-only) für die Bibliothek.
+function LibSheet({ title, onClose, children }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
+      <div style={{ padding: '12px 16px', background: '#fff', borderBottom: `1px solid ${C.washiDark}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted }}>✕</button>
+        <h3 style={{ fontSize: 15, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo }}>{title}</h3>
+      </div>
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>{children}</div>
+    </div>
+  )
+}
 
-      {/* Lesson path */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
-        {/* Connecting line */}
-        <div style={{
-          position: 'absolute', left: 28, top: 28, bottom: 28,
-          width: 2, background: C.washiDark, zIndex: 0,
-        }} />
+// Kana-Tabelle zum Nachschlagen — tippen öffnet Strichfolge, Lesung und Schreibfeld.
+function KanaLibrary() {
+  const [sel, setSel] = useState(null)
 
-        {lessons.map((lesson, i) => (
-          <div key={lesson.id} style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            marginBottom: i < lessons.length - 1 ? 16 : 0,
-            position: 'relative', zIndex: 1,
-          }}>
-            {/* Node */}
-            <div style={{
-              width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
-              background: lesson.done ? C.matcha : lesson.locked ? C.washiDark : C.shu,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: lesson.done ? 22 : lesson.locked ? 18 : 24,
-              color: '#fff', fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
-              boxShadow: !lesson.locked && !lesson.done ? `0 0 0 4px ${C.shu}30` : 'none',
-            }}>
-              {lesson.done ? '✓' : lesson.locked ? '🔒' : lesson.kana[0]}
-            </div>
+  if (sel) {
+    const d = KANA_DATA[sel]
+    return (
+      <LibSheet title={`${sel}${d?.romaji ? ` · ${d.romaji}` : ''}`} onClose={() => setSel(null)}>
+        <StrokeDisplay char={sel} />
+        <div style={{ textAlign: 'center', margin: '14px 0' }}>
+          <button onClick={() => speak(sel)}
+            style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 20, padding: '4px 14px', fontSize: 13, cursor: 'pointer', color: C.indigo }}>
+            🔊 Anhören
+          </button>
+          {d?.tip && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 8 }}>💡 {d.tip}</div>}
+        </div>
+        <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, margin: '8px 0' }}>SELBST SCHREIBEN</div>
+        <DrawCanvas char={sel} />
+      </LibSheet>
+    )
+  }
 
-            {/* Card */}
-            <button onClick={() => !lesson.locked && setActiveLesson(lesson.id)}
-              disabled={lesson.locked}
+  const Grid = ({ rows }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {rows.map((row, ri) => (
+        <div key={ri} style={{ display: 'flex', gap: 6 }}>
+          {row.map(ch => (
+            <button key={ch} onClick={() => setSel(ch)}
               style={{
-                flex: 1, background: '#fff', border: `2px solid`,
-                borderColor: lesson.done ? C.matcha : lesson.locked ? C.washiDark : C.shu,
-                borderRadius: 12, padding: '12px 14px', textAlign: 'left',
-                cursor: lesson.locked ? 'not-allowed' : 'pointer',
-                opacity: lesson.locked ? 0.6 : 1,
+                flex: 1, aspectRatio: '1 / 1', minWidth: 0, background: '#fff',
+                border: `1px solid ${C.washiDark}`, borderRadius: 8, cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               }}>
-              <div style={{ fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", fontSize: 18, marginBottom: 2 }}>
-                {lesson.title}
-              </div>
-              <div style={{ fontSize: 12, color: C.textMuted }}>
-                {lesson.done ? 'Abgeschlossen ✓' :
-                  lesson.locked ? 'Noch gesperrt' :
-                    `${lesson.kana.length} Zeichen · Jetzt starten`}
-              </div>
+              <span style={{ fontSize: 22, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi, lineHeight: 1 }}>{ch}</span>
+              <span style={{ fontSize: 9, color: C.textMuted }}>{KANA_DATA[ch]?.romaji || ''}</span>
             </button>
+          ))}
+          {row.length < 5 && Array.from({ length: 5 - row.length }).map((_, k) => <div key={`s${k}`} style={{ flex: 1 }} />)}
+        </div>
+      ))}
+    </div>
+  )
+
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 14 }}>
+        Alle Kana – tippe ein Zeichen für Strichfolge, Lesung und Schreibfeld.
+      </p>
+      <div style={{ fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>HIRAGANA</div>
+      <Grid rows={HIRA_ROWS} />
+      <div style={{ fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, margin: '18px 0 8px' }}>KATAKANA</div>
+      <Grid rows={KATA_ROWS} />
+    </div>
+  )
+}
+
+// Alle Wörter zum Nachschlagen, nach Thema gruppiert.
+function WordLibrary() {
+  const [sel, setSel] = useState(null)
+
+  if (sel) {
+    const w = WORD_BY_KANJI[sel]
+    return (
+      <LibSheet title={`${w.kanji} · ${w.de}`} onClose={() => setSel(null)}>
+        <WordDetail word={w} />
+      </LibSheet>
+    )
+  }
+
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 14 }}>
+        Alle Wörter mit Kanji, Lesung, Bedeutung und Beispielsatz.
+      </p>
+      {WORD_BLOCKS.map(block => (
+        <div key={block.id} style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>
+            {block.theme} {block.title.toUpperCase()}
+          </div>
+          {block.words.map(w => (
+            <button key={w.kanji} onClick={() => setSel(w.kanji)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left',
+                background: '#fff', border: '1px solid rgba(33,31,27,0.05)', borderRadius: 12,
+                boxShadow: 'var(--shadow-card)', padding: '10px 14px', marginBottom: 8, cursor: 'pointer',
+              }}>
+              <span style={{ fontSize: 30, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.sumi, lineHeight: 1 }}>{w.kanji}</span>
+              <span style={{ flex: 1 }}>
+                <span style={{ display: 'block', fontSize: 14, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo }}>{w.kana} · {w.romaji}</span>
+                <span style={{ display: 'block', fontSize: 13, color: C.sumi }}>{w.de}</span>
+              </span>
+              <span style={{ fontSize: 16, color: C.textMuted }}>›</span>
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Alle Grammatik-Themen als read-only Erklärung (Beispiele antippbar, keine Übungen/XP).
+function GrammarLibrary() {
+  const [sel, setSel] = useState(null)
+
+  if (sel) {
+    const topic = GRAMMAR.find(t => t.id === sel)
+    return (
+      <LibSheet title={`${topic.glyph} · ${topic.title}`} onClose={() => setSel(null)}>
+        <div style={{ textAlign: 'center', marginBottom: 16 }}>
+          <div style={{ fontSize: 48, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.shu }}>{topic.glyph}</div>
+          <h2 style={{ fontSize: 20, color: C.indigo, marginTop: 4 }}>{topic.title}</h2>
+        </div>
+        {topic.body.map((s, i) => (
+          <div key={i} style={{ marginBottom: 12 }}>
+            {s.h && <div style={{ fontSize: 12, color: C.shu, fontWeight: 700, marginBottom: 2 }}>{s.h}</div>}
+            <p style={{ fontSize: 14, color: C.sumi, lineHeight: 1.6 }}>{s.text}</p>
           </div>
         ))}
-      </div>
+        <Card style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>BEISPIELE</div>
+          {topic.examples.map((ex, i) => <TappableSentence key={i} ex={ex} />)}
+        </Card>
+      </LibSheet>
+    )
+  }
 
-      </>
-      )}
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 14 }}>
+        Alle Grammatik-Themen zum Nachlesen – mit Beispielen zum Antippen.
+      </p>
+      {GRAMMAR_SEQ.map(t => (
+        <button key={t.id} onClick={() => setSel(t.id)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left',
+            background: '#fff', border: '1px solid rgba(33,31,27,0.05)', borderRadius: 12,
+            boxShadow: 'var(--shadow-card)', padding: '12px 14px', marginBottom: 8, cursor: 'pointer',
+          }}>
+          <span style={{
+            width: 42, height: 42, flexShrink: 0, borderRadius: 10, background: `${C.shu}12`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.shu,
+          }}>{t.glyph}</span>
+          <span style={{ flex: 1 }}>
+            <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: C.sumi }}>{t.title}</span>
+            <span style={{ display: 'block', fontSize: 12, color: C.textMuted }}>{t.summary}</span>
+          </span>
+          <span style={{ fontSize: 16, color: C.textMuted }}>›</span>
+        </button>
+      ))}
     </div>
   )
 }
@@ -2338,9 +2261,11 @@ function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
   )
 }
 
-function UebenScreen() {
+function UebenScreen({ initialMode, onConsumeInitial }) {
   const { progress } = useContext(ProgressCtx)
-  const [mode, setMode] = useState(null)
+  const [mode, setMode] = useState(initialMode || null)
+  // einmaligen Deep-Link (z. B. „Wiederholen" aus Reise/Fortschritt) verbrauchen
+  useEffect(() => { if (initialMode) onConsumeInitial?.() }, [])
 
   if (mode === 'srs') return <SRSQuiz onClose={() => setMode(null)} />
   if (mode === 'erkennen' || mode === 'hoeren') return <PracticeQuiz mode={mode} onClose={() => setMode(null)} />
@@ -2417,7 +2342,7 @@ const SRS_STAGES = [
   { label: 'Gemeistert', color: '#1E4368', test: e => e.interval >= 120 },
 ]
 
-function FortschrittScreen() {
+function FortschrittScreen({ onReview }) {
   const { progress, reset } = useContext(ProgressCtx)
   const [period, setPeriod] = useState('woche')
   const stats = computeStats(progress)
@@ -2443,6 +2368,7 @@ function FortschrittScreen() {
   const srsVals = Object.values(progress.srs || {})
   const stageCounts = SRS_STAGES.map(s => ({ ...s, n: srsVals.filter(s.test).length }))
   const vocabTotal = srsVals.length
+  const due = dueKana(progress, [...completedKanaList(completed), ...learnedWordKanji(progress.completedWordBlocks || [])]).length
 
   // Fertigkeiten mit Aufschlüsselung (so kommt der Prozentwert zustande).
   const skills = [
@@ -2551,6 +2477,14 @@ function FortschrittScreen() {
                 <span style={{ fontSize: 13, color: C.textMuted, fontWeight: 600 }}>{s.n}</span>
               </div>
             ))}
+            <button onClick={onReview} style={{
+              width: '100%', marginTop: 10, padding: '10px 0', borderRadius: 8,
+              border: `1px solid ${due > 0 ? C.shu : C.washiDark}`,
+              background: due > 0 ? `${C.shu}12` : '#fff',
+              color: due > 0 ? C.shu : C.indigo, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}>
+              {due > 0 ? `${due} fällig – jetzt wiederholen →` : 'Wiederholung öffnen →'}
+            </button>
           </>
         )}
       </Card>
@@ -2783,14 +2717,12 @@ const PATH = [
   { type: 'kana', id: 'h1' },
   { type: 'kana', id: 'h2' },
   { type: 'kana', id: 'h3' },
-  { type: 'review', id: 'rv1' },
   { type: 'chapter', id: 'c1' },
   { world: 'ひらがな・二', sub: 'Mehr Silben' },
   { type: 'kana', id: 'h4' },
   { type: 'kana', id: 'h5' },
   { type: 'kana', id: 'h6' },
   { type: 'kana', id: 'h7' },
-  { type: 'review', id: 'rv2' },
   { type: 'chapter', id: 'c2' },
   { world: 'ひらがな・三 & 文の基本', sub: 'Hiragana fertig · Satz-Grundgerüst' },
   { type: 'kana', id: 'h8' },
@@ -2802,7 +2734,6 @@ const PATH = [
   { type: 'grammar', id: 'g3' },
   { type: 'grammar', id: 'g4' },
   { type: 'word', id: 'wb1' },
-  { type: 'review', id: 'rv3' },
   { type: 'chapter', id: 'c3' },
   { world: 'カタカナ・一', sub: 'Die zweite Schrift' },
   { type: 'kana', id: 'k1' },
@@ -2812,7 +2743,6 @@ const PATH = [
   { type: 'kana', id: 'k5' },
   { type: 'grammar', id: 'g5' },
   { type: 'word', id: 'wb2' },
-  { type: 'review', id: 'rv4' },
   { type: 'chapter', id: 'c4' },
   { world: 'カタカナ・二', sub: 'Katakana fertig' },
   { type: 'kana', id: 'k6' },
@@ -2822,7 +2752,6 @@ const PATH = [
   { type: 'kana', id: 'k10' },
   { type: 'grammar', id: 'g7' },
   { type: 'word', id: 'wb3' },
-  { type: 'review', id: 'rv5' },
   { type: 'chapter', id: 'c5' },
   { world: '文を作る', sub: 'Sätze bauen' },
   { type: 'word', id: 'wb4' },
@@ -3224,7 +3153,7 @@ function StoryJournal({ progress, onClose }) {
   )
 }
 
-function ReiseScreen() {
+function ReiseScreen({ onReview }) {
   const { progress, completeLesson, completeWordBlock, completeGrammar, completeChapter } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
   const [showStory, setShowStory] = useState(false)
@@ -3292,13 +3221,6 @@ function ReiseScreen() {
           onDone={() => { if (!already) completeGrammar(active.id, XP_PER_GRAMMAR); close() }} />
       )
     }
-    if (active.type === 'review') {
-      return (
-        <div style={{ position: 'fixed', inset: 0, background: C.washi, zIndex: 100, overflow: 'auto' }}>
-          <SRSQuiz onClose={close} />
-        </div>
-      )
-    }
     if (active.type === 'chapter') {
       const chapter = CHAPTER_BY_ID[active.id]
       const already = (progress.completedChapters || []).includes(active.id)
@@ -3325,8 +3247,7 @@ function ReiseScreen() {
     }
     const done = isNodeDone(it, progress)
     let state
-    if (it.type === 'review') state = foundCurrent ? 'locked' : (dueCount > 0 ? 'review' : 'done')
-    else if (it.type === 'goal') state = allDone ? 'done' : 'locked'
+    if (it.type === 'goal') state = allDone ? 'done' : 'locked'
     else if (foundCurrent) state = 'locked'
     else if (done) state = 'done'
     else { state = 'current'; foundCurrent = true }
@@ -3340,6 +3261,7 @@ function ReiseScreen() {
   const trackH = y + 60
   const road = roadPath(laid.map(n => [n.x, n.y]))
   const goal = laid[laid.length - 1]
+  const current = laid.find(n => n.state === 'current')   // nächste offene Station
 
   // Durchgängiger Parallax-Hintergrund (eine Tal-Landschaft über die volle Höhe).
   const backdropH = trackH + 80
@@ -3348,7 +3270,7 @@ function ReiseScreen() {
   return (
     <div ref={wrapRef} style={{ paddingBottom: 8 }}>
       {showStory && <StoryJournal progress={progress} onClose={() => setShowStory(false)} />}
-      {/* Intro + Gesamtfortschritt */}
+      {/* Intro + Tagesstatus + Gesamtfortschritt */}
       <div style={{ padding: '16px 16px 12px', position: 'relative', zIndex: 1 }}>
         <h2 style={{ fontSize: 20, fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif", color: C.indigo, marginBottom: 4 }}>
           Deine Reise 旅
@@ -3356,12 +3278,26 @@ function ReiseScreen() {
         <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>
           Ein Weg vom Anfang bis zum Gipfel – Schrift, Wörter und Grammatik Schritt für Schritt.
         </p>
+
+        {/* Tagesstatus — eingebettet aus dem früheren „Heute"-Tab */}
+        <DailyStrip onReview={onReview} />
+
+        {/* Direkt an der nächsten offenen Station weitermachen */}
+        {current ? (
+          <Btn onClick={() => setActive(current.node)} style={{ width: '100%', marginBottom: 12 }}>
+            Weiter: {pathNodeMeta(current.node).label} →
+          </Btn>
+        ) : (
+          <Btn variant="secondary" onClick={onReview} style={{ width: '100%', marginBottom: 12 }}>
+            Alles gemeistert 🎉 – Wiederholen
+          </Btn>
+        )}
+
         <div style={{ height: 8, background: C.washiDark, borderRadius: 4, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${Math.round(doneCount / contentNodes.length * 100)}%`, background: C.matcha, borderRadius: 4, transition: 'width 0.3s' }} />
         </div>
         <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6 }}>
           {doneCount} / {contentNodes.length} Stationen gemeistert
-          {dueCount > 0 && <span style={{ color: '#BE8316' }}> · {dueCount} fällig</span>}
         </div>
         <button onClick={() => setShowStory(true)}
           style={{
@@ -3468,6 +3404,7 @@ function ReiseScreen() {
 
 export default function TabiApp() {
   const [tab, setTab] = useState('reise')
+  const [uebenMode, setUebenMode] = useState(null)  // gewünschter Übungsmodus beim Tab-Wechsel
   const { user, logout } = useAuth()
   const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
@@ -3482,12 +3419,14 @@ export default function TabiApp() {
     scheduleNew(learned)
   }, [progress.completedLessons, progress.completedWordBlocks, progress.srs])
 
+  // Wiederholungen leben an einem Ort (Üben). Andere Screens verlinken hierher.
+  const goToReview = () => { setUebenMode('srs'); setTab('ueben') }
+
   const screens = {
-    reise: <ReiseScreen />,
-    heute: <HeuteScreen />,
+    reise: <ReiseScreen onReview={goToReview} />,
     lernen: <LernenScreen />,
-    ueben: <UebenScreen />,
-    fortschritt: <FortschrittScreen />,
+    ueben: <UebenScreen initialMode={uebenMode} onConsumeInitial={() => setUebenMode(null)} />,
+    fortschritt: <FortschrittScreen onReview={goToReview} />,
   }
 
   return (
