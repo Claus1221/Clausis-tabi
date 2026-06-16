@@ -11,10 +11,26 @@ const DEFAULT = {
   completedDialogs: [],    // IDs abgeschlossener Gesprächs-Szenen, z.B. ['d1']
   xpByDate: {},            // { 'YYYY-MM-DD': XP }  → XP heute, Streak, Wochenchart
   srs: {},                 // { '山': { ease, interval, reps, due } }  → Wiederholungsplan
+  settings: {},            // Nutzer-Einstellungen (s. SETTINGS_DEFAULTS)
 }
 
-const DAILY_GOAL = 200      // XP-Ziel pro Tag
+const DAILY_GOAL = 200      // XP-Ziel pro Tag (Standard, per Einstellungen änderbar)
 const XP_PER_LEVEL = 1000   // XP für ein Level
+
+// Einstellbare Parameter mit ihren Standardwerten. Was der Nutzer ändert, landet
+// unter progress.settings; fehlende Werte fallen auf diese Defaults zurück.
+export const SETTINGS_DEFAULTS = {
+  options: 6,             // Antwortmöglichkeiten bei Erkennen/Hören (4–8)
+  dailyGoal: DAILY_GOAL,  // XP-Tagesziel
+  roundSize: 12,          // Aufgaben pro Übungsrunde
+  freeSize: 20,           // Karten je Fleiß-Session
+  standardReview: 'mix',  // was „Wiederholen" startet: 'mix' | 'srs'
+}
+
+// Einstellungen mit Defaults zusammenführen (eine Quelle für alle Screens).
+export function getSettings(progress) {
+  return { ...SETTINGS_DEFAULTS, ...(progress.settings || {}) }
+}
 
 // ─── Datums-Helfer (lokale Zeitzone) ─────────────────────────────────────────
 export function localDate(d = new Date()) {
@@ -104,7 +120,8 @@ export function computeStats(progress) {
     else break
   }
 
-  return { xpToday, totalXp, level, streak, goal: DAILY_GOAL }
+  const goal = progress.settings?.dailyGoal ?? DAILY_GOAL
+  return { xpToday, totalXp, level, streak, goal }
 }
 
 // ─── Hook: lädt live aus Firestore und liefert Schreib-Funktionen ─────────────
@@ -207,11 +224,18 @@ export function useProgress(uid) {
     await setDoc(ref(), { srs: updates }, { merge: true })
   }
 
-  // Kompletter Reset auf 0 (überschreibt das Dokument).
-  const reset = async () => {
-    if (!uid || !db) return
-    await setDoc(ref(), { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], xpByDate: {}, srs: {} })
+  // Einstellungen (teil-)speichern. Merge lässt unveränderte Werte unberührt.
+  const saveSettings = async (patch) => {
+    if (!uid || !db || !patch) return
+    await setDoc(ref(), { settings: patch }, { merge: true })
   }
 
-  return { progress, loading, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, reset }
+  // Kompletter Reset auf 0 (überschreibt das Dokument). Einstellungen bleiben erhalten:
+  // volles Überschreiben (löscht srs/xpByDate sicher), aber settings werden mitgenommen.
+  const reset = async () => {
+    if (!uid || !db) return
+    await setDoc(ref(), { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], xpByDate: {}, srs: {}, settings: progress.settings || {} })
+  }
+
+  return { progress, loading, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveSettings, reset }
 }

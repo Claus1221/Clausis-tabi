@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, createContext, useContext } from 'react'
 import { useAuth } from './AuthGate.jsx'
-import { useProgress, computeStats, dueKana, SRS_STAGE_BOUNDS } from './useProgress.js'
+import { useProgress, computeStats, dueKana, SRS_STAGE_BOUNDS, SETTINGS_DEFAULTS, getSettings } from './useProgress.js'
 import { KANA_STROKES, STROKE_VIEWBOX } from './kanaStrokes.js'
 
 // Fortschritt (aus Firestore) für alle Screens verfügbar machen.
 const ProgressCtx = createContext({
-  progress: { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], xpByDate: {}, srs: {} },
+  progress: { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], xpByDate: {}, srs: {}, settings: {} },
+  settings: SETTINGS_DEFAULTS,
   awardXp: async () => {},
   completeLesson: async () => {},
   completeWordBlock: async () => {},
@@ -13,6 +14,7 @@ const ProgressCtx = createContext({
   completeChapter: async () => {},
   completeDialog: async () => {},
   reviewCard: async () => {},
+  saveSettings: async () => {},
   reset: async () => {},
 })
 
@@ -421,6 +423,13 @@ function speak(text) {
     speechSynthesis.cancel()
     speechSynthesis.speak(u)
   }
+}
+
+// Ein SRS-Item vorlesen: bei Wörtern die Kana-Lesung (nicht das Kanji – sonst
+// liest die TTS z. B. 月 als „getsu" statt „tsuki"), bei Kana das Zeichen selbst.
+function speakItem(item) {
+  const w = WORD_BY_KANJI[item]
+  speak(w ? w.kana : item)
 }
 
 // Text in die Zwischenablage kopieren (mit Fallback für ältere Browser).
@@ -988,10 +997,8 @@ const SRS_RATINGS = [
 // Spaced-Repetition-Quiz. Modus 'due' = heute fällige Karten; 'free' = Fleiß-
 // Übung über ALLE gelernten Karten (begrenzte Session), auch wenn nichts fällig
 // ist. Nur wirklich fällige Karten verschieben dabei den Wiederholungsplan.
-const FREESTYLE_SIZE = 20
-
 function SRSQuiz({ onClose, initialMode = 'due' }) {
-  const { progress, awardXp, reviewCard } = useContext(ProgressCtx)
+  const { progress, awardXp, reviewCard, settings } = useContext(ProgressCtx)
 
   const learned = [
     ...completedKanaList(progress.completedLessons || []),
@@ -1005,7 +1012,7 @@ function SRSQuiz({ onClose, initialMode = 'due' }) {
   const buildDeck = (m) => {
     const pool = m === 'free' ? learned : [...dueSet]
     const d = shuffled(pool)
-    return m === 'free' ? d.slice(0, FREESTYLE_SIZE) : d
+    return m === 'free' ? d.slice(0, settings.freeSize) : d
   }
 
   const [mode, setMode] = useState(initialMode)
@@ -1104,7 +1111,7 @@ function SRSQuiz({ onClose, initialMode = 'due' }) {
         {isRepeat && (
           <div style={{ position: 'absolute', top: 10, left: 12, fontSize: 11, color: C.shu, fontWeight: 600 }}>🔁 nochmal</div>
         )}
-        <button onClick={() => speak(item)} title="Anhören"
+        <button onClick={() => speakItem(item)} title="Anhören"
           style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}>🔊</button>
         <div style={{ fontSize: item.length > 1 ? 52 : 80, fontFamily: JP, marginBottom: 12 }}>{item}</div>
         {flipped ? (
@@ -1162,9 +1169,9 @@ function buildRounds(learnedKana, optionCount = OPTIONS_PER_ROUND) {
 
 function PracticeQuiz({ mode, onClose }) {
   // mode: 'erkennen' (Zeichen → Lesung) | 'hoeren' (Audio → Zeichen)
-  const { progress, awardXp } = useContext(ProgressCtx)
+  const { progress, awardXp, settings } = useContext(ProgressCtx)
   const learned = completedKanaList(progress.completedLessons || [])
-  const [rounds] = useState(() => buildRounds(learned).slice(0, 12))
+  const [rounds] = useState(() => buildRounds(learned, settings.options).slice(0, settings.roundSize))
   const [idx, setIdx] = useState(0)
   const [answer, setAnswer] = useState(null)
   const [correctCount, setCorrectCount] = useState(0)
@@ -2024,9 +2031,9 @@ function UebenDone({ correct, total, onClose }) {
 
 // Tippen: Kana ansehen, Lesung (Romaji) per Tastatur eingeben.
 function TypeQuiz({ onClose }) {
-  const { progress, awardXp } = useContext(ProgressCtx)
+  const { progress, awardXp, settings } = useContext(ProgressCtx)
   const learned = completedKanaList(progress.completedLessons || [])
-  const [rounds] = useState(() => shuffled(learned).slice(0, 12))
+  const [rounds] = useState(() => shuffled(learned).slice(0, settings.roundSize))
   const [idx, setIdx] = useState(0)
   const [val, setVal] = useState('')
   const [res, setRes] = useState(null)
@@ -2090,6 +2097,228 @@ function SentenceQuiz({ onClose }) {
       <BuildStep key={idx} step={rounds[idx]} onSolved={() => setSolved(true)} />
       {solved && <Btn onClick={() => { setSolved(false); setIdx(i => i + 1) }} style={{ width: '100%', marginTop: 14 }}>{last ? 'Fertig →' : 'Weiter →'}</Btn>}
     </div>
+  )
+}
+
+// ─── Gemischte Wiederholung ──────────────────────────────────────────────────
+// Verschränkt mehrere Übungsformen in einer Session (Interleaving fördert das
+// Lernen mehr als „Blocken" einer Form). Pro Aufgabe wechselt zufällig das
+// Format aus dem, was du schon gelernt hast.
+const MIX_LABEL = {
+  erkennen: '👁 Erkennen', hoeren: '👂 Hören', tippen: '⌨️ Tippen',
+  karte: '🗂 Karteikarte', satzbau: '🧩 Satzbau',
+}
+
+function buildMixTasks({ kana, learnedAll, sentencePool, settings }) {
+  const types = []
+  if (kana.length >= 2) types.push('erkennen', 'hoeren')
+  if (kana.length >= 1) types.push('tippen')
+  if (learnedAll.length >= 1) types.push('karte')
+  if (sentencePool.length >= 1) types.push('satzbau')
+  if (!types.length) return []
+
+  const rand = arr => arr[Math.floor(Math.random() * arr.length)]
+  const mkOptions = (ch) => {
+    const n = Math.min(settings.options - 1, kana.length - 1)
+    return shuffled([ch, ...shuffled(kana.filter(k => k !== ch)).slice(0, n)])
+  }
+  const out = []
+  for (let i = 0; i < settings.roundSize; i++) {
+    const type = rand(types)
+    if (type === 'erkennen' || type === 'hoeren') {
+      const ch = rand(kana); out.push({ type, char: ch, options: mkOptions(ch) })
+    } else if (type === 'tippen') {
+      out.push({ type, char: rand(kana) })
+    } else if (type === 'karte') {
+      out.push({ type, item: rand(learnedAll) })
+    } else {
+      const e = rand(sentencePool)
+      const ans = e.tokens.map(t => t.t).filter(t => t !== '。' && t !== '！')
+      out.push({ type, step: { prompt: `Bilde: „${e.de}"`, tiles: ans, answer: ans, tr: e.de } })
+    }
+  }
+  return out
+}
+
+function MixQuiz({ onClose }) {
+  const { progress, reviewCard, settings } = useContext(ProgressCtx)
+  const kana = completedKanaList(progress.completedLessons || [])
+  const learnedAll = [...kana, ...learnedWordKanji(progress.completedWordBlocks || [])]
+  const sentencePool = GRAMMAR.filter(g => (progress.completedGrammar || []).includes(g.id)).flatMap(g => g.examples)
+
+  const [tasks] = useState(() => buildMixTasks({ kana, learnedAll, sentencePool, settings }))
+  // Nur WIRKLICH fällige Karten verschieben den Wiederholungsplan (wie bei „Fleiß").
+  const [dueSet, setDueSet] = useState(() => new Set(dueKana(progress, learnedAll)))
+  const [idx, setIdx] = useState(0)
+  const [score, setScore] = useState(0)
+
+  if (tasks.length === 0) {
+    return <UebenEmpty onClose={onClose} text="Lerne erst ein paar Kana, Wörter oder Grammatik – dann mischt die Wiederholung daraus." />
+  }
+  if (idx >= tasks.length) {
+    return <UebenDone correct={score} total={tasks.length} onClose={onClose} />
+  }
+
+  const cardReview = (item, q) => {
+    if (dueSet.has(item)) {
+      reviewCard(item, q)
+      setDueSet(prev => { const n = new Set(prev); n.delete(item); return n })
+    }
+  }
+  const next = (ok) => { if (ok) setScore(s => s + 1); setIdx(i => i + 1) }
+
+  return (
+    <div style={{ padding: 20 }}>
+      <UebenHead title="Gemischt" idx={idx} total={tasks.length} onClose={onClose} />
+      <MixStep key={idx} task={tasks[idx]} cardReview={cardReview} onNext={next} />
+    </div>
+  )
+}
+
+// Eine einzelne Aufgabe der gemischten Wiederholung – Rendering je nach Format.
+function MixStep({ task, cardReview, onNext }) {
+  const { awardXp } = useContext(ProgressCtx)
+  const [answer, setAnswer] = useState(null)   // Multiple-Choice
+  const [val, setVal] = useState('')           // Tippen-Eingabe
+  const [typed, setTyped] = useState(null)      // Tippen-Ergebnis
+  const [flipped, setFlipped] = useState(false) // Karteikarte aufgedeckt
+  const [built, setBuilt] = useState(null)       // Satzbau-Ergebnis
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (task.type === 'hoeren') speak(task.char)
+    else if (task.type === 'karte') speakItem(task.item)
+    if (task.type === 'tippen') inputRef.current?.focus()
+  }, []) // eslint-disable-line
+
+  const chip = (
+    <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.3, marginBottom: 8 }}>
+      {MIX_LABEL[task.type]}
+    </div>
+  )
+
+  // ── Multiple-Choice: Erkennen / Hören ──
+  if (task.type === 'erkennen' || task.type === 'hoeren') {
+    const revealed = answer !== null
+    const choose = (opt) => { if (revealed) return; setAnswer(opt); if (opt === task.char) awardXp(XP_PER_CARD) }
+    return (
+      <>
+        {chip}
+        <Card style={{ textAlign: 'center', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 16 }}>
+          {task.type === 'erkennen' ? (
+            <>
+              <div style={{ fontSize: 80, fontFamily: JP, marginBottom: 4 }}>{task.char}</div>
+              <div style={{ fontSize: 13, color: C.textMuted }}>Welche Lesung?</div>
+            </>
+          ) : (
+            <>
+              <button onClick={() => speak(task.char)}
+                style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 40, width: 80, height: 80, fontSize: 36, cursor: 'pointer', margin: '0 auto 8px' }}>🔊</button>
+              <div style={{ fontSize: 13, color: C.textMuted }}>Welches Zeichen hast du gehört?</div>
+            </>
+          )}
+        </Card>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {task.options.map(opt => {
+            const isCorrect = opt === task.char
+            const isChosen = opt === answer
+            const label = task.type === 'erkennen' ? KANA_DATA[opt]?.romaji : opt
+            return (
+              <button key={opt} onClick={() => choose(opt)} disabled={revealed}
+                style={{
+                  padding: '16px 8px', borderRadius: 8, border: '2px solid',
+                  borderColor: !revealed ? C.washiDark : isCorrect ? C.matcha : isChosen ? C.shu : C.washiDark,
+                  background: !revealed ? '#fff' : isCorrect ? `${C.matcha}20` : isChosen ? `${C.shu}20` : '#fff',
+                  fontSize: task.type === 'erkennen' ? 18 : 28,
+                  fontFamily: task.type === 'erkennen' ? 'inherit' : JP,
+                  fontWeight: 600, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
+                }}>{label}</button>
+            )
+          })}
+        </div>
+        {revealed && (
+          <>
+            <p style={{ textAlign: 'center', marginTop: 12, color: answer === task.char ? C.matcha : C.shu, fontWeight: 600 }}>
+              {answer === task.char ? '✓ Richtig!' : `✗ Richtig: ${task.char} (${KANA_DATA[task.char]?.romaji})`}
+            </p>
+            <Btn onClick={() => onNext(answer === task.char)} style={{ width: '100%', marginTop: 12 }}>Weiter →</Btn>
+          </>
+        )}
+      </>
+    )
+  }
+
+  // ── Tippen ──
+  if (task.type === 'tippen') {
+    const ans = KANA_DATA[task.char]?.romaji
+    const revealed = typed !== null
+    const check = () => { if (!val.trim()) return; const ok = val.trim().toLowerCase() === ans; setTyped(ok); if (ok) awardXp(XP_PER_CARD) }
+    return (
+      <>
+        {chip}
+        <Card style={{ textAlign: 'center', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 16 }}>
+          <div style={{ fontSize: 80, fontFamily: JP, marginBottom: 6 }}>{task.char}</div>
+          <button onClick={() => speak(task.char)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}>🔊</button>
+        </Card>
+        <input ref={inputRef} value={val} onChange={e => setVal(e.target.value)} disabled={revealed}
+          onKeyDown={e => { if (e.key === 'Enter') (revealed ? onNext(typed) : check()) }}
+          placeholder="Lesung tippen (z. B. ka)" autoCapitalize="none" autoCorrect="off"
+          style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', fontSize: 18, borderRadius: 10, textAlign: 'center', border: `2px solid ${revealed ? (typed ? C.matcha : C.shu) : C.washiDark}` }} />
+        {revealed && (
+          <p style={{ textAlign: 'center', marginTop: 12, color: typed ? C.matcha : C.shu, fontWeight: 600 }}>
+            {typed ? '✓ Richtig!' : `✗ Richtig: ${ans}`}
+          </p>
+        )}
+        <Btn onClick={revealed ? () => onNext(typed) : check} style={{ width: '100%', marginTop: 12 }}>
+          {revealed ? 'Weiter →' : 'Prüfen'}
+        </Btn>
+      </>
+    )
+  }
+
+  // ── Karteikarte (Selbstbewertung wie im SRS) ──
+  if (task.type === 'karte') {
+    const info = srsItemInfo(task.item)
+    const rate = (q) => { cardReview(task.item, q); if (q >= 3) awardXp(XP_PER_CARD); onNext(q >= 3) }
+    return (
+      <>
+        {chip}
+        <Card style={{ textAlign: 'center', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 16, position: 'relative' }}>
+          <button onClick={() => speakItem(task.item)} title="Anhören"
+            style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}>🔊</button>
+          <div style={{ fontSize: task.item.length > 1 ? 52 : 80, fontFamily: JP, marginBottom: 12 }}>{task.item}</div>
+          {flipped ? (
+            <>
+              <div style={{ fontSize: 22, fontWeight: 700, color: C.indigo, marginBottom: 4 }}>{info.reading}</div>
+              {info.sub && <div style={{ fontSize: 13, color: C.textMuted }}>{info.sub}</div>}
+            </>
+          ) : (
+            <div style={{ color: C.textMuted, fontSize: 14 }}>Tippen zum Aufdecken</div>
+          )}
+        </Card>
+        {!flipped ? (
+          <Btn onClick={() => setFlipped(true)} style={{ width: '100%' }} variant="secondary">Aufdecken</Btn>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
+            {SRS_RATINGS.map(([label, color, q]) => (
+              <button key={label} onClick={() => rate(q)}
+                style={{ padding: '10px 4px', borderRadius: 8, border: `2px solid ${color}`, background: `${color}15`, color, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </>
+    )
+  }
+
+  // ── Satzbau (renutzt BuildStep) ──
+  return (
+    <>
+      {chip}
+      <BuildStep step={task.step} onSolved={(ok) => setBuilt(!!ok)} />
+      {built !== null && <Btn onClick={() => onNext(built)} style={{ width: '100%', marginTop: 14 }}>Weiter →</Btn>}
+    </>
   )
 }
 
@@ -2314,6 +2543,7 @@ function UebenScreen({ initialMode, onConsumeInitial }) {
   // einmaligen Deep-Link (z. B. „Wiederholen" aus Reise/Fortschritt) verbrauchen
   useEffect(() => { if (initialMode) onConsumeInitial?.() }, [])
 
+  if (mode === 'mix') return <MixQuiz onClose={() => setMode(null)} />
   if (mode === 'srs') return <SRSQuiz onClose={() => setMode(null)} />
   if (mode === 'fleiss') return <SRSQuiz initialMode="free" onClose={() => setMode(null)} />
   if (mode === 'erkennen' || mode === 'hoeren') return <PracticeQuiz mode={mode} onClose={() => setMode(null)} />
@@ -2325,6 +2555,7 @@ function UebenScreen({ initialMode, onConsumeInitial }) {
   const dueCount = dueKana(progress, learnedAll).length
   const dialogsDone = (progress.completedDialogs || []).length
   const exercises = [
+    { id: 'mix', icon: '🎲', title: 'Gemischte Wiederholung', sub: 'Alle Übungsarten bunt gemischt', color: C.indigo },
     { id: 'srs', icon: '🗂', title: 'SRS-Wiederholungen', sub: dueCount > 0 ? `${dueCount} Karten fällig` : 'Nichts fällig', color: C.shu },
     { id: 'fleiss', icon: '🔥', title: 'Fleiß-Übung', sub: 'Alle Karten, jederzeit', color: '#C2410C' },
     { id: 'erkennen', icon: '👁', title: 'Erkennen', sub: 'Zeichen → Lesung', color: C.indigo },
@@ -3038,7 +3269,7 @@ function BuildStep({ step, onSolved }) {
 
   const add = (tile) => { if (result != null) return; speak(tile.t); setPool(p => p.filter(x => x.id !== tile.id)); setLine(l => [...l, tile]) }
   const back = (tile) => { if (result != null) return; setLine(l => l.filter(x => x.id !== tile.id)); setPool(p => [...p, tile]) }
-  const check = () => { const ok = line.map(x => x.t).join('') === step.answer.join(''); setResult(ok); if (ok) awardXp(XP_PER_CARD); onSolved() }
+  const check = () => { const ok = line.map(x => x.t).join('') === step.answer.join(''); setResult(ok); if (ok) awardXp(XP_PER_CARD); onSolved(ok) }
 
   const tileStyle = (filled) => ({
     padding: '8px 12px', borderRadius: 8, border: `2px solid ${filled ? C.indigo : C.washiDark}`,
@@ -3437,14 +3668,92 @@ function ReiseScreen({ onReview }) {
   )
 }
 
+// ─── Einstellungen ───────────────────────────────────────────────────────────
+
+// Zahlen-Einsteller (− Wert +) für einen Parameter.
+function NumberSetting({ label, hint, value, min, max, step, suffix, onChange }) {
+  const StepBtn = ({ dir, disabled }) => (
+    <button onClick={() => onChange(Math.min(max, Math.max(min, value + dir * step)))} disabled={disabled}
+      style={{
+        width: 34, height: 34, borderRadius: 9, border: `1.5px solid ${C.washiDark}`,
+        background: disabled ? C.washi : '#fff', color: disabled ? C.washiDark : C.indigo,
+        fontSize: 20, fontWeight: 700, lineHeight: 1, cursor: disabled ? 'default' : 'pointer',
+      }}>{dir < 0 ? '−' : '+'}</button>
+  )
+  return (
+    <Card style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <div>
+        <div style={{ fontWeight: 600, fontSize: 14, color: C.sumi }}>{label}</div>
+        {hint && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{hint}</div>}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <StepBtn dir={-1} disabled={value <= min} />
+        <span style={{ minWidth: 48, textAlign: 'center', fontWeight: 700, fontSize: 16, color: C.indigo }}>{value}{suffix || ''}</span>
+        <StepBtn dir={1} disabled={value >= max} />
+      </div>
+    </Card>
+  )
+}
+
+function SettingsScreen({ onClose }) {
+  const { settings, saveSettings } = useContext(ProgressCtx)
+  const set = (patch) => saveSettings(patch)
+
+  return (
+    <div style={{ padding: '16px 16px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, color: C.textMuted, cursor: 'pointer', lineHeight: 1 }}>←</button>
+        <h2 style={{ fontSize: 20, fontFamily: JP, color: C.indigo, margin: 0 }}>Einstellungen</h2>
+      </div>
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 20, marginLeft: 30 }}>Übungen nach deinem Geschmack einstellen</p>
+
+      {/* Standard-Wiederholung */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, marginBottom: 8 }}>STANDARD-WIEDERHOLUNG</div>
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 10 }}>Was startet, wenn du „Wiederholen" antippst:</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[['mix', '🎲 Gemischt'], ['srs', '🗂 SRS-Karten']].map(([id, lbl]) => {
+            const on = settings.standardReview === id
+            return (
+              <button key={id} onClick={() => set({ standardReview: id })}
+                style={{
+                  flex: 1, padding: '12px 8px', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600,
+                  border: `2px solid ${on ? C.indigo : C.washiDark}`,
+                  background: on ? `${C.indigo}12` : '#fff', color: on ? C.indigo : C.sumi,
+                }}>{lbl}</button>
+            )
+          })}
+        </div>
+      </Card>
+
+      {/* Übungs-Parameter */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, margin: '18px 0 8px' }}>PARAMETER</div>
+      <NumberSetting label="Antwortmöglichkeiten" hint="Optionen bei Erkennen/Hören — mehr = weniger Raten"
+        value={settings.options} min={4} max={8} step={1} onChange={v => set({ options: v })} />
+      <NumberSetting label="Tagesziel" hint="XP, die du pro Tag schaffen möchtest" suffix=" XP"
+        value={settings.dailyGoal} min={50} max={600} step={50} onChange={v => set({ dailyGoal: v })} />
+      <NumberSetting label="Aufgaben pro Runde" hint="Fragen je Übung (Erkennen, Hören, Tippen, Gemischt)"
+        value={settings.roundSize} min={5} max={30} step={1} onChange={v => set({ roundSize: v })} />
+      <NumberSetting label="Fleiß-Session" hint="Karten je Fleiß-Übung"
+        value={settings.freeSize} min={10} max={60} step={5} onChange={v => set({ freeSize: v })} />
+
+      <p style={{ fontSize: 12, color: C.textMuted, marginTop: 16, lineHeight: 1.5 }}>
+        Änderungen werden sofort gespeichert und gelten beim nächsten Start einer Übung.
+      </p>
+    </div>
+  )
+}
+
 // ─── Root App ─────────────────────────────────────────────────────────────────
 
 export default function TabiApp() {
   const [tab, setTab] = useState('reise')
+  const [prevTab, setPrevTab] = useState('reise')   // Rücksprung aus den Einstellungen
   const [uebenMode, setUebenMode] = useState(null)  // gewünschter Übungsmodus beim Tab-Wechsel
   const { user, logout } = useAuth()
-  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, reset } = useProgress(user?.uid)
+  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveSettings, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
+  const settings = getSettings(progress)
 
   // Neu gelernte Kana/Wörter in den Wiederholungsplan einplanen (und bereits
   // gelernte, aber noch ungeplante migrieren). Hält die „fällig"-Zahl sinnvoll.
@@ -3456,18 +3765,23 @@ export default function TabiApp() {
     scheduleNew(learned)
   }, [progress.completedLessons, progress.completedWordBlocks, progress.srs])
 
-  // Wiederholungen leben an einem Ort (Üben). Andere Screens verlinken hierher.
-  const goToReview = () => { setUebenMode('srs'); setTab('ueben') }
+  // Wiederholungen leben an einem Ort (Üben). Andere Screens verlinken hierher;
+  // gestartet wird die in den Einstellungen gewählte Standard-Wiederholung.
+  const goToReview = () => { setUebenMode(settings.standardReview); setTab('ueben') }
+
+  // Einstellungen öffnen/schließen (merkt sich den vorherigen Tab für den Rücksprung).
+  const openSettings = () => { setPrevTab(tab); setTab('einstellungen') }
 
   const screens = {
     reise: <ReiseScreen onReview={goToReview} />,
     lernen: <LernenScreen />,
     ueben: <UebenScreen initialMode={uebenMode} onConsumeInitial={() => setUebenMode(null)} />,
     fortschritt: <FortschrittScreen onReview={goToReview} />,
+    einstellungen: <SettingsScreen onClose={() => setTab(prevTab)} />,
   }
 
   return (
-    <ProgressCtx.Provider value={{ progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, reset }}>
+    <ProgressCtx.Provider value={{ progress, settings, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, saveSettings, reset }}>
     <div className="app-shell" style={{
       maxWidth: 480, margin: '0 auto', height: '100vh',
       display: 'flex', flexDirection: 'column', position: 'relative',
@@ -3497,6 +3811,15 @@ export default function TabiApp() {
             <span style={{ width: 5, height: 5, borderRadius: 99, background: C.shu, display: 'inline-block' }} />
             Level {level}
           </div>
+          <button onClick={openSettings} title="Einstellungen" aria-label="Einstellungen"
+            style={{
+              background: tab === 'einstellungen' ? `${C.indigo}12` : 'none',
+              border: `1px solid ${C.washiDark}`, borderRadius: 999,
+              width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, color: tab === 'einstellungen' ? C.indigo : C.textMuted, cursor: 'pointer', lineHeight: 1,
+            }}>
+            ⚙
+          </button>
           <button onClick={logout} title={`Abmelden (${user?.email || ''})`}
             style={{
               background: 'none', border: `1px solid ${C.washiDark}`, borderRadius: 999,
