@@ -85,18 +85,6 @@ export function computeStats(progress) {
   return { xpToday, totalXp, level, streak, goal: DAILY_GOAL }
 }
 
-// Letzte 7 Tage (alt → neu) mit Wochentags-Label und XP.
-export function weeklyXp(progress) {
-  const xpByDate = progress.xpByDate || {}
-  const names = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
-  const out = []
-  for (let o = -6; o <= 0; o++) {
-    const d = dateWithOffset(o)
-    out.push({ label: names[d.getDay()], xp: xpByDate[localDate(d)] || 0 })
-  }
-  return out
-}
-
 // ─── Hook: lädt live aus Firestore und liefert Schreib-Funktionen ─────────────
 export function useProgress(uid) {
   const [progress, setProgress] = useState(DEFAULT)
