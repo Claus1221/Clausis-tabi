@@ -3741,6 +3741,16 @@ function SettingsScreen({ onClose }) {
       <p style={{ fontSize: 12, color: C.textMuted, marginTop: 16, lineHeight: 1.5 }}>
         Änderungen werden sofort gespeichert und gelten beim nächsten Start einer Übung.
       </p>
+
+      {/* Versionsanzeige — hilft zu erkennen, ob die neueste Version geladen ist. */}
+      <div style={{ marginTop: 24, paddingTop: 16, borderTop: `1px solid ${C.washiDark}`, textAlign: 'center' }}>
+        <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>
+          Tabi v{__APP_VERSION__} · {__BUILD_HASH__}
+        </div>
+        <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
+          Build: {__BUILD_TIME__.slice(0, 16).replace('T', ' ')} UTC
+        </div>
+      </div>
     </div>
   )
 }
