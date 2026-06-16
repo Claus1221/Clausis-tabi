@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, createContext, useContext } from 'react'
 import { useAuth } from './AuthGate.jsx'
-import { useProgress, computeStats, weeklyXp, dueKana } from './useProgress.js'
+import { useProgress, computeStats, dueKana } from './useProgress.js'
 import { KANA_STROKES, STROKE_VIEWBOX } from './kanaStrokes.js'
 
 // Fortschritt (aus Firestore) für alle Screens verfügbar machen.
@@ -1778,8 +1778,6 @@ function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
 const GRAMMAR_ORDER = ['g2', 'g1', 'g6', 'g3', 'g4', 'g5', 'g7', 'g8', 'g9', 'g10']
 const GRAMMAR_SEQ = GRAMMAR_ORDER.map(id => GRAMMAR.find(g => g.id === id))
 
-// (GrammarPath entfernt — siehe GrammarLibrary weiter unten.)
-
 // „Lernen" ist jetzt eine reine Nachschlage-Bibliothek: alles frei einsehbar,
 // keine Sperren, kein XP. Gelernt/freigeschaltet wird auf der Reise.
 function LernenScreen() {
@@ -2873,7 +2871,6 @@ function pathNodeMeta(node) {
   if (node.type === 'word') { const b = WORD_BLOCKS.find(x => x.id === node.id); return { face: b.words[0].kanji, label: b.title, kind: 'Wörter' } }
   if (node.type === 'grammar') { const g = GRAMMAR.find(x => x.id === node.id); return { face: g.glyph, label: g.title, kind: 'Grammatik' } }
   if (node.type === 'chapter') { const c = CHAPTER_BY_ID[node.id]; return { face: '物', label: c ? c.title : 'Geschichte', kind: 'Kapitel' } }
-  if (node.type === 'review') return { face: '復', label: 'Wiederholung', kind: 'SRS' }
   return { face: '富', label: 'Gipfel', kind: 'Ziel' }
 }
 
@@ -2891,7 +2888,6 @@ function roadPath(pts) {
 const STATE_PALETTE = {
   done: ['#5E8A6A', '#4A7257'],
   current: ['#DA4A38', '#B23A2B'],
-  review: ['#E8A020', '#BE8316'],
   locked: ['#E0DAC8', '#C7BFA9'],
 }
 
@@ -3221,13 +3217,7 @@ function ReiseScreen({ onReview }) {
     return () => { el.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
   }, [])
 
-  // Fällige Wiederholungen (für Checkpoint-Status).
-  const learnedAll = [
-    ...completedKanaList(progress.completedLessons || []),
-    ...learnedWordKanji(progress.completedWordBlocks || []),
-  ]
-  const dueCount = dueKana(progress, learnedAll).length
-  const contentNodes = PATH.filter(n => n.type && n.type !== 'review' && n.type !== 'goal')
+  const contentNodes = PATH.filter(n => n.type && n.type !== 'goal')
   const doneCount = contentNodes.filter(n => isNodeDone(n, progress)).length
   const allDone = doneCount === contentNodes.length
 
@@ -3425,11 +3415,6 @@ function ReiseScreen({ onReview }) {
                 {n.state === 'current' && (
                   <div style={{ marginTop: 2 }}>
                     <span style={{ background: C.shu, color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 9px', borderRadius: 10 }}>START</span>
-                  </div>
-                )}
-                {n.state === 'review' && (
-                  <div style={{ marginTop: 2 }}>
-                    <span style={{ background: '#E8A020', color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 9px', borderRadius: 10 }}>{dueCount} fällig</span>
                   </div>
                 )}
               </div>
