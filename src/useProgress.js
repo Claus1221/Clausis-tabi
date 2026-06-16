@@ -32,26 +32,48 @@ export function addDays(n) {
   return localDate(dateWithOffset(n))
 }
 
+// ─── Kenntnisstufen ───────────────────────────────────────────────────────────
+// Intervall-Grenzen (in Tagen) zwischen den 5 Stufen:
+//   Neu <1 · Lernphase <7 · Vertraut <30 · Gefestigt <120 · Gemeistert ≥120
+// Einzige Quelle der Wahrheit – der Fortschritt-Screen (SRS_STAGES) baut darauf auf.
+export const SRS_STAGE_BOUNDS = [1, 7, 30, 120]
+
+// Beim Vergessen nur EINE Kenntnisstufe zurück: neues Intervall = Untergrenze der
+// nächst-niedrigeren Stufe (mind. 1 Tag, damit der SM-2-Multiplikator weiter greift).
+function relaxedLapseInterval(interval) {
+  const floors = [0, ...SRS_STAGE_BOUNDS] // Untergrenze je Stufe
+  let idx = 0
+  for (let i = floors.length - 1; i >= 0; i--) {
+    if ((interval || 0) >= floors[i]) { idx = i; break }
+  }
+  return Math.max(1, floors[Math.max(0, idx - 1)])
+}
+
 // ─── SRS (SM-2-Algorithmus) ───────────────────────────────────────────────────
 // quality: 1 = Nochmal (vergessen), 3 = Schwer, 4 = Gut, 5 = Leicht.
 export function sm2(prev, quality) {
   let ease = prev?.ease ?? 2.5
   let interval = prev?.interval ?? 0
   let reps = prev?.reps ?? 0
+  let due
 
   if (quality < 3) {
-    reps = 0
-    interval = 1 // morgen wieder
+    // Entspannter Rückfall: Kenntnisstand nur eine Stufe zurück, der Lernfortschritt
+    // bleibt großteils erhalten – die Karte wird aber morgen zur Auffrischung erneut fällig.
+    interval = relaxedLapseInterval(interval)
+    reps = Math.max(2, reps - 1) // Multiplikator-Pfad halten, nicht wieder von vorn lernen
+    due = addDays(1)
   } else {
     reps += 1
     if (reps === 1) interval = 1
     else if (reps === 2) interval = 6
     else interval = Math.round(interval * ease)
+    due = addDays(interval)
   }
   ease = ease + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
   if (ease < 1.3) ease = 1.3
 
-  return { ease: Math.round(ease * 100) / 100, interval, reps, due: addDays(interval) }
+  return { ease: Math.round(ease * 100) / 100, interval, reps, due }
 }
 
 // Welche der gelernten Kana sind heute fällig (oder neu/noch nie wiederholt)?

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, createContext, useContext } from 'react'
 import { useAuth } from './AuthGate.jsx'
-import { useProgress, computeStats, dueKana } from './useProgress.js'
+import { useProgress, computeStats, dueKana, SRS_STAGE_BOUNDS } from './useProgress.js'
 import { KANA_STROKES, STROKE_VIEWBOX } from './kanaStrokes.js'
 
 // Fortschritt (aus Firestore) für alle Screens verfügbar machen.
@@ -2375,13 +2375,14 @@ function periodBuckets(xpByDate, period) {
   return out
 }
 
-// Vokabel-Kenntnisstufen nach SRS-Intervall (Tage).
+// Vokabel-Kenntnisstufen nach SRS-Intervall (Tage). Grenzen aus SRS_STAGE_BOUNDS,
+// damit Anzeige und Rückstufungs-Logik (sm2) nicht auseinanderlaufen.
 const SRS_STAGES = [
-  { label: 'Neu', color: '#B3AA92', test: e => (e.interval || 0) < 1 },
-  { label: 'Lernphase', color: '#DA4A38', test: e => e.interval >= 1 && e.interval < 7 },
-  { label: 'Vertraut', color: '#E8A020', test: e => e.interval >= 7 && e.interval < 30 },
-  { label: 'Gefestigt', color: '#5E8A6A', test: e => e.interval >= 30 && e.interval < 120 },
-  { label: 'Gemeistert', color: '#1E4368', test: e => e.interval >= 120 },
+  { label: 'Neu', color: '#B3AA92', test: e => (e.interval || 0) < SRS_STAGE_BOUNDS[0] },
+  { label: 'Lernphase', color: '#DA4A38', test: e => e.interval >= SRS_STAGE_BOUNDS[0] && e.interval < SRS_STAGE_BOUNDS[1] },
+  { label: 'Vertraut', color: '#E8A020', test: e => e.interval >= SRS_STAGE_BOUNDS[1] && e.interval < SRS_STAGE_BOUNDS[2] },
+  { label: 'Gefestigt', color: '#5E8A6A', test: e => e.interval >= SRS_STAGE_BOUNDS[2] && e.interval < SRS_STAGE_BOUNDS[3] },
+  { label: 'Gemeistert', color: '#1E4368', test: e => e.interval >= SRS_STAGE_BOUNDS[3] },
 ]
 
 function FortschrittScreen({ onReview }) {
