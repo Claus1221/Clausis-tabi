@@ -2186,8 +2186,9 @@ function MixStep({ task, cardReview, onNext }) {
   const inputRef = useRef(null)
 
   useEffect(() => {
+    // „Hören" wird vorgelesen (das ist die Aufgabe); Karteikarten NICHT – sonst
+    // verrät die Aussprache die Lesung, bevor man aufgedeckt hat. 🔊 bleibt manuell.
     if (task.type === 'hoeren') speak(task.char)
-    else if (task.type === 'karte') speakItem(task.item)
     if (task.type === 'tippen') inputRef.current?.focus()
   }, []) // eslint-disable-line
 
