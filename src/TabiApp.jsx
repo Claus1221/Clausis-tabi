@@ -982,49 +982,82 @@ const SRS_RATINGS = [
   ['Leicht', C.indigo, 5],
 ]
 
-function SRSQuiz({ onClose }) {
+// Spaced-Repetition-Quiz. Modus 'due' = heute fällige Karten; 'free' = Fleiß-
+// Übung über ALLE gelernten Karten (begrenzte Session), auch wenn nichts fällig
+// ist. Nur wirklich fällige Karten verschieben dabei den Wiederholungsplan.
+const FREESTYLE_SIZE = 20
+
+function SRSQuiz({ onClose, initialMode = 'due' }) {
   const { progress, awardXp, reviewCard } = useContext(ProgressCtx)
-  // Fällige Karten = heute fällige gelernte Kana UND gelernte Wörter.
-  const [deck] = useState(() => {
-    const learned = [
-      ...completedKanaList(progress.completedLessons || []),
-      ...learnedWordKanji(progress.completedWordBlocks || []),
-    ]
-    // Gemischt, damit nicht jede Sitzung im selben Schema (a, e, i, o, u …)
-    // abgefragt wird – sonst lernt man die Reihenfolge statt der Karten.
-    return shuffled(dueKana(progress, learned))
-  })
+
+  const learned = [
+    ...completedKanaList(progress.completedLessons || []),
+    ...learnedWordKanji(progress.completedWordBlocks || []),
+  ]
+  // Welche Karten sind WIRKLICH heute fällig? Nur diese verschieben den Plan.
+  const [dueSet, setDueSet] = useState(() => new Set(dueKana(progress, learned)))
+
+  // Stapel je nach Modus bauen und mischen, damit nicht immer dasselbe Schema
+  // (a, e, i, o, u …) abgefragt wird – sonst lernt man die Reihenfolge.
+  const buildDeck = (m) => {
+    const pool = m === 'free' ? learned : [...dueSet]
+    const d = shuffled(pool)
+    return m === 'free' ? d.slice(0, FREESTYLE_SIZE) : d
+  }
+
+  const [mode, setMode] = useState(initialMode)
+  const [deck, setDeck] = useState(() => buildDeck(initialMode))
   const [queue, setQueue] = useState(deck)   // Arbeits-Warteschlange (kann wachsen)
   const [flipped, setFlipped] = useState(false)
   const [passed, setPassed] = useState(0)    // endgültig gekonnte Karten
   const [lapses, setLapses] = useState(0)    // wie oft „Nochmal"
   const [repeats, setRepeats] = useState(() => new Set()) // welche Karten schon mal daneben
 
-  // Nichts fällig (oder noch nichts gelernt)
+  // Eine Fleiß-Session über alle gelernten Karten starten – auch wenn nichts fällig ist.
+  const startFree = () => {
+    const d = buildDeck('free')
+    setMode('free'); setDeck(d); setQueue(d)
+    setPassed(0); setLapses(0); setRepeats(new Set()); setFlipped(false)
+  }
+
+  // Leerer Stapel: nichts fällig – oder im Fleiß-Modus noch nichts gelernt.
   if (deck.length === 0) {
+    const canFree = mode !== 'free' && learned.length > 0
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>🌿</div>
-        <h3 style={{ fontSize: 18, marginBottom: 8 }}>Nichts fällig</h3>
+        <h3 style={{ fontSize: 18, marginBottom: 8 }}>
+          {mode === 'free' ? 'Noch nichts zu üben' : 'Nichts fällig'}
+        </h3>
         <p style={{ color: C.textMuted, marginBottom: 16 }}>
-          Aktuell sind keine Wiederholungen fällig. Lerne neue Kana oder Wörter
-          oder komm später wieder – fällige Karten erscheinen automatisch.
+          {mode === 'free'
+            ? 'Lerne erst ein paar Kana oder Wörter auf der Reise – dann kannst du hier nach Lust und Laune üben.'
+            : 'Aktuell sind keine Wiederholungen fällig. Du kannst trotzdem zur Übung alle gelernten Karten durchgehen.'}
         </p>
-        <Btn onClick={onClose}>Zurück</Btn>
+        {canFree && <Btn onClick={startFree} style={{ width: '100%', marginBottom: 8 }}>🔥 Trotzdem üben</Btn>}
+        <Btn onClick={onClose} variant={canFree ? 'ghost' : 'primary'} style={{ width: '100%' }}>Zurück</Btn>
       </div>
     )
   }
 
   if (queue.length === 0) {
+    const canMore = learned.length > 0
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-        <h3 style={{ fontSize: 18, marginBottom: 8 }}>Alle fälligen Karten gemeistert!</h3>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>{mode === 'free' ? '🔥' : '✅'}</div>
+        <h3 style={{ fontSize: 18, marginBottom: 8 }}>
+          {mode === 'free' ? 'Fleiß-Session geschafft!' : 'Alle fälligen Karten gemeistert!'}
+        </h3>
         <p style={{ color: C.textMuted, marginBottom: 16 }}>
           {passed} Karten · +{passed * XP_PER_CARD} XP
           {lapses > 0 && ` · ${lapses}× wiederholt`}
         </p>
-        <Btn onClick={onClose}>Fertig</Btn>
+        {canMore && (
+          <Btn onClick={startFree} style={{ width: '100%', marginBottom: 8 }}>
+            🔥 {mode === 'free' ? 'Noch eine Runde' : 'Weiter üben (Fleiß)'}
+          </Btn>
+        )}
+        <Btn onClick={onClose} variant={canMore ? 'ghost' : 'primary'} style={{ width: '100%' }}>Fertig</Btn>
       </div>
     )
   }
@@ -1040,8 +1073,13 @@ function SRSQuiz({ onClose }) {
       setQueue(prev => [...prev.slice(1), prev[0]])
       setLapses(l => l + 1)
     } else {
-      // gekonnt: Plan speichern, XP, aus der Warteschlange nehmen.
-      reviewCard(item, quality)
+      // „Gekonnt": nur WIRKLICH fällige Karten verschieben den Wiederholungsplan –
+      // so bringt Vorab-Üben („Fleiß") den Plan nicht durcheinander. Danach gilt
+      // die Karte als erledigt (kein Doppel-Review in einer späteren Fleiß-Runde).
+      if (dueSet.has(item)) {
+        reviewCard(item, quality)
+        setDueSet(prev => { const n = new Set(prev); n.delete(item); return n })
+      }
       awardXp(XP_PER_CARD)
       setPassed(p => p + 1)
       setQueue(prev => prev.slice(1))
@@ -1053,6 +1091,7 @@ function SRSQuiz({ onClose }) {
     <div style={{ padding: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <span style={{ color: C.textMuted, fontSize: 13 }}>
+          {mode === 'free' && <span style={{ color: '#C2410C', fontWeight: 700 }}>🔥 Fleiß · </span>}
           {passed} / {deck.length} gekonnt · noch {queue.length}
         </span>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: 16 }}>✕</button>
@@ -2268,6 +2307,7 @@ function UebenScreen({ initialMode, onConsumeInitial }) {
   useEffect(() => { if (initialMode) onConsumeInitial?.() }, [])
 
   if (mode === 'srs') return <SRSQuiz onClose={() => setMode(null)} />
+  if (mode === 'fleiss') return <SRSQuiz initialMode="free" onClose={() => setMode(null)} />
   if (mode === 'erkennen' || mode === 'hoeren') return <PracticeQuiz mode={mode} onClose={() => setMode(null)} />
   if (mode === 'tippen') return <TypeQuiz onClose={() => setMode(null)} />
   if (mode === 'satzbau') return <SentenceQuiz onClose={() => setMode(null)} />
@@ -2278,6 +2318,7 @@ function UebenScreen({ initialMode, onConsumeInitial }) {
   const dialogsDone = (progress.completedDialogs || []).length
   const exercises = [
     { id: 'srs', icon: '🗂', title: 'SRS-Wiederholungen', sub: dueCount > 0 ? `${dueCount} Karten fällig` : 'Nichts fällig', color: C.shu },
+    { id: 'fleiss', icon: '🔥', title: 'Fleiß-Übung', sub: 'Alle Karten, jederzeit', color: '#C2410C' },
     { id: 'erkennen', icon: '👁', title: 'Erkennen', sub: 'Zeichen → Lesung', color: C.indigo },
     { id: 'hoeren', icon: '👂', title: 'Hören', sub: 'Was hast du gehört?', color: C.matcha },
     { id: 'tippen', icon: '⌨️', title: 'Tippen', sub: 'Kana per Tastatur', color: '#8B6914' },
