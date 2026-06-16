@@ -1143,11 +1143,18 @@ function shuffled(arr) {
   return [...arr].sort(() => Math.random() - 0.5)
 }
 
-// Baut Multiple-Choice-Runden über die gelernten Kana.
-function buildRounds(learnedKana) {
+// Antwortmöglichkeiten pro Multiple-Choice-Runde. Mehr Optionen = weniger
+// Treffer per Ausschlussprinzip (Raten durch Wegstreichen der offensichtlich
+// Falschen).
+const OPTIONS_PER_ROUND = 6
+
+// Baut Multiple-Choice-Runden über die gelernten Kana. Die Zahl der Ablenker
+// passt sich an, falls noch nicht genug Zeichen gelernt sind.
+function buildRounds(learnedKana, optionCount = OPTIONS_PER_ROUND) {
   const pool = [...new Set(learnedKana)]
+  const nDistract = Math.min(optionCount - 1, pool.length - 1)
   return shuffled(pool).map(ch => {
-    const distractors = shuffled(pool.filter(k => k !== ch)).slice(0, 3)
+    const distractors = shuffled(pool.filter(k => k !== ch)).slice(0, nDistract)
     const options = shuffled([ch, ...distractors])
     return { char: ch, options }
   })
