@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, createContext, useContext } from 'react'
+import { useState, useRef, useEffect, useMemo, createContext, useContext } from 'react'
 import { useAuth } from './AuthGate.jsx'
 import { useProgress, computeStats, dueKana, SRS_STAGE_BOUNDS, SETTINGS_DEFAULTS, getSettings } from './useProgress.js'
 import { KANA_STROKES, STROKE_VIEWBOX } from './kanaStrokes.js'
@@ -1683,6 +1683,8 @@ function GrammarExercise({ ex, idx, total, onNext, isLast }) {
   const [ans, setAns] = useState(null)
   const revealed = ans != null
   const correct = ans === ex.a
+  // Optionen pro Übung einmalig mischen (sonst steht die Lösung immer zuerst).
+  const options = useMemo(() => shuffled(ex.options), [ex])
 
   const choose = (o) => {
     if (revealed) return
@@ -1707,7 +1709,7 @@ function GrammarExercise({ ex, idx, total, onNext, isLast }) {
       </Card>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        {ex.options.map(o => {
+        {options.map(o => {
           const isCorrect = o === ex.a
           const isChosen = o === ans
           return (
@@ -2668,6 +2670,8 @@ function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
   const [turn, setTurn] = useState(0)
   const [ans, setAns] = useState(null)
   const [score, setScore] = useState(0)
+  // Antwortoptionen pro Zug einmalig mischen (sonst steht die richtige zuerst).
+  const options = useMemo(() => shuffled(turns[turn]?.options || []), [turns, turn])
 
   useEffect(() => { if (phase === 'done' && !alreadyDone) onComplete() }, [phase])
   // NPC-Zeile beim Erscheinen vorlesen (Hören-zuerst).
@@ -2721,7 +2725,7 @@ function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
       </div>
       <p style={{ fontWeight: 500, marginBottom: 12 }}>Was antwortest du?</p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-        {t.options.map(o => {
+        {options.map(o => {
           const correct = o === t.answer, chosen = o === ans
           return (
             <button key={o} onClick={() => choose(o)} disabled={revealed}
@@ -3352,12 +3356,15 @@ function ChoiceStep({ step, onSolved }) {
   const [ans, setAns] = useState(null)
   const revealed = ans != null
 
+  // Optionen pro Schritt einmalig mischen (sonst steht die Lösung immer zuerst).
+  const mixedOpts = useMemo(() => step.options ? shuffled(step.options) : null, [step])
+
   // Abruf OHNE deutsche Krücke: pic (Bild→Schrift), audio (Audio→Schrift),
   // pic_choice (Schrift→Bild). Deutsch erscheint NUR im Feedback nach der Antwort.
   let options, answerValue, emojiOptions = false
-  if (step.kind === 'pic_choice') { options = step.options.map(n => ({ value: n, emoji: n })); answerValue = step.answer; emojiOptions = true }
+  if (step.kind === 'pic_choice') { options = mixedOpts.map(n => ({ value: n, emoji: n })); answerValue = step.answer; emojiOptions = true }
   else if (step.kind === 'tf') { options = [{ value: 'Ja' }, { value: 'Nein' }]; answerValue = step.answer ? 'Ja' : 'Nein' }
-  else { options = step.options.map(o => ({ value: o })); answerValue = step.answer } // pic, audio, sign, dialog, gap
+  else { options = mixedOpts.map(o => ({ value: o })); answerValue = step.answer } // pic, audio, sign, dialog, gap
 
   const prompt = step.prompt || (step.kind === 'pic' ? 'Welches Wort passt?' : step.kind === 'audio' ? 'Was hörst du?' : step.kind === 'pic_choice' ? 'Welches Bild passt?' : '')
 
