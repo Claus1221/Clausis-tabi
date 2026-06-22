@@ -2393,6 +2393,158 @@ const DIALOGS = [
   ] },
 ]
 
+// ─── Wort-Lexikon fürs Rollenspiel ───────────────────────────────────────────
+// Jede Dialog-Zeile wird per Längsten-Treffer in einzelne Wörter zerlegt; tippt
+// man eines an, zeigt TappableJp Bedeutung (de) + Aufbau/Wortart (b) und – wo
+// hilfreich – die Lesung (r). Längere Einträge gewinnen, damit feste Wendungen
+// (おねがいします, ありがとうございます) zusammenbleiben, Partikeln aber einzeln
+// erklärbar sind (ホテル + まで). Was nicht im Lexikon steht, bleibt untippbar.
+const DIALOG_LEX = {
+  // Begrüßung & Floskeln
+  'こんにちは': { de: 'Guten Tag / Hallo', b: 'Begrüßung' },
+  'こんばんは': { de: 'Guten Abend', b: 'Begrüßung' },
+  'おはよう': { de: 'Guten Morgen (locker)', b: 'Begrüßung' },
+  'さようなら': { de: 'Auf Wiedersehen', b: 'Verabschiedung' },
+  'おやすみなさい': { de: 'Gute Nacht', b: 'Verabschiedung' },
+  'すみません': { de: 'Entschuldigung / Verzeihung', b: 'Höflichkeitsformel' },
+  'ありがとうございます': { de: 'Vielen Dank', b: 'Dankesformel (höflich)' },
+  'ありがとうございました': { de: 'Vielen Dank (für Geschehenes)', b: 'Dankesformel, Vergangenheit' },
+  'どうも': { de: 'Danke / Hallo (kurz)', b: 'lockere Floskel' },
+  'おねがいします': { de: 'Bitte (eine Bitte äußern)', b: 'höfliche Bitte', r: 'onegai shimasu' },
+  'いらっしゃいませ': { de: 'Herzlich willkommen', b: 'Begrüßung im Geschäft' },
+  'いただきます': { de: 'Ich fange an zu essen', b: 'Floskel vor dem Essen' },
+  'どうぞ': { de: 'Bitte (etwas anbieten/reichen)', b: 'Höflichkeitsfloskel' },
+  'はい': { de: 'Ja', b: 'Antwortpartikel' },
+  'いいえ': { de: 'Nein', b: 'Antwortpartikel' },
+  'けっこう': { de: 'genug / danke, nein (Ablehnung)', b: 'な-Adjektiv (結構)' },
+  'だいじょうぶ': { de: 'in Ordnung / alles gut', b: 'な-Adjektiv (大丈夫)' },
+  'たすけて': { de: 'Hilfe!', b: 'Verb 助ける, て-Form (Ruf/Bitte)' },
+  'たすかります': { de: 'das hilft mir sehr', b: 'Verb 助かる, höflich' },
+  'じゃあ': { de: 'also / dann', b: 'Konjunktion (locker)' },
+  'それから': { de: 'und dann / danach', b: 'Konjunktion' },
+  'まっすぐ': { de: 'geradeaus', b: 'Adverb (真っ直ぐ)' },
+  'いっしょに': { de: 'zusammen', b: 'Adverb (一緒に)' },
+  'よろしい': { de: 'in Ordnung / gut (höflich)', b: 'い-Adjektiv (höflich)' },
+  'なんでしょう': { de: 'Was darf es sein? / Ja, bitte?', b: 'höfliche Frage' },
+  'きを': { de: 'auf (sich) achten – き=Achtsamkeit + を', b: 'aus 気をつけて' },
+  'つけて': { de: 'achte / pass auf', b: 'Verb つける, て-Form' },
+  // Nomen
+  'おなまえ': { de: '(Ihr) Name', b: 'Nomen, höflich (お＋名前)', r: 'o-namae' },
+  'クラウス': { de: 'Klaus (Name)', b: 'Eigenname', r: 'kurausu' },
+  'ドイツ': { de: 'Deutschland', b: 'Ländername', r: 'doitsu' },
+  'ホテル': { de: 'Hotel', b: 'Nomen', r: 'hoteru' },
+  'えき': { de: 'Bahnhof', b: 'Nomen (駅)' },
+  'おみず': { de: 'Wasser', b: 'Nomen, höflich (お＋水)' },
+  'みず': { de: 'Wasser', b: 'Nomen (水)' },
+  'さかな': { de: 'Fisch', b: 'Nomen (魚)' },
+  'メニュー': { de: 'Speisekarte', b: 'Nomen', r: 'menyuu' },
+  'コーヒー': { de: 'Kaffee', b: 'Nomen', r: 'koohii' },
+  'パスポート': { de: 'Reisepass', b: 'Nomen', r: 'pasupooto' },
+  'カード': { de: 'Karte (Kreditkarte)', b: 'Nomen', r: 'kaado' },
+  'チェックイン': { de: 'Check-in', b: 'Nomen', r: 'chekku-in' },
+  'ごちゅうもん': { de: 'Bestellung', b: 'Nomen, höflich (ご＋注文)' },
+  'おのみもの': { de: 'Getränk', b: 'Nomen, höflich (お＋飲み物)' },
+  'おかんじょう': { de: 'Rechnung', b: 'Nomen, höflich (お＋勘定)' },
+  'ホット': { de: 'heiß (Getränk)', b: 'Nomen (engl. hot)', r: 'hotto' },
+  'アイス': { de: 'kalt / Eis (Getränk)', b: 'Nomen (engl. ice)', r: 'aisu' },
+  'いじょう': { de: 'das ist alles / Ende', b: 'Nomen (以上)' },
+  'とうきょう': { de: 'Tokyo', b: 'Ortsname (東京)' },
+  'かたみち': { de: 'einfache Fahrt', b: 'Nomen (片道)' },
+  'おうふく': { de: 'Hin- und Rückfahrt', b: 'Nomen (往復)' },
+  'みち': { de: 'Weg', b: 'Nomen (道)' },
+  'みぎ': { de: 'rechts', b: 'Richtung (右)' },
+  'にせん': { de: 'zweitausend', b: 'Zahl (二千)' },
+  'せん': { de: 'tausend', b: 'Zahl (千)' },
+  'えん': { de: 'Yen', b: 'Währung (円)' },
+  // Frage- & Demonstrativwörter
+  'いくら': { de: 'wie viel (Preis)', b: 'Fragewort' },
+  'どこ': { de: 'wo', b: 'Fragewort' },
+  'どちら': { de: 'wohin / welches (höflich)', b: 'Fragewort (höflich)' },
+  'これ': { de: 'das / dies (hier)', b: 'Demonstrativpronomen' },
+  // Adjektive
+  'たかい': { de: 'teuer / hoch', b: 'い-Adjektiv (高い)' },
+  'やすい': { de: 'günstig / billig', b: 'い-Adjektiv (安い)' },
+  'おいしい': { de: 'lecker', b: 'い-Adjektiv (美味しい)' },
+  // Verben
+  'たべます': { de: '(ich) esse', b: 'Verb 食べる, höflich' },
+  'たべません': { de: '(ich) esse nicht', b: 'Verb 食べる, höflich verneint' },
+  'わかりました': { de: 'verstanden', b: 'Verb 分かる, höflich Vergangenheit' },
+  'わかりません': { de: '(ich) verstehe nicht / weiß nicht', b: 'Verb 分かる, höflich verneint' },
+  'いきましょう': { de: 'gehen wir', b: 'Verb 行く, Vorschlagsform (～ましょう)' },
+  'まよいました': { de: 'habe mich verirrt', b: 'Verb 迷う, höflich Vergangenheit' },
+  'つきました': { de: '(wir) sind angekommen', b: 'Verb 着く, höflich Vergangenheit' },
+  'ください': { de: 'bitte geben Sie mir …', b: 'höfliche Bitte (ください)' },
+  'どうしました': { de: 'Was ist passiert?', b: 'Verb する, höflich Vergangenheit' },
+  // Kopula & Partikeln
+  'です': { de: 'ist / sind', b: 'höfliche Kopula' },
+  'は': { de: '(Thema: „was … betrifft")', b: 'Themenpartikel', r: 'wa' },
+  'を': { de: '(Objekt)', b: 'Objektpartikel', r: 'o' },
+  'が': { de: '(Subjekt)', b: 'Subjektpartikel' },
+  'に': { de: '(Ziel / Ort / Richtung)', b: 'Partikel' },
+  'で': { de: '(Mittel / Art / Ort)', b: 'Partikel' },
+  'から': { de: 'von / aus', b: 'Partikel' },
+  'まで': { de: 'bis (zu)', b: 'Partikel' },
+  'か': { de: '(macht zur Frage)', b: 'Fragepartikel' },
+  'よ': { de: '(Betonung / Hinweis)', b: 'Satzendpartikel' },
+}
+const LEX_MAXLEN = Math.max(...Object.keys(DIALOG_LEX).map(k => k.length))
+
+// Zerlegt eine Dialog-Zeile in Tokens. Leerzeichen & Satzzeichen werden als
+// untippbare Tokens (ohne .de) durchgereicht; alles andere per Längsten-Treffer
+// am Lexikon. Unbekanntes fällt zeichenweise als untippbarer Text zurück.
+function lexTokens(line) {
+  const out = []
+  let i = 0
+  while (i < line.length) {
+    const ch = line[i]
+    if (ch === ' ' || ch === '　' || '。、，！？!?,.「」『』・…'.includes(ch)) { out.push({ t: ch }); i++; continue }
+    let hit = null
+    for (let len = Math.min(LEX_MAXLEN, line.length - i); len >= 1; len--) {
+      const sub = line.slice(i, i + len)
+      if (DIALOG_LEX[sub]) { hit = { t: sub, ...DIALOG_LEX[sub] }; break }
+    }
+    if (hit) { out.push(hit); i += hit.t.length }
+    else { out.push({ t: ch }); i++ }
+  }
+  return out
+}
+
+// Eine japanische Zeile, bei der jedes bekannte Wort antippbar ist und seine
+// Bedeutung + den grammatischen Aufbau zeigt (gleiches Muster wie StoryLine).
+function TappableJp({ text, size = 19, hint = false }) {
+  const tokens = lexTokens(text)
+  const [active, setActive] = useState(null)
+  const tk = active != null ? tokens[active] : null
+  return (
+    <div>
+      <div style={{ fontSize: size, fontFamily: JP, color: C.sumi, lineHeight: 1.85 }}>
+        {tokens.map((t, i) => {
+          if (!t.de) return <span key={i} style={{ whiteSpace: 'pre' }}>{t.t}</span>
+          const on = active === i
+          return (
+            <span key={i} role="button" onClick={() => setActive(on ? null : i)}
+              style={{ cursor: 'pointer', borderRadius: 4, padding: '0 1px',
+                borderBottom: `2px dotted ${on ? C.shu : `${C.indigo}66`}`,
+                background: on ? `${C.shu}22` : 'transparent' }}>{t.t}</span>
+          )
+        })}
+      </div>
+      {tk ? (
+        <div style={{ background: `${C.indigo}10`, border: `1px solid ${C.indigo}30`, borderRadius: 8, padding: '8px 10px', marginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontSize: 18, fontFamily: JP, color: C.sumi }}>{tk.t}</span>
+            {tk.r && <span style={{ fontSize: 12, color: C.textMuted }}>{tk.r}</span>}
+          </div>
+          <div style={{ fontSize: 14, color: C.indigo, fontWeight: 600 }}>{tk.de}</div>
+          {tk.b && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>Aufbau: {tk.b}</div>}
+        </div>
+      ) : hint ? (
+        <div style={{ fontSize: 11, color: C.textMuted, fontStyle: 'italic', marginTop: 6 }}>💡 Tippe ein Wort für Bedeutung & Form</div>
+      ) : null}
+    </div>
+  )
+}
+
 // Verwaltet Pfad-Liste ↔ aktive Szene.
 function DialogHub({ onClose }) {
   const { progress, completeDialog } = useContext(ProgressCtx)
@@ -2508,7 +2660,7 @@ function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 16 }}>
         <Emoji name={node.emoji} size={48} />
         <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 12, padding: '10px 14px', flex: 1 }}>
-          <div style={{ fontSize: 19, fontFamily: JP, color: C.sumi }}>{t.npc}</div>
+          <TappableJp text={t.npc} size={19} hint />
           {showDe && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>„{t.de}"</div>}
           <button onClick={() => speak(t.npc)} style={{ background: 'none', border: 'none', fontSize: 13, cursor: 'pointer', padding: '2px 0 0', color: C.textMuted }}>🔊 nochmal hören</button>
         </div>
@@ -2531,6 +2683,10 @@ function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
             {ans === t.answer ? '✓ Gute Antwort!' : '✗ Passt nicht ganz'}
             <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 2 }}>NPC: „{t.de}"</span>
           </p>
+          <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 10, padding: '10px 12px', marginTop: 10 }}>
+            <div style={{ fontSize: 11, color: C.textMuted, letterSpacing: 1, marginBottom: 6 }}>RICHTIGE ANTWORT · WÖRTER ANTIPPEN</div>
+            <TappableJp text={t.answer} size={18} />
+          </div>
           <Btn onClick={next} style={{ width: '100%', marginTop: 12 }}>{turn === turns.length - 1 ? 'Fertig →' : 'Weiter →'}</Btn>
         </>
       )}
