@@ -14,6 +14,7 @@ const ProgressCtx = createContext({
   completeChapter: async () => {},
   completeDialog: async () => {},
   reviewCard: async () => {},
+  saveNote: async () => {},
   saveSettings: async () => {},
   reset: async () => {},
 })
@@ -546,6 +547,56 @@ function Btn({ children, onClick, variant = 'primary', style }) {
       fontFamily: 'inherit', cursor: 'pointer', boxShadow: shadow,
       transition: 'transform 0.12s ease, filter 0.12s ease', ...style,
     }}>{children}</button>
+  )
+}
+
+// Merkhilfe/Notiz zu einer aufgedeckten SRS-Karte. Wird unter der Karte gezeigt
+// und kann dort bearbeitet werden; gespeichert landet sie unter srs[key].note und
+// taucht beim nächsten Aufdecken wieder mit auf. itemKey = der SRS-Schlüssel
+// (Zeichen/Wort). Wird nur im aufgedeckten Zustand gerendert → frischer State je
+// Karte durch Mount/Unmount, kein Reset nötig.
+function CardNote({ itemKey }) {
+  const { progress, saveNote } = useContext(ProgressCtx)
+  const saved = (progress.srs && progress.srs[itemKey] && progress.srs[itemKey].note) || ''
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(saved)
+
+  const save = () => { saveNote(itemKey, draft); setEditing(false) }
+  const cancel = () => { setDraft(saved); setEditing(false) }
+
+  if (editing) {
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <textarea value={draft} onChange={e => setDraft(e.target.value)} autoFocus rows={2}
+          placeholder="Merkhilfe, Eselsbrücke …"
+          style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', fontSize: 14,
+            borderRadius: 10, border: `2px solid ${C.washiDark}`, fontFamily: 'inherit', resize: 'vertical' }} />
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <Btn onClick={save} variant="secondary" style={{ flex: 1, padding: '9px 12px', fontSize: 13 }}>Speichern</Btn>
+          <Btn onClick={cancel} variant="ghost" style={{ flex: 1, padding: '9px 12px', fontSize: 13 }}>Abbrechen</Btn>
+        </div>
+      </div>
+    )
+  }
+
+  if (saved) {
+    return (
+      <button onClick={() => setEditing(true)} title="Merkhilfe bearbeiten"
+        style={{ display: 'block', width: '100%', textAlign: 'left', marginBottom: 16, padding: '10px 12px',
+          background: `${C.matcha}12`, border: `1px solid ${C.matcha}40`, borderRadius: 10,
+          color: C.sumi, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: C.matcha }}>💡 Merkhilfe</span>
+        <div style={{ marginTop: 2, whiteSpace: 'pre-wrap' }}>{saved}</div>
+      </button>
+    )
+  }
+
+  return (
+    <button onClick={() => setEditing(true)}
+      style={{ display: 'block', marginBottom: 16, background: 'none', border: 'none',
+        color: C.indigo, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
+      + Merkhilfe hinzufügen
+    </button>
   )
 }
 
@@ -1123,6 +1174,8 @@ function SRSQuiz({ onClose, initialMode = 'due' }) {
           <div style={{ color: C.textMuted, fontSize: 14 }}>Tippen zum Aufdecken</div>
         )}
       </Card>
+
+      {flipped && <CardNote itemKey={item} />}
 
       {!flipped ? (
         <Btn onClick={() => setFlipped(true)} style={{ width: '100%' }} variant="secondary">
@@ -2297,6 +2350,7 @@ function MixStep({ task, cardReview, onNext }) {
             <div style={{ color: C.textMuted, fontSize: 14 }}>Tippen zum Aufdecken</div>
           )}
         </Card>
+        {flipped && <CardNote itemKey={task.item} />}
         {!flipped ? (
           <Btn onClick={() => setFlipped(true)} style={{ width: '100%' }} variant="secondary">Aufdecken</Btn>
         ) : (
@@ -3918,7 +3972,7 @@ export default function TabiApp() {
   const [prevTab, setPrevTab] = useState('reise')   // Rücksprung aus den Einstellungen
   const [uebenMode, setUebenMode] = useState(null)  // gewünschter Übungsmodus beim Tab-Wechsel
   const { user, logout } = useAuth()
-  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveSettings, reset } = useProgress(user?.uid)
+  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
   const settings = getSettings(progress)
 
@@ -3948,7 +4002,7 @@ export default function TabiApp() {
   }
 
   return (
-    <ProgressCtx.Provider value={{ progress, settings, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, saveSettings, reset }}>
+    <ProgressCtx.Provider value={{ progress, settings, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, saveNote, saveSettings, reset }}>
     <div className="app-shell" style={{
       maxWidth: 480, margin: '0 auto', height: '100vh',
       display: 'flex', flexDirection: 'column', position: 'relative',

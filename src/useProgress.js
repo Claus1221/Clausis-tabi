@@ -215,13 +215,23 @@ export function useProgress(uid) {
   const scheduleNew = async (keys) => {
     if (!uid || !db || !keys || !keys.length) return
     const srs = progress.srs || {}
-    const fresh = keys.filter(k => !srs[k])
+    // Noch ungeplante Keys: kein Eintrag ODER nur eine Notiz ohne Fälligkeit
+    // (z. B. wenn vor dem ersten Review schon eine Merkhilfe gespeichert wurde).
+    const fresh = keys.filter(k => !srs[k] || srs[k].due == null)
     if (!fresh.length) return
     const updates = {}
     fresh.forEach((k, i) => {
       updates[k] = { ease: 2.5, interval: 0, reps: 0, due: addDays(1 + Math.floor(i / 8)) }
     })
     await setDoc(ref(), { srs: updates }, { merge: true })
+  }
+
+  // Merkhilfe/Notiz zu einer SRS-Karte speichern (leerer Text löscht sie). Wird
+  // beim nächsten Aufdecken wieder angezeigt. Deep-Merge lässt ease/interval/due
+  // unberührt; reviewCard wiederum lässt die Notiz unberührt.
+  const saveNote = async (key, note) => {
+    if (!uid || !db || !key) return
+    await setDoc(ref(), { srs: { [key]: { note: (note || '').trim() } } }, { merge: true })
   }
 
   // Einstellungen (teil-)speichern. Merge lässt unveränderte Werte unberührt.
@@ -237,5 +247,5 @@ export function useProgress(uid) {
     await setDoc(ref(), { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], xpByDate: {}, srs: {}, settings: progress.settings || {} })
   }
 
-  return { progress, loading, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveSettings, reset }
+  return { progress, loading, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, reset }
 }
