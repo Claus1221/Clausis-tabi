@@ -2608,7 +2608,6 @@ function DialogHub({ onClose }) {
   const [active, setActive] = useState(null)
 
   const steps = DIALOGS.filter(n => !n.section)
-  const unlocked = (id) => { const i = steps.findIndex(s => s.id === id); return i <= 0 || done.includes(steps[i - 1].id) }
 
   if (active) {
     const node = DIALOGS.find(n => n.id === active)
@@ -2624,7 +2623,7 @@ function DialogHub({ onClose }) {
       <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 10 }}>← Üben</button>
       <h2 style={{ fontSize: 20, fontFamily: JP, color: C.indigo, margin: '0 0 4px' }}>会話の道 · Gesprächspfad</h2>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 16 }}>
-        Echte Reise-Situationen. {doneCount}/{steps.length} gemeistert – jede Szene öffnet die nächste.
+        Echte Reise-Situationen. {doneCount}/{steps.length} gemeistert – eine Szene öffnet sich, sobald ihre Wörter & Grammatik in der Reise dran kamen.
       </p>
       {DIALOGS.map((n, i) => {
         if (n.section) return (
@@ -2633,7 +2632,14 @@ function DialogHub({ onClose }) {
             <div style={{ fontSize: 12, color: C.textMuted }}>{n.sub}</div>
           </div>
         )
-        const isDone = done.includes(n.id), open = unlocked(n.id)
+        const isDone = done.includes(n.id)
+        const gate = dialogGate(n, progress, done)
+        const si = steps.findIndex(s => s.id === n.id)
+        const prevDone = si <= 0 || done.includes(steps[si - 1].id)
+        const open = isDone || (gate.open && prevDone)
+        const need = [...gate.missGrammar.map(g => GRAMMAR_GLYPH[g] || g), ...gate.missVocab]
+        const lockHint = !gate.open ? `Erst in der Reise lernen: ${need.slice(0, 5).join(' · ')}`
+          : !prevDone ? 'Vorige Szene zuerst abschließen' : null
         return (
           <button key={n.id} onClick={() => open && setActive(n.id)} disabled={!open}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
@@ -2646,6 +2652,9 @@ function DialogHub({ onClose }) {
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, fontSize: 15, color: C.sumi }}>{n.title}{n.review && <span style={{ fontWeight: 400, fontSize: 11, color: C.textMuted }}> · Mix</span>}</div>
               <div style={{ fontSize: 12, color: C.textMuted }}>{n.goal}</div>
+              {!open && lockHint && (
+                <div style={{ fontSize: 11, color: C.shu, marginTop: 3, fontFamily: JP }}>🔒 {lockHint}</div>
+              )}
             </div>
             <div style={{ fontSize: 18 }}>{isDone ? '✓' : open ? '›' : '🔒'}</div>
           </button>
@@ -3202,6 +3211,91 @@ const CHAPTERS = [
   ] },
 ]
 const CHAPTER_BY_ID = Object.fromEntries(CHAPTERS.map(c => [c.id, c]))
+
+// ─── Rollenspiel-Freischaltung: Vokabeln & Grammatik müssen in der Reise dran kommen ──
+// Strikt nach Nutzerwunsch: eine Gesprächs-Szene öffnet sich erst, wenn die Wörter
+// UND die Grammatik, die ihre Antworten verlangen, schon in der Reise gelernt wurden.
+// Wichtig: Wörter, welche die Reise (noch) gar nicht lehrt, zählen NICHT als Sperre –
+// so blockiert nichts dauerhaft. Sobald die Reise um solche Vokabeln wächst (TODO Reise),
+// greift die Sperre für diese Wörter automatisch.
+
+// Partikeln/Kopula werden über die Grammatik geprüft, nicht als „Vokabel".
+const ROLE_GRAMMATICAL = new Set(['は', 'が', 'を', 'に', 'で', 'の', 'か', 'へ', 'と', 'も', 'よ', 'です'])
+
+// Welches Grammatik-Thema (g-ID) verlangt ein Antwort-Token? null = keins.
+function tokenGrammarId(tok) {
+  const b = tok.b || ''
+  if (tok.t === 'です') return 'g2'
+  if (tok.t === 'は' && tok.r === 'wa') return 'g1'
+  if (tok.t === 'が' && /Subjekt/.test(b)) return 'g3'
+  if (tok.t === 'を') return 'g4'
+  if ((tok.t === 'に' || tok.t === 'で') && /Partikel|Richtung|Ziel|Mittel/.test(b)) return 'g5'
+  if (tok.t === 'か') return 'g8'
+  if (tok.t === 'の' && /Partikel|Besitz|Verbindung/.test(b)) return 'g9'
+  if (/Verb/.test(b) && /höflich/.test(b)) return 'g6' // ます-Form
+  if (/Adjektiv/.test(b)) return 'g7'
+  return null
+}
+
+// Alle bekannten Lexikon-Wörter in einer japanischen Zeile.
+function lexKeysIn(line) {
+  if (typeof line !== 'string') return []
+  return lexTokens(line).filter(t => DIALOG_LEX[t.t]).map(t => t.t)
+}
+
+// Vokabeln (Lexikon-Schlüssel), die die angegebenen Reise-Einheiten lehren.
+function reiseVocab(blockIds, chapterIds) {
+  const set = new Set()
+  const add = s => lexKeysIn(s).forEach(k => set.add(k))
+  WORD_BLOCKS.filter(b => blockIds.includes(b.id)).forEach(b => b.words.forEach(w => {
+    add(w.kana); if (w.ex) add(w.ex.kana)
+  }))
+  const FIELDS = ['jp', 'reading', 'say', 'sign', 'line', 'text']
+  CHAPTERS.filter(c => chapterIds.includes(c.id)).forEach(c => c.steps.forEach(s => {
+    FIELDS.forEach(f => add(s[f]))
+    if (typeof s.answer === 'string') add(s.answer)
+    if (Array.isArray(s.answer)) add(s.answer.join(''))
+    if (Array.isArray(s.tiles)) add(s.tiles.join(''))
+  }))
+  return set
+}
+
+// Was die GESAMTE Reise theoretisch lehrt (einmalig, zur Ausnahme nicht lehrbarer Wörter).
+let _curriculumVocab = null
+function curriculumVocab() {
+  if (!_curriculumVocab) _curriculumVocab = reiseVocab(WORD_BLOCKS.map(b => b.id), CHAPTERS.map(c => c.id))
+  return _curriculumVocab
+}
+
+// Antwort-Sätze einer Szene (bei Wiederholungs-Knoten aus den Quellszenen).
+function dialogAnswers(node) {
+  const turns = node.turns || (node.from || []).flatMap(id => DIALOGS.find(d => d.id === id)?.turns || [])
+  return turns.map(t => t.answer).filter(Boolean)
+}
+
+// Vokabel- & Grammatik-Anforderungen einer Szene aus ihren Antworten ableiten.
+function dialogRequirements(node) {
+  const vocab = new Set(), grammar = new Set()
+  dialogAnswers(node).forEach(ans => lexTokens(ans).forEach(tok => {
+    const g = tokenGrammarId(tok); if (g) grammar.add(g)
+    if (DIALOG_LEX[tok.t] && !ROLE_GRAMMATICAL.has(tok.t)) vocab.add(tok.t)
+  }))
+  return { vocab: [...vocab], grammar: [...grammar] }
+}
+
+// Freischalt-Prüfung: offen? + was in der Reise noch fehlt (Grammatik-IDs, Vokabeln).
+function dialogGate(node, progress, done) {
+  if (done.includes(node.id)) return { open: true, missGrammar: [], missVocab: [] }
+  const learnedG = new Set(progress.completedGrammar || [])
+  const learnedV = reiseVocab(progress.completedWordBlocks || [], progress.completedChapters || [])
+  const teachableV = curriculumVocab()
+  const { vocab, grammar } = dialogRequirements(node)
+  const missGrammar = grammar.filter(g => !learnedG.has(g))
+  const missVocab = vocab.filter(w => teachableV.has(w) && !learnedV.has(w))
+  return { open: missGrammar.length === 0 && missVocab.length === 0, missGrammar, missVocab }
+}
+
+const GRAMMAR_GLYPH = Object.fromEntries(GRAMMAR.map(g => [g.id, g.glyph]))
 
 // ─── Reise: der durchgehende Lernpfad (roter Faden) ──────────────────────────
 // EIN geordneter Pfad bündelt Kana, Wörter, Grammatik und Wiederholung in

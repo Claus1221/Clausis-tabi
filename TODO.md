@@ -22,6 +22,10 @@ Backlog der noch zu programmierenden bzw. zu überarbeitenden Features.
 
 ## Thema Üben – Rollenspiel
 
-- [ ] **Freischaltung an Lernfortschritt koppeln** – Rollenspiel-Lektionen erst
+- [x] **Freischaltung an Lernfortschritt koppeln** – Rollenspiel-Lektionen erst
       freischalten, wenn die jeweiligen Vokabeln und die Grammatik dazu gelernt
-      wurden, d. h. in der Reise schon einmal dran kamen.
+      wurden, d. h. in der Reise schon einmal dran kamen. *(Erledigt: `dialogGate`
+      leitet Vokabel-/Grammatik-Bedarf aus den Antworten ab und prüft gegen das,
+      was die Reise lehrt. Strikt, aber selbst-nachziehend – Wörter, die die Reise
+      noch nicht lehrt, sperren nicht, greifen aber automatisch, sobald sie in der
+      Reise eingeführt werden. Pfad-Reihenfolge bleibt zusätzlich erhalten.)*
