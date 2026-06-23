@@ -19,9 +19,11 @@ Backlog der noch zu programmierenden bzw. zu überarbeitenden Features.
       Komponente in Reise-Einführung (IntroStep) und Vokabel-Detail; deckt alle 28
       aktuell eingeführten Kanji ab. Neue Kanji brauchen je einen Eintrag.)*
 - [ ] **Beispielsätze begrenzen** – In Beispielsätzen nur Grammatik und Wörter
-      verwenden, die schon einmal dran kamen. *(Für neue Kapitel (c7) per Skript
-      geprüft; ein Audit des Altbestands (Grammatik-Themen, Wortblöcke) steht noch
-      aus.)*
+      verwenden, die schon einmal dran kamen. *(Audit-Werkzeug `scripts/
+      audit-examples.mjs` erstellt; findet 35 Vorwärts-Referenzen. Wurzel:
+      Grammatik wird vor Vokabular gelehrt → Grammatik-Beispiele nutzen noch nicht
+      formal eingeführte Nomen/Adjektive (inline antippbar erklärt). Fix-Strategie
+      offen: inline akzeptieren + Ausreißer fixen vs. Pfad umsortieren.)*
 - [x] **Multiple-Choice randomisieren** – Bei Multiple-Choice-Antworten die richtige
       Antwort zufällig verteilen; nicht immer die erste Auswahlmöglichkeit darf
       richtig sein. *(Erledigt: Optionen werden in GrammarExercise, ChoiceStep und
