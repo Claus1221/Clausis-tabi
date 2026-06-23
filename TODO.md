@@ -5,14 +5,16 @@ Backlog der noch zu programmierenden bzw. zu überarbeitenden Features.
 ## Thema Reise
 
 - [ ] **Geschichte fortführen** – Die Geschichte soll nicht am Gipfel enden. Den
-      weiteren Verlauf logisch aufbauen. *(In Arbeit: Kapitel **c7 „Ankunft in
-      Tokyo"** als erstes Muster nach dem Gipfel ergänzt; der Reise-Pfad geht jetzt
-      über den Gipfel hinaus. Weitere Kapitel folgen nach Stil-Freigabe.)*
+      weiteren Verlauf logisch aufbauen. *(In Arbeit: Tokyo-Bogen c7–c12 nach dem
+      Gipfel ergänzt – Ankunft, Restaurant, Konbini, U-Bahn, Schilder/Toiletten,
+      Tempel. Der Pfad geht über den Gipfel hinaus weiter. Weitere Kapitel jederzeit.)*
 - [ ] **Tourismus-Orientierung** – Die Fortführung der Geschichte daran ausrichten,
-      was man als Tourist in Japan am ehesten braucht. *(c7 = Bahnhof/Ausgang/
-      Richtung – klassische Ankunfts-Situationen.)*
+      was man als Tourist in Japan am ehesten braucht. *(c7–c12 decken die
+      häufigsten Touristen-Situationen ab: ankommen, essen, einkaufen, fahren,
+      Schilder/Toiletten lesen, Sehenswürdigkeiten.)*
 - [ ] **Neue Inhalte einführen** – Immer wieder neue Wörter und neue Grammatik
-      einführen. *(c7 führt 東京/出口/右/左 + ここ・そこ・あそこ・どこ ein.)*
+      einführen. *(c8–c12: 食/大/小/上/下/男/女/中/寺 + レストラン/コンビニ/トイレ/
+      カメラ; Grammatik 〜たいです, 〜があります, 〜から〜まで, 〜の中, 〜ましょう.)*
 - [x] **Kanji-Herkunft zeigen** – Wenn neue Wörter eingeführt werden, zeigen, woher
       das Kanji kommt: welche Radikale es benutzt, ob es ein eigenes Radikal ist
       oder ein Piktogramm. *(Erledigt: `KANJI_ORIGIN`-Datenbank + `KanjiOrigin`-

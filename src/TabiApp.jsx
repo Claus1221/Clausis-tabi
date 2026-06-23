@@ -272,6 +272,15 @@ const KANJI_ORIGIN = {
   '出': { type: 'Piktogramm', note: 'Ein Fuß, der aus einer Senke heraustritt – „hinaus".' },
   '右': { type: 'Zusammengesetzt', parts: [{ c: '手', de: 'Hand' }, { c: '口', de: 'Mund' }], note: 'Eine Hand über dem Mund 口 – die rechte (Ess-)Hand.' },
   '左': { type: 'Zusammengesetzt', parts: [{ c: '手', de: 'Hand' }, { c: '工', de: 'Werkzeug' }], note: 'Eine Hand am Werkzeug 工 – die linke (Helfer-)Hand.' },
+  '食': { type: 'Piktogramm', radical: true, note: 'Speise in einer Schale unter einem Deckel – Essen.' },
+  '大': { type: 'Piktogramm', radical: true, note: 'Ein Mensch mit weit ausgebreiteten Armen – „groß".' },
+  '小': { type: 'Ideogramm', radical: true, note: 'Drei kleine Striche – „klein".' },
+  '上': { type: 'Ideogramm', note: 'Ein Strich über der Grundlinie – „oben".' },
+  '下': { type: 'Ideogramm', note: 'Ein Strich unter der Grundlinie – „unten".' },
+  '男': { type: 'Zusammengesetzt', parts: [{ c: '田', de: 'Reisfeld' }, { c: '力', de: 'Kraft' }], note: 'Kraft 力 im Reisfeld 田 – der Mann, der dort arbeitet.' },
+  '女': { type: 'Piktogramm', radical: true, note: 'Eine kniende Frau – „Frau".' },
+  '中': { type: 'Ideogramm', note: 'Ein senkrechter Strich mitten durch ein Feld – „Mitte / innen".' },
+  '寺': { type: 'Zusammengesetzt', parts: [{ c: '土', de: 'Erde' }, { c: '寸', de: 'Hand/Maß' }], note: 'Erde 土 und Hand 寸 – einst ein Amt, später der Tempel.' },
 }
 
 // Kanji aller Wörter aus abgeschlossenen Blöcken (= fällige Wort-Karten fürs SRS).
@@ -3199,6 +3208,21 @@ const STORY_TOKENS = {
   '人(ひと)が多(おお)いです。': [
     { t: '人', r: 'ひと', de: 'Mensch', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '多い', r: 'おおい', de: 'viel / zahlreich', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
   ],
+  '魚を食べました。': [
+    { t: '魚', r: 'さかな', de: 'Fisch', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '食べました', r: 'たべました', de: 'habe gegessen', b: 'ます-Form, Vergangenheit' }, { t: '。' },
+  ],
+  '小さい店です。': [
+    { t: '小さい', r: 'ちいさい', de: 'klein', b: 'い-Adjektiv' }, { t: '店', r: 'みせ', de: 'Laden', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+  ],
+  '駅から東京まで行きます。': [
+    { t: '駅', r: 'えき', de: 'Bahnhof', b: 'Nomen' }, { t: 'から', de: 'von / ab', b: 'Partikel' }, { t: '東京', r: 'とうきょう', de: 'Tokyo', b: 'Nomen' }, { t: 'まで', de: 'bis', b: 'Partikel' }, { t: '行きます', r: 'いきます', de: 'fahren / gehen', b: 'Verb, höflich' }, { t: '。' },
+  ],
+  'トイレは中です。': [
+    { t: 'トイレ', de: 'Toilette', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '中', r: 'なか', de: 'Mitte / drinnen', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+  ],
+  '寺はきれいです。': [
+    { t: '寺', r: 'てら', de: 'Tempel', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: 'きれい', de: 'schön', b: 'な-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+  ],
 }
 
 // Antippbare Story-Zeile mit Furigana: Wort tippen → Lesung, Bedeutung, Aufbau.
@@ -3328,6 +3352,64 @@ const CHAPTERS = [
     { kind: 'build', prompt: 'Bilde: „Wo ist der Ausgang?"', tiles: ['出口', 'は', 'どこ', 'です', 'か'], answer: ['出口', 'は', 'どこ', 'です', 'か'], tr: '出口はどこですか。' },
     { kind: 'dialog', emoji: 'person', line: 'みぎですか、ひだりですか？', prompt: 'Der Bahnhofsangestellte fragt: rechts oder links? Der Ausgang ist rechts.', options: ['みぎです。', 'ひだりです。', 'たべます。'], answer: 'みぎです。', tr: 'Rechts.' },
     { kind: 'story', emoji: 'city', text: 'Du findest den richtigen Ausgang und trittst hinaus: Neonlicht, Menschenmengen, unzählige Schilder. Deine Stadt-Reise hat begonnen.' },
+  ] },
+  { id: 'c8', title: 'Im Restaurant', steps: [
+    { kind: 'story', emoji: 'food', text: 'In der Stadt wirst du hungrig. Du suchst dir ein Restaurant und setzt dich an einen Tisch.' },
+    { kind: 'intro', emoji: 'food', jp: '食べます', reading: 'たべます', de: 'essen' },
+    { kind: 'intro', emoji: 'food', jp: 'レストラン', reading: 'レストラン', de: 'Restaurant' },
+    { kind: 'audio', say: 'たべます', options: ['食べます', '飲みます', '見ます'], answer: '食べます', de: 'essen' },
+    { kind: 'story', emoji: 'food', text: 'Neu: 〜たいです drückt einen Wunsch aus. 食べます → 食べたいです = „ich möchte essen". 飲みます → 飲みたいです = „ich möchte trinken".' },
+    { kind: 'gap', text: '魚を 食べ＿です。', prompt: '„Ich möchte Fisch essen." Welche Endung passt?', options: ['たい', 'ます', 'ません'], answer: 'たい', hint: '〜たいです = „möchte".' },
+    { kind: 'build', prompt: 'Bilde: „Ich möchte Wasser trinken."', tiles: ['水', 'を', '飲みたい', 'です'], answer: ['水', 'を', '飲みたい', 'です'], tr: '水を飲みたいです。' },
+    { kind: 'dialog', emoji: 'person', line: 'いらっしゃいませ！', prompt: 'Du möchtest Fisch essen. Was sagst du?', options: ['魚を 食べたいです。', 'さようなら。', '右です。'], answer: '魚を 食べたいです。', tr: 'Ich möchte Fisch essen.' },
+    { kind: 'story', emoji: 'fish', jp: '魚を食べました。', tr: 'Ich habe Fisch gegessen.' },
+  ] },
+  { id: 'c9', title: 'Im Konbini', steps: [
+    { kind: 'story', emoji: 'city', text: 'Nach dem Essen brauchst du Wasser. Gleich um die Ecke leuchtet ein Konbini – ein kleiner Laden, rund um die Uhr offen.' },
+    { kind: 'intro', emoji: 'mountain', jp: '大きい', reading: 'おおきい', de: 'groß' },
+    { kind: 'intro', emoji: 'star', jp: '小さい', reading: 'ちいさい', de: 'klein' },
+    { kind: 'audio', say: 'ちいさい', options: ['小さい', '大きい', '高い'], answer: '小さい', de: 'klein' },
+    { kind: 'story', emoji: 'water', text: 'Neu: 〜が あります = „es gibt ~". 水が あります = „es gibt Wasser". Mit か wird daraus die Frage: 水が ありますか？' },
+    { kind: 'gap', text: '水＿ あります。', prompt: '„Es gibt Wasser." Welche Partikel passt?', options: ['が', 'を', 'は'], answer: 'が', hint: '〜が あります = „es gibt ~".' },
+    { kind: 'build', prompt: 'Bilde: „Es gibt einen Laden."', tiles: ['店', 'が', 'あります'], answer: ['店', 'が', 'あります'], tr: '店があります。' },
+    { kind: 'dialog', emoji: 'person', line: 'いらっしゃいませ。', prompt: 'Du suchst Wasser und fragst die Person im Laden:', options: ['水が ありますか？', 'さようなら。', '大きいです。'], answer: '水が ありますか？', tr: 'Gibt es Wasser?' },
+    { kind: 'story', emoji: 'city', jp: '小さい店です。', tr: 'Es ist ein kleiner Laden.' },
+  ] },
+  { id: 'c10', title: 'Mit der U-Bahn', steps: [
+    { kind: 'story', emoji: 'train', text: 'Tokyo ist riesig – zu Fuß kommst du nicht weit. Du nimmst die U-Bahn. Im Bahnhof geht es treppauf und treppab.' },
+    { kind: 'intro', emoji: 'map', jp: '上', reading: 'うえ', de: 'oben' },
+    { kind: 'intro', emoji: 'map', jp: '下', reading: 'した', de: 'unten' },
+    { kind: 'sign', sign: '下', prompt: 'Ein Pfeil mit diesem Zeichen zeigt…', options: ['nach unten', 'nach oben', 'geradeaus'], answer: 'nach unten' },
+    { kind: 'audio', say: 'うえ', options: ['上', '下', '右'], answer: '上', de: 'oben' },
+    { kind: 'story', emoji: 'train', text: 'Neu: 〜から = „von/ab", 〜まで = „bis". 駅から 東京まで = „vom Bahnhof bis Tokyo".' },
+    { kind: 'gap', text: '駅＿ 東京まで。', prompt: '„Vom Bahnhof bis Tokyo." Welches Wort heißt „von/ab"?', options: ['から', 'まで', 'に'], answer: 'から', hint: '〜から = von/ab, 〜まで = bis.' },
+    { kind: 'build', prompt: 'Bilde: „Ich gehe nach oben."', tiles: ['上', 'に', '行きます'], answer: ['上', 'に', '行きます'], tr: '上に行きます。' },
+    { kind: 'dialog', emoji: 'person', line: 'きっぷは どこですか？', prompt: 'Jemand sucht die Fahrkarten – sie sind unten. Antworte:', options: ['下です。', '上です。', '魚です。'], answer: '下です。', tr: 'Unten.' },
+    { kind: 'story', emoji: 'train', jp: '駅から東京まで行きます。', tr: 'Ich fahre vom Bahnhof bis Tokyo.' },
+  ] },
+  { id: 'c11', title: 'Schilder lesen', steps: [
+    { kind: 'story', emoji: 'map', text: 'Überall Schilder. Du musst dringend zur Toilette – und lernst, die wichtigsten Zeichen zu erkennen.' },
+    { kind: 'intro', emoji: 'person', jp: '男', reading: 'おとこ', de: 'Mann' },
+    { kind: 'intro', emoji: 'person', jp: '女', reading: 'おんな', de: 'Frau' },
+    { kind: 'intro', emoji: 'house', jp: 'トイレ', reading: 'トイレ', de: 'Toilette' },
+    { kind: 'sign', sign: '男', prompt: 'Auf einer Toilettentür steht 男. Das ist…', options: ['Herren', 'Damen', 'Ausgang'], answer: 'Herren' },
+    { kind: 'sign', sign: '女', prompt: 'Und auf der anderen Tür: 女. Das ist…', options: ['Damen', 'Herren', 'Eingang'], answer: 'Damen' },
+    { kind: 'intro', emoji: 'house', jp: '中', reading: 'なか', de: 'Mitte / drinnen' },
+    { kind: 'story', emoji: 'house', text: 'Neu: 〜の 中 = „in / innerhalb von ~". 店の 中 = „im Laden", 家の 中 = „im Haus".' },
+    { kind: 'gap', text: '家の ＿に います。', prompt: '„Ich bin im Haus." Welches Wort passt?', options: ['中', '右', '上'], answer: '中', hint: '〜の 中 = im Inneren.' },
+    { kind: 'dialog', emoji: 'person', line: 'トイレは どこですか？', prompt: 'Jemand sucht die Toilette – sie ist dort drüben. Antworte:', options: ['あそこです。', '魚です。', '大きいです。'], answer: 'あそこです。', tr: 'Dort drüben.' },
+    { kind: 'story', emoji: 'house', jp: 'トイレは中です。', tr: 'Die Toilette ist drinnen.' },
+  ] },
+  { id: 'c12', title: 'Beim Tempel', steps: [
+    { kind: 'story', emoji: 'torii', text: 'Am Stadtrand liegt ein alter Tempel. Hinter dem roten Torii wird es still. Du möchtest diesen Moment festhalten.' },
+    { kind: 'intro', emoji: 'torii', jp: '寺', reading: 'てら', de: 'Tempel' },
+    { kind: 'intro', emoji: 'city', jp: 'カメラ', reading: 'カメラ', de: 'Kamera' },
+    { kind: 'audio', say: 'てら', options: ['寺', '店', '家'], answer: '寺', de: 'Tempel' },
+    { kind: 'story', emoji: 'party', text: 'Neu: 〜ましょう schlägt etwas vor: „lass uns ~". 行きます → 行きましょう = „lass uns gehen". 見ます → 見ましょう = „lass uns schauen".' },
+    { kind: 'gap', text: '寺に 行き＿。', prompt: '„Lass uns zum Tempel gehen!" Welche Endung passt?', options: ['ましょう', 'ました', 'ません'], answer: 'ましょう', hint: '〜ましょう = „lass uns ~".' },
+    { kind: 'build', prompt: 'Bilde: „Lass uns den Tempel anschauen."', tiles: ['寺', 'を', '見ましょう'], answer: ['寺', 'を', '見ましょう'], tr: '寺を見ましょう。' },
+    { kind: 'dialog', emoji: 'person', line: 'しゃしんを とりましょうか？', prompt: 'Jemand bietet an, ein Foto von dir zu machen. Du freust dich:', options: ['はい、おねがいします。', 'いいえ。', 'たべます。'], answer: 'はい、おねがいします。', tr: 'Ja, bitte.' },
+    { kind: 'story', emoji: 'torii', jp: '寺はきれいです。', tr: 'Der Tempel ist schön.' },
   ] },
 ]
 const CHAPTER_BY_ID = Object.fromEntries(CHAPTERS.map(c => [c.id, c]))
@@ -3472,6 +3554,13 @@ const PATH = [
   { type: 'goal', id: 'fuji' },
   { world: '東京・一', sub: 'Ankunft in Tokyo' },
   { type: 'chapter', id: 'c7' },
+  { world: '東京・二', sub: 'Essen & Einkaufen' },
+  { type: 'chapter', id: 'c8' },
+  { type: 'chapter', id: 'c9' },
+  { world: '東京・三', sub: 'Unterwegs & Sehenswürdiges' },
+  { type: 'chapter', id: 'c10' },
+  { type: 'chapter', id: 'c11' },
+  { type: 'chapter', id: 'c12' },
 ]
 
 // Kleine flache Landschafts-Motive (Bäume, Torii) als SVG-Gruppen.
