@@ -267,6 +267,11 @@ const KANJI_ORIGIN = {
   '茶': { type: 'Zusammengesetzt', parts: [{ c: '艹', de: 'Pflanze – Bedeutung' }, { c: '余', de: 'Lautgeber' }], note: 'Pflanzen-Radikal 艹 – Tee ist ein Strauch.' },
   '日': { type: 'Piktogramm', radical: true, note: 'Die Sonne mit einem Punkt in der Mitte.' },
   '本': { type: 'Ideogramm', parts: [{ c: '木', de: 'Baum' }, { c: '一', de: 'Markierung' }], note: 'Ein Baum 木 mit Markierung an der Wurzel – der „Ursprung".' },
+  '東': { type: 'Zusammengesetzt', parts: [{ c: '日', de: 'Sonne' }, { c: '木', de: 'Baum' }], note: 'Die Sonne 日 hinter einem Baum 木 – dort geht sie auf: der Osten.' },
+  '京': { type: 'Piktogramm', note: 'Ein hohes Tor auf einem Hügel – die Hauptstadt.' },
+  '出': { type: 'Piktogramm', note: 'Ein Fuß, der aus einer Senke heraustritt – „hinaus".' },
+  '右': { type: 'Zusammengesetzt', parts: [{ c: '手', de: 'Hand' }, { c: '口', de: 'Mund' }], note: 'Eine Hand über dem Mund 口 – die rechte (Ess-)Hand.' },
+  '左': { type: 'Zusammengesetzt', parts: [{ c: '手', de: 'Hand' }, { c: '工', de: 'Werkzeug' }], note: 'Eine Hand am Werkzeug 工 – die linke (Helfer-)Hand.' },
 }
 
 // Kanji aller Wörter aus abgeschlossenen Blöcken (= fällige Wort-Karten fürs SRS).
@@ -3294,6 +3299,20 @@ const CHAPTERS = [
     { kind: 'tf', emoji: 'fuji', jp: '日本の山です。', prompt: 'Stimmt es zum Bild?', answer: true },
     { kind: 'story', emoji: 'party', jp: 'おめでとうございます！旅(たび)は終(お)わりました。', text: 'Du stehst auf dem Gipfel. Eine neue Reise beginnt.' },
   ] },
+  { id: 'c7', title: 'Ankunft in Tokyo', steps: [
+    { kind: 'story', emoji: 'train', jp: '人(ひと)が 多(おお)いです。', text: 'Vom Gipfel geht es zurück ins Tal und mit dem Zug weiter in Japans größte Stadt: Tokyo. Der Bahnhof ist riesig – überall Menschen, Lärm und Schilder.' },
+    { kind: 'intro', emoji: 'city', jp: '東京', reading: 'とうきょう', de: 'Tokyo' },
+    { kind: 'audio', say: 'とうきょう', options: ['東京', '電車', '飛行機'], answer: '東京', de: 'Tokyo' },
+    { kind: 'intro', emoji: 'station', jp: '出口', reading: 'でぐち', de: 'Ausgang' },
+    { kind: 'sign', sign: '出口', prompt: 'Am Bahnsteig hängt dieses Schild. Was bedeutet es?', options: ['Ausgang', 'Eingang', 'Bahnsteig'], answer: 'Ausgang' },
+    { kind: 'intro', emoji: 'hand', jp: '右', reading: 'みぎ', de: 'rechts' },
+    { kind: 'intro', emoji: 'hand', jp: '左', reading: 'ひだり', de: 'links' },
+    { kind: 'story', emoji: 'map', text: 'Orte zeigen – neu: ここ = hier (bei mir), そこ = da (bei dir), あそこ = dort (weiter weg). Und „Wo ist …?" heißt 〜は どこ ですか。' },
+    { kind: 'gap', text: '出口は ＿ です。', prompt: '„Der Ausgang ist dort drüben." Welches Wort passt?', options: ['あそこ', 'ここ', 'どこ'], answer: 'あそこ', hint: 'あそこ = dort (weiter entfernt).' },
+    { kind: 'build', prompt: 'Bilde: „Wo ist der Ausgang?"', tiles: ['出口', 'は', 'どこ', 'です', 'か'], answer: ['出口', 'は', 'どこ', 'です', 'か'], tr: '出口はどこですか。' },
+    { kind: 'dialog', emoji: 'person', line: 'みぎですか、ひだりですか？', prompt: 'Der Bahnhofsangestellte fragt: rechts oder links? Der Ausgang ist rechts.', options: ['みぎです。', 'ひだりです。', 'たべます。'], answer: 'みぎです。', tr: 'Rechts.' },
+    { kind: 'story', emoji: 'city', text: 'Du findest den richtigen Ausgang und trittst hinaus: Neonlicht, Menschenmengen, unzählige Schilder. Deine Stadt-Reise hat begonnen.' },
+  ] },
 ]
 const CHAPTER_BY_ID = Object.fromEntries(CHAPTERS.map(c => [c.id, c]))
 
@@ -3435,6 +3454,8 @@ const PATH = [
   { type: 'grammar', id: 'g10' },
   { type: 'chapter', id: 'c6' },
   { type: 'goal', id: 'fuji' },
+  { world: '東京・一', sub: 'Ankunft in Tokyo' },
+  { type: 'chapter', id: 'c7' },
 ]
 
 // Kleine flache Landschafts-Motive (Bäume, Torii) als SVG-Gruppen.
@@ -3862,6 +3883,10 @@ function ReiseScreen({ onReview }) {
   const contentNodes = PATH.filter(n => n.type && n.type !== 'goal')
   const doneCount = contentNodes.filter(n => isNodeDone(n, progress)).length
   const allDone = doneCount === contentNodes.length
+  // Der Gipfel (goal) leuchtet, sobald alles VOR ihm geschafft ist – unabhängig
+  // von Kapiteln, die danach kommen (die Reise geht über den Gipfel hinaus weiter).
+  const goalPos = PATH.findIndex(n => n.type === 'goal')
+  const summitReached = PATH.slice(0, goalPos).filter(n => n.type && n.type !== 'goal').every(n => isNodeDone(n, progress))
 
   // ─ Aktive Lektion als Vollbild-Overlay (nutzt bestehende Komponenten) ─
   if (active) {
@@ -3920,7 +3945,7 @@ function ReiseScreen({ onReview }) {
     }
     const done = isNodeDone(it, progress)
     let state
-    if (it.type === 'goal') state = allDone ? 'done' : 'locked'
+    if (it.type === 'goal') state = summitReached ? 'done' : 'locked'
     else if (foundCurrent) state = 'locked'
     else if (done) state = 'done'
     else { state = 'current'; foundCurrent = true }
@@ -3933,7 +3958,7 @@ function ReiseScreen({ onReview }) {
   if (bandIdx >= 0) bands.push({ top: bandStart, bottom: y, idx: bandIdx })
   const trackH = y + 60
   const road = roadPath(laid.map(n => [n.x, n.y]))
-  const goal = laid[laid.length - 1]
+  const goal = laid.find(n => n.node.type === 'goal')
   const current = laid.find(n => n.state === 'current')   // nächste offene Station
 
   // Durchgängiger Parallax-Hintergrund (eine Tal-Landschaft über die volle Höhe).
@@ -3949,7 +3974,7 @@ function ReiseScreen({ onReview }) {
           Deine Reise 旅
         </h2>
         <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>
-          Ein Weg vom Anfang bis zum Gipfel – Schrift, Wörter und Grammatik Schritt für Schritt.
+          Ein Weg vom Anfang über den Gipfel hinaus – Schrift, Wörter und Grammatik Schritt für Schritt.
         </p>
 
         {/* Tagesstatus — eingebettet aus dem früheren „Heute"-Tab */}
