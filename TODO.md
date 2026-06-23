@@ -10,9 +10,11 @@ Backlog der noch zu programmierenden bzw. zu überarbeitenden Features.
       was man als Tourist in Japan am ehesten braucht.
 - [ ] **Neue Inhalte einführen** – Immer wieder neue Wörter und neue Grammatik
       einführen.
-- [ ] **Kanji-Herkunft zeigen** – Wenn neue Wörter eingeführt werden, zeigen, woher
+- [x] **Kanji-Herkunft zeigen** – Wenn neue Wörter eingeführt werden, zeigen, woher
       das Kanji kommt: welche Radikale es benutzt, ob es ein eigenes Radikal ist
-      oder ein Piktogramm.
+      oder ein Piktogramm. *(Erledigt: `KANJI_ORIGIN`-Datenbank + `KanjiOrigin`-
+      Komponente in Reise-Einführung (IntroStep) und Vokabel-Detail; deckt alle 28
+      aktuell eingeführten Kanji ab. Neue Kanji brauchen je einen Eintrag.)*
 - [ ] **Beispielsätze begrenzen** – In Beispielsätzen nur Grammatik und Wörter
       verwenden, die schon einmal dran kamen.
 - [x] **Multiple-Choice randomisieren** – Bei Multiple-Choice-Antworten die richtige

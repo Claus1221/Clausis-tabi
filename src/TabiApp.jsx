@@ -233,6 +233,42 @@ const WORD_BLOCKS = [
 const ALL_WORDS = WORD_BLOCKS.flatMap(b => b.words)
 const WORD_BY_KANJI = Object.fromEntries(ALL_WORDS.map(w => [w.kanji, w]))
 
+// ─── Kanji-Herkunft ──────────────────────────────────────────────────────────
+// Woher ein Kanji kommt: Piktogramm (Bild eines Dings), Ideogramm (abstrakte Idee)
+// oder zusammengesetzt (Bedeutungsteil + Lautgeber). `radical: true` = das Zeichen
+// ist selbst ein Radikal. `parts`: Bausteine mit ihrer Rolle. Wird beim Einführen
+// eines Wortes (Reise & Vokabel-Detail) gezeigt. Schlüssel = einzelnes Kanji.
+const KANJI_ORIGIN = {
+  '山': { type: 'Piktogramm', radical: true, note: 'Drei aufragende Gipfel – ein Bild des Gebirges.' },
+  '川': { type: 'Piktogramm', radical: true, note: 'Drei fließende Linien – ein Fluss.' },
+  '空': { type: 'Zusammengesetzt', parts: [{ c: '穴', de: 'Höhle – Bedeutung' }, { c: '工', de: 'kō – Lautgeber' }], note: 'Unter dem Höhlen-Radikal 穴; 工 gibt den Klang.' },
+  '星': { type: 'Zusammengesetzt', parts: [{ c: '日', de: 'Sonne – Bedeutung' }, { c: '生', de: 'sei – Lautgeber' }], note: 'Ein leuchtendes „Sonnending" am Himmel; 生 gibt den Klang.' },
+  '月': { type: 'Piktogramm', radical: true, note: 'Die Sichel des zunehmenden Mondes.' },
+  '猫': { type: 'Zusammengesetzt', parts: [{ c: '犭', de: 'Tier – Bedeutung' }, { c: '苗', de: 'byō – Lautgeber' }], note: 'Tier-Radikal 犭 (von 犬 Hund); 苗 gibt den Klang.' },
+  '犬': { type: 'Piktogramm', radical: true, note: 'Ein Hund: 大 (groß) mit einem Strich für Ohr/Pfote.' },
+  '鳥': { type: 'Piktogramm', radical: true, note: 'Ein Vogel mit Schwanzfedern.' },
+  '魚': { type: 'Piktogramm', radical: true, note: 'Kopf, Körper und Flossen (灬) eines Fisches.' },
+  '馬': { type: 'Piktogramm', radical: true, note: 'Ein Pferd mit Mähne und vier Beinen (灬).' },
+  '目': { type: 'Piktogramm', radical: true, note: 'Ein Auge, senkrecht gestellt.' },
+  '口': { type: 'Piktogramm', radical: true, note: 'Ein offener Mund.' },
+  '耳': { type: 'Piktogramm', radical: true, note: 'Ein Ohr.' },
+  '手': { type: 'Piktogramm', radical: true, note: 'Eine Hand mit gespreizten Fingern.' },
+  '足': { type: 'Piktogramm', radical: true, note: 'Knie und Fuß – das ganze Bein.' },
+  '人': { type: 'Piktogramm', radical: true, note: 'Ein Mensch von der Seite, auf zwei Beinen.' },
+  '家': { type: 'Zusammengesetzt', parts: [{ c: '宀', de: 'Dach – Bedeutung' }, { c: '豕', de: 'Schwein' }], note: 'Ein Schwein unter dem Dach-Radikal 宀 – das Haus.' },
+  '水': { type: 'Piktogramm', radical: true, note: 'Fließendes Wasser mit Strudeln.' },
+  '車': { type: 'Piktogramm', radical: true, note: 'Ein Wagen von oben: Achse und zwei Räder.' },
+  '店': { type: 'Zusammengesetzt', parts: [{ c: '广', de: 'Gebäude – Bedeutung' }, { c: '占', de: 'sen – Lautgeber' }], note: 'Unter dem Gebäude-Radikal 广; 占 gibt den Klang.' },
+  '飛': { type: 'Piktogramm', note: 'Ein auffliegender Vogel mit ausgebreiteten Schwingen.' },
+  '行': { type: 'Piktogramm', radical: true, note: 'Eine Kreuzung zweier Wege – gehen.' },
+  '機': { type: 'Zusammengesetzt', parts: [{ c: '木', de: 'Holz – Bedeutung' }, { c: '幾', de: 'ki – Lautgeber' }], note: 'Holz-Radikal 木 (Maschinen waren aus Holz); 幾 gibt den Klang.' },
+  '駅': { type: 'Zusammengesetzt', parts: [{ c: '馬', de: 'Pferd – Bedeutung' }, { c: '尺', de: 'Lautgeber' }], note: 'Pferd-Radikal 馬 – früher eine Poststation für Pferde.' },
+  '電': { type: 'Zusammengesetzt', parts: [{ c: '雨', de: 'Regen – Bedeutung' }, { c: '电', de: 'Blitz' }], note: 'Unter dem Regen-Radikal 雨; 电 ist der Blitz – Elektrizität.' },
+  '茶': { type: 'Zusammengesetzt', parts: [{ c: '艹', de: 'Pflanze – Bedeutung' }, { c: '余', de: 'Lautgeber' }], note: 'Pflanzen-Radikal 艹 – Tee ist ein Strauch.' },
+  '日': { type: 'Piktogramm', radical: true, note: 'Die Sonne mit einem Punkt in der Mitte.' },
+  '本': { type: 'Ideogramm', parts: [{ c: '木', de: 'Baum' }, { c: '一', de: 'Markierung' }], note: 'Ein Baum 木 mit Markierung an der Wurzel – der „Ursprung".' },
+}
+
 // Kanji aller Wörter aus abgeschlossenen Blöcken (= fällige Wort-Karten fürs SRS).
 function learnedWordKanji(completedBlocks) {
   return WORD_BLOCKS.filter(b => completedBlocks.includes(b.id)).flatMap(b => b.words.map(w => w.kanji))
@@ -1459,6 +1495,45 @@ function BlockQuiz({ words, onFinish }) {
   )
 }
 
+// Zeigt für jedes Kanji eines Wortes, woher es kommt (Piktogramm/Ideogramm/
+// zusammengesetzt, Radikale). Rendert nichts, wenn kein Kanji Herkunftsdaten hat.
+function KanjiOrigin({ jp }) {
+  const chars = [...new Set([...(jp || '')])].filter(c => KANJI_ORIGIN[c])
+  if (!chars.length) return null
+  const badge = (text, fill) => (
+    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.3, color: fill, border: `1px solid ${fill}66`, background: `${fill}14`, borderRadius: 5, padding: '1px 6px' }}>{text}</span>
+  )
+  return (
+    <div style={{ background: `${C.matcha}10`, border: `1px solid ${C.matcha}40`, borderRadius: 10, padding: 12, textAlign: 'left' }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.matcha, marginBottom: 8 }}>KANJI-HERKUNFT</div>
+      {chars.map((c, ci) => {
+        const o = KANJI_ORIGIN[c]
+        return (
+          <div key={c} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', paddingTop: ci ? 10 : 0, marginTop: ci ? 10 : 0, borderTop: ci ? `1px solid ${C.matcha}33` : 'none' }}>
+            <div style={{ fontSize: 34, fontFamily: JP, color: C.sumi, lineHeight: 1, minWidth: 40, textAlign: 'center' }}>{c}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 4 }}>
+                {badge(o.type, C.indigo)}
+                {o.radical && badge('eigenes Radikal', C.shu)}
+              </div>
+              {o.parts && (
+                <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 3 }}>
+                  {o.parts.map((p, i) => (
+                    <span key={i}>{i > 0 && <span style={{ color: C.matcha }}> ＋ </span>}
+                      <span style={{ fontFamily: JP, fontSize: 16, color: C.sumi }}>{p.c}</span> <span>({p.de})</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div style={{ fontSize: 12, color: C.sumi }}>{o.note}</div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function WordDetail({ word }) {
   const [copied, setCopied] = useState(false)
   const [activeTok, setActiveTok] = useState(null)
@@ -1469,10 +1544,15 @@ function WordDetail({ word }) {
     .map(t => `${t.t}${t.r && t.r !== t.t ? ` (${t.r})` : ''} = ${t.de} [${t.b}]`)
     .join(' · ')
 
+  const origin = [...new Set([...word.kanji])].filter(c => KANJI_ORIGIN[c])
+    .map(c => { const o = KANJI_ORIGIN[c]; return `${c}: ${o.type}${o.radical ? ', eigenes Radikal' : ''}${o.parts ? ' (' + o.parts.map(p => `${p.c} ${p.de}`).join(', ') + ')' : ''} – ${o.note}` })
+    .join('\n')
+
   const clip =
     `${word.kanji}（${word.kana} / ${word.romaji}）— ${word.de}\n\n` +
     `Beispielsatz:\n${word.ex.jp}\n${word.ex.kana}\n„${word.ex.de}"\n` +
-    `Aufbau: ${aufbau}`
+    `Aufbau: ${aufbau}` +
+    (origin ? `\n\nKanji-Herkunft:\n${origin}` : '')
 
   const handleCopy = async () => {
     const ok = await copyText(clip)
@@ -1536,6 +1616,11 @@ function WordDetail({ word }) {
           </div>
         )}
       </Card>
+
+      {/* Woher kommen die Kanji des Wortes? */}
+      <div style={{ marginTop: 12 }}>
+        <KanjiOrigin jp={word.kanji} />
+      </div>
 
       {/* In die Zwischenablage kopieren (z. B. um eine KI zu fragen) */}
       <button onClick={handleCopy}
@@ -3554,6 +3639,9 @@ function IntroStep({ step }) {
       </button>
       <div style={{ fontSize: 13, color: C.textMuted, paddingTop: 10, borderTop: `1px solid ${C.washiDark}`, maxWidth: 260, margin: '14px auto 0' }}>
         Bedeutung: <strong style={{ color: C.sumi }}>{step.de}</strong>
+      </div>
+      <div style={{ maxWidth: 320, margin: '14px auto 0' }}>
+        <KanjiOrigin jp={step.jp} />
       </div>
     </div>
   )
