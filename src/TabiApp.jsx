@@ -3185,10 +3185,14 @@ const STORY_TOKENS = {
   'おめでとうございます！旅(たび)は終(お)わりました。': [
     { t: 'おめでとうございます', de: 'Herzlichen Glückwunsch', b: 'feste Wendung' }, { t: '！' }, { t: '旅', r: 'たび', de: 'Reise', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '終わりました', r: 'おわりました', de: 'ist zu Ende', b: 'Verb, höflich · Vergangenheit (終わる)' }, { t: '。' },
   ],
+  '人(ひと)が多(おお)いです。': [
+    { t: '人', r: 'ひと', de: 'Mensch', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '多い', r: 'おおい', de: 'viel / zahlreich', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+  ],
 }
 
 // Antippbare Story-Zeile mit Furigana: Wort tippen → Lesung, Bedeutung, Aufbau.
-function StoryLine({ tokens }) {
+// `tr` = direkte deutsche Übersetzung, die unter dem Satz steht.
+function StoryLine({ tokens, tr }) {
   const [active, setActive] = useState(null)
   const tk = active != null ? tokens[active] : null
   const plain = tokens.map(t => t.t).join('')
@@ -3209,6 +3213,7 @@ function StoryLine({ tokens }) {
         })}
         <button onClick={() => speak(plain)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, marginLeft: 6, verticalAlign: 'middle' }}>🔊</button>
       </div>
+      {tr && <div style={{ fontSize: 15, color: C.indigo, marginTop: 6 }}>„{tr}"</div>}
       {tk ? (
         <div style={{ background: `${C.indigo}10`, border: `1px solid ${C.indigo}30`, borderRadius: 8, padding: 10, marginTop: 10, textAlign: 'left', maxWidth: 300, margin: '10px auto 0' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -3257,7 +3262,7 @@ const CHAPTERS = [
     { kind: 'story', emoji: 'tea', text: 'Mit einer Tasse Tee verlässt du die Stadt. Vor dir: grüne Hügel.' },
   ] },
   { id: 'c3', title: 'In die Natur', steps: [
-    { kind: 'story', emoji: 'mountain', jp: '山(やま)が見(み)えます。', text: 'Der Weg führt in die Berge. Ein Fluss glitzert im Tal.' },
+    { kind: 'story', emoji: 'mountain', jp: '山(やま)が見(み)えます。', tr: 'Ein Berg ist zu sehen.', text: 'Der Weg führt in die Berge. Ein Fluss glitzert im Tal.' },
     { kind: 'intro', emoji: 'river', jp: '川', reading: 'かわ', de: 'Fluss' },
     { kind: 'intro', emoji: 'sun', jp: '空', reading: 'そら', de: 'Himmel' },
     { kind: 'pic', emoji: 'river', options: ['川', '山', '空'], answer: '川', de: 'Fluss' },
@@ -3265,10 +3270,10 @@ const CHAPTERS = [
     { kind: 'build', prompt: 'Bilde den Satz: „Das ist ein Berg."', tiles: ['これ', 'は', '山', 'です'], answer: ['これ', 'は', '山', 'です'], tr: 'これは山です。' },
     { kind: 'gap', text: 'これ＿山です。', prompt: 'Welche Partikel markiert das Thema?', options: ['は', 'を', 'が'], answer: 'は', hint: 'は markiert das Thema.' },
     { kind: 'trace', char: '川', reading: 'かわ', de: 'Fluss' },
-    { kind: 'story', emoji: 'river', jp: 'これは川(かわ)です。', text: 'Das ist ein Fluss. Du benennst, was du siehst.' },
+    { kind: 'story', emoji: 'river', jp: 'これは川(かわ)です。', tr: 'Das ist ein Fluss.', text: 'Das ist ein Fluss. Du benennst, was du siehst.' },
   ] },
   { id: 'c4', title: 'Begegnungen', steps: [
-    { kind: 'story', emoji: 'dog', jp: '犬(いぬ)が走(はし)ります。', text: 'Tiere überall – und neue, kantige Zeichen: Katakana.' },
+    { kind: 'story', emoji: 'dog', jp: '犬(いぬ)が走(はし)ります。', tr: 'Der Hund rennt.', text: 'Tiere überall – und neue, kantige Zeichen: Katakana.' },
     { kind: 'intro', emoji: 'dog', jp: '犬', reading: 'いぬ', de: 'Hund' },
     { kind: 'intro', emoji: 'fish', jp: '魚', reading: 'さかな', de: 'Fisch' },
     { kind: 'pic', emoji: 'dog', options: ['犬', '猫', '魚'], answer: '犬', de: 'Hund' },
@@ -3276,10 +3281,10 @@ const CHAPTERS = [
     { kind: 'sign', sign: 'コーヒー', prompt: 'An einem Automaten: コーヒー. Das ist…', options: ['Kaffee', 'Tee', 'Milch'], answer: 'Kaffee' },
     { kind: 'build', prompt: 'Bilde: „Der Hund rennt."', tiles: ['犬', 'が', '走ります'], answer: ['犬', 'が', '走ります'], tr: '犬が走ります。' },
     { kind: 'gap', text: '魚＿食べます。', prompt: 'Welche Partikel markiert das Objekt?', options: ['を', 'が', 'に'], answer: 'を', hint: 'を markiert das Objekt.' },
-    { kind: 'story', emoji: 'fish', jp: '魚(さかな)を見(み)ます。', text: 'Am Fluss winkt dir ein Fischer zu.' },
+    { kind: 'story', emoji: 'fish', jp: '魚(さかな)を見(み)ます。', tr: 'Ich sehe einen Fisch.', text: 'Am Fluss winkt dir ein Fischer zu.' },
   ] },
   { id: 'c5', title: 'Der Aufstieg', steps: [
-    { kind: 'story', emoji: 'person', jp: '山(やま)を登(のぼ)ります。', text: 'Der Aufstieg wird hart. Du spürst jeden Muskel.' },
+    { kind: 'story', emoji: 'person', jp: '山(やま)を登(のぼ)ります。', tr: 'Ich besteige den Berg.', text: 'Der Aufstieg wird hart. Du spürst jeden Muskel.' },
     { kind: 'intro', emoji: 'eye', jp: '目', reading: 'め', de: 'Auge' },
     { kind: 'intro', emoji: 'hand', jp: '手', reading: 'て', de: 'Hand' },
     { kind: 'pic', emoji: 'eye', options: ['目', '手', '耳'], answer: '目', de: 'Auge' },
@@ -3287,20 +3292,20 @@ const CHAPTERS = [
     { kind: 'trace', char: '目', reading: 'め', de: 'Auge' },
     { kind: 'build', prompt: 'Bilde: „Ich trinke Wasser."', tiles: ['水', 'を', '飲みます'], answer: ['水', 'を', '飲みます'], tr: '水を飲みます。' },
     { kind: 'gap', text: '家＿帰ります。', prompt: 'Welche Partikel zeigt das Ziel (wohin)?', options: ['に', 'で', 'を'], answer: 'に', hint: 'に zeigt Ziel/Richtung.' },
-    { kind: 'story', emoji: 'mountain', jp: '足(あし)が痛(いた)いです。', text: 'Erschöpft erreichst du eine Hütte. Morgen wartet der Gipfel.' },
+    { kind: 'story', emoji: 'mountain', jp: '足(あし)が痛(いた)いです。', tr: 'Meine Füße tun weh.', text: 'Erschöpft erreichst du eine Hütte. Morgen wartet der Gipfel.' },
   ] },
   { id: 'c6', title: 'Zum Gipfel', steps: [
-    { kind: 'story', emoji: 'fuji', jp: '日本(にほん)の山(やま)です。', text: 'Der letzte Morgen. Vor dir ragt der berühmteste Berg Japans auf.' },
+    { kind: 'story', emoji: 'fuji', jp: '日本(にほん)の山(やま)です。', tr: 'Es ist Japans Berg.', text: 'Der letzte Morgen. Vor dir ragt der berühmteste Berg Japans auf.' },
     { kind: 'intro', emoji: 'japan', jp: '日本', reading: 'にほん', de: 'Japan' },
     { kind: 'pic_choice', jp: '日本', options: ['japan', 'mountain', 'torii'], answer: 'japan', de: 'Japan' },
     { kind: 'build', prompt: 'Bilde: „Die Katze frisst den Fisch."', tiles: ['猫', 'が', '魚', 'を', '食べます'], answer: ['猫', 'が', '魚', 'を', '食べます'], tr: '猫が魚を食べます。' },
     { kind: 'gap', text: '星＿きれいです。', prompt: 'Welche Partikel markiert das Thema „die Sterne"?', options: ['は', 'を', 'が'], answer: 'は', hint: 'は markiert das Thema.' },
     { kind: 'dialog', emoji: 'person', line: '水を飲みますか？', prompt: 'Ein Mitwanderer fragt. Du hast Durst. Antworte höflich:', options: ['はい、飲みます。', 'いいえ、飲みません。', 'こんにちは。'], answer: 'はい、飲みます。', tr: 'Ja, ich trinke.' },
     { kind: 'tf', emoji: 'fuji', jp: '日本の山です。', prompt: 'Stimmt es zum Bild?', answer: true },
-    { kind: 'story', emoji: 'party', jp: 'おめでとうございます！旅(たび)は終(お)わりました。', text: 'Du stehst auf dem Gipfel. Eine neue Reise beginnt.' },
+    { kind: 'story', emoji: 'party', jp: 'おめでとうございます！旅(たび)は終(お)わりました。', tr: 'Herzlichen Glückwunsch! Die Reise ist zu Ende.', text: 'Du stehst auf dem Gipfel. Eine neue Reise beginnt.' },
   ] },
   { id: 'c7', title: 'Ankunft in Tokyo', steps: [
-    { kind: 'story', emoji: 'train', jp: '人(ひと)が 多(おお)いです。', text: 'Vom Gipfel geht es zurück ins Tal und mit dem Zug weiter in Japans größte Stadt: Tokyo. Der Bahnhof ist riesig – überall Menschen, Lärm und Schilder.' },
+    { kind: 'story', emoji: 'train', jp: '人(ひと)が多(おお)いです。', tr: 'Es sind viele Menschen da.', text: 'Vom Gipfel geht es zurück ins Tal und mit dem Zug weiter in Japans größte Stadt: Tokyo. Der Bahnhof ist riesig – überall Menschen, Lärm und Schilder.' },
     { kind: 'intro', emoji: 'city', jp: '東京', reading: 'とうきょう', de: 'Tokyo' },
     { kind: 'audio', say: 'とうきょう', options: ['東京', '電車', '飛行機'], answer: '東京', de: 'Tokyo' },
     { kind: 'intro', emoji: 'station', jp: '出口', reading: 'でぐち', de: 'Ausgang' },
@@ -3757,11 +3762,14 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
         <Emoji name={cur.emoji} size={80} />
         {cur.jp && (
           <div style={{ marginTop: 16 }}>
-            {toks ? <StoryLine tokens={toks} /> : (
-              <div style={{ fontSize: 24, fontFamily: JP, lineHeight: 2.1, color: C.sumi }}>
-                {renderFuri(cur.jp)}
-                <button onClick={() => speak(furiPlain(cur.jp))} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, marginLeft: 6, verticalAlign: 'middle' }}>🔊</button>
-              </div>
+            {toks ? <StoryLine tokens={toks} tr={cur.tr} /> : (
+              <>
+                <div style={{ fontSize: 24, fontFamily: JP, lineHeight: 2.1, color: C.sumi }}>
+                  {renderFuri(cur.jp)}
+                  <button onClick={() => speak(furiPlain(cur.jp))} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, marginLeft: 6, verticalAlign: 'middle' }}>🔊</button>
+                </div>
+                {cur.tr && <div style={{ fontSize: 15, color: C.indigo, marginTop: 6 }}>„{cur.tr}"</div>}
+              </>
             )}
           </div>
         )}
