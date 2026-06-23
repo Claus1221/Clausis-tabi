@@ -574,6 +574,20 @@ export default function ReiseScreen({ onReview }) {
   const goal = laid.find(n => n.node.type === 'goal')
   const current = laid.find(n => n.state === 'current')   // nächste offene Station
 
+  // Sterne für Ziel-Knoten (z. B. Gipfel): gerundeter Schnitt der Kapitel-Sterne im
+  // Pfad-Abschnitt bis zu diesem Ziel (ab Reisebeginn bzw. dem vorigen Ziel) – spiegelt,
+  // wie gut die Reise bis dahin sitzt. Funktioniert auch bei mehreren Zielen.
+  const goalStarsById = {}
+  let segChapters = []
+  PATH.forEach(n => {
+    if (n.type === 'chapter') segChapters.push(n.id)
+    else if (n.type === 'goal') {
+      const vals = segChapters.map(id => chapterStarsShown(CHAPTER_BY_ID[id], progress)).filter(v => v > 0)
+      goalStarsById[n.id] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0
+      segChapters = []
+    }
+  })
+
   // Durchgängiger Parallax-Hintergrund (eine Tal-Landschaft über die volle Höhe).
   const backdropH = trackH + 80
   const backdrop = buildBackdrop(backdropH)
@@ -682,7 +696,9 @@ export default function ReiseScreen({ onReview }) {
             // Abgeschlossene Kapitel öffnen ein Info-Sheet (Sterne + Übung + erneut erleben),
             // statt direkt erneut die Geschichte zu starten.
             const doneChapter = n.node.type === 'chapter' && n.state === 'done'
-            const stars = doneChapter ? chapterStarsShown(CHAPTER_BY_ID[n.node.id], progress) : 0
+            const goalDone = n.node.type === 'goal' && n.state === 'done'
+            const stars = doneChapter ? chapterStarsShown(CHAPTER_BY_ID[n.node.id], progress)
+              : goalDone ? (goalStarsById[n.node.id] || 0) : 0
             const onTap = () => { if (locked || isGoal) return; if (doneChapter) setSheet(n.node); else setActive(n.node) }
             return (
               <div key={i} ref={n.state === 'current' ? currentRef : null}
@@ -706,7 +722,7 @@ export default function ReiseScreen({ onReview }) {
                     {meta.label}
                   </span>
                 </div>
-                {doneChapter && (
+                {(doneChapter || goalDone) && (
                   <div style={{ marginTop: 3 }}>
                     <span style={{ display: 'inline-block', background: 'rgba(239,235,224,0.85)', borderRadius: 8, padding: '1px 5px' }}>
                       <Stars count={stars} size={11} />
