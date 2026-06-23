@@ -104,3 +104,4 @@ export function dialogGate(node, progress, done) {
   const missGrammar = grammar.filter(g => !learnedG.has(g))
   const missVocab = vocab.filter(w => teachableV.has(w) && !learnedV.has(w))
   return { open: missGrammar.length === 0 && missVocab.length === 0, missGrammar, missVocab }
+}
