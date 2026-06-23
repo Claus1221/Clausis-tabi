@@ -9,6 +9,7 @@ const DEFAULT = {
   completedGrammar: [],    // IDs gelesener Grammatik-Themen, z.B. ['g1']
   completedChapters: [],   // IDs abgeschlossener Geschichts-Kapitel, z.B. ['c1']
   completedDialogs: [],    // IDs abgeschlossener Gesprächs-Szenen, z.B. ['d1']
+  chapterStars: {},        // { 'c1': 3 }  → höchster je erreichter Sterne-Stand je Kapitel (1–5)
   xpByDate: {},            // { 'YYYY-MM-DD': XP }  → XP heute, Streak, Wochenchart
   srs: {},                 // { '山': { ease, interval, reps, due } }  → Wiederholungsplan
   settings: {},            // Nutzer-Einstellungen (s. SETTINGS_DEFAULTS)
@@ -226,6 +227,19 @@ export function useProgress(uid) {
     await setDoc(ref(), { srs: updates }, { merge: true })
   }
 
+  // Sterne-Höchststand je Kapitel anheben (monoton: nur Anstiege werden gespeichert,
+  // damit einmal erreichte Sterne nie wieder verloren gehen). `updates` = { c1: 3, … }.
+  const bumpChapterStars = async (updates) => {
+    if (!uid || !db || !updates) return
+    const cur = progress.chapterStars || {}
+    const patch = {}
+    for (const [id, n] of Object.entries(updates)) {
+      if ((n || 0) > (cur[id] || 0)) patch[id] = n
+    }
+    if (!Object.keys(patch).length) return
+    await setDoc(ref(), { chapterStars: patch }, { merge: true })
+  }
+
   // Merkhilfe/Notiz zu einer SRS-Karte speichern (leerer Text löscht sie). Wird
   // beim nächsten Aufdecken wieder angezeigt. Deep-Merge lässt ease/interval/due
   // unberührt; reviewCard wiederum lässt die Notiz unberührt.
@@ -244,8 +258,8 @@ export function useProgress(uid) {
   // volles Überschreiben (löscht srs/xpByDate sicher), aber settings werden mitgenommen.
   const reset = async () => {
     if (!uid || !db) return
-    await setDoc(ref(), { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], xpByDate: {}, srs: {}, settings: progress.settings || {} })
+    await setDoc(ref(), { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], chapterStars: {}, xpByDate: {}, srs: {}, settings: progress.settings || {} })
   }
 
-  return { progress, loading, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, reset }
+  return { progress, loading, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset }
 }

@@ -5,7 +5,7 @@ import { KANA_STROKES, STROKE_VIEWBOX } from './kanaStrokes.js'
 
 // Fortschritt (aus Firestore) für alle Screens verfügbar machen.
 const ProgressCtx = createContext({
-  progress: { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], xpByDate: {}, srs: {}, settings: {} },
+  progress: { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], chapterStars: {}, xpByDate: {}, srs: {}, settings: {} },
   settings: SETTINGS_DEFAULTS,
   awardXp: async () => {},
   completeLesson: async () => {},
@@ -14,8 +14,10 @@ const ProgressCtx = createContext({
   completeChapter: async () => {},
   completeDialog: async () => {},
   reviewCard: async () => {},
+  scheduleNew: async () => {},
   saveNote: async () => {},
   saveSettings: async () => {},
+  bumpChapterStars: async () => {},
   reset: async () => {},
 })
 
@@ -480,7 +482,9 @@ function speak(text) {
 // liest die TTS z. B. 月 als „getsu" statt „tsuki"), bei Kana das Zeichen selbst.
 function speakItem(item) {
   const w = WORD_BY_KANJI[item]
-  speak(w ? w.kana : item)
+  if (w) { speak(w.kana); return }
+  const cw = CHAPTER_WORD[item]   // Kapitel-Vokabel (nicht im Wort-Lexikon)
+  speak(cw ? cw.reading : item)
 }
 
 // Text in die Zwischenablage kopieren (mit Fallback für ältere Browser).
@@ -510,6 +514,8 @@ async function copyText(text) {
 function srsItemInfo(key) {
   const w = WORD_BY_KANJI[key]
   if (w) return { reading: w.kana, sub: `${w.romaji} · ${w.de}`, isWord: true }
+  const cw = CHAPTER_WORD[key]   // Kapitel-Vokabel (nicht im Wort-Lexikon)
+  if (cw) return { reading: cw.reading, sub: cw.de, isWord: true }
   const d = KANA_DATA[key]
   return { reading: d?.romaji, sub: d?.tip, isWord: false }
 }
@@ -2957,6 +2963,14 @@ const SRS_STAGES = [
   { label: 'Gemeistert', color: '#1E4368', test: e => e.interval >= SRS_STAGE_BOUNDS[3] },
 ]
 
+// Kenntnisstufe (0 = Neu … 4 = Gemeistert) einer SRS-Karte – aus denselben Tests
+// wie SRS_STAGES, damit Anzeige und Sterne-Berechnung nicht auseinanderlaufen.
+function srsStageIndex(entry) {
+  if (!entry) return 0
+  for (let i = SRS_STAGES.length - 1; i >= 0; i--) if (SRS_STAGES[i].test(entry)) return i
+  return 0
+}
+
 function FortschrittScreen({ onReview }) {
   const { progress, reset } = useContext(ProgressCtx)
   const [period, setPeriod] = useState('woche')
@@ -2979,8 +2993,11 @@ function FortschrittScreen({ onReview }) {
   const periodTotal = buckets.reduce((a, b) => a + b.xp, 0)
   const maxXP = Math.max(1, ...buckets.map(b => b.xp))
 
-  // Vokabeln nach Kenntnisstand.
-  const srsVals = Object.values(progress.srs || {})
+  // Vokabeln nach Kenntnisstand. Nur das Kern-Curriculum (gelernte Kana + Wort-
+  // Kanji) zählt – Kapitel-Vokabel-Karten aus der Kapitel-Übung bleiben außen vor,
+  // damit diese Statistik dieselbe Vokabel-Menge zeigt wie die Wiederholungs-Stapel.
+  const curriculumSet = new Set([...completedKanaList(completed), ...learnedWordKanji(progress.completedWordBlocks || [])])
+  const srsVals = Object.entries(progress.srs || {}).filter(([k]) => curriculumSet.has(k)).map(([, v]) => v)
   const stageCounts = SRS_STAGES.map(s => ({ ...s, n: srsVals.filter(s.test).length }))
   const vocabTotal = srsVals.length
   const due = dueKana(progress, [...completedKanaList(completed), ...learnedWordKanji(progress.completedWordBlocks || [])]).length
@@ -3413,6 +3430,41 @@ const CHAPTERS = [
   ] },
 ]
 const CHAPTER_BY_ID = Object.fromEntries(CHAPTERS.map(c => [c.id, c]))
+
+// ─── Kapitel-Sternesystem (Kenntnisstand je Kapitel) ─────────────────────────
+// Jedes Kapitel führt in seinen „intro"-Schritten Vokabeln ein. Diese Wörter
+// werden zu SRS-Karten (Schlüssel = das jp-Wort) und tragen den Kenntnisstand:
+//   1 Stern  = Kapitel abgeschlossen
+//   2–5 Sterne = wachsen mit dem SRS-Kenntnisstand der Kapitel-Vokabeln
+//   5 Sterne = alle Vokabeln „Gemeistert"
+// Üben (Üben-Tab UND die Kapitel-Übung) bewertet dieselben Karten → hebt Sterne.
+const CHAPTER_WORD = Object.fromEntries(
+  CHAPTERS.flatMap(c => c.steps.filter(s => s.kind === 'intro').map(s => [s.jp, { reading: s.reading, de: s.de }])),
+)
+// SRS-fähige Schlüssel eines Kapitels = seine eingeführten Vokabeln (eindeutig).
+function chapterSrsKeys(chapter) {
+  return [...new Set(chapter.steps.filter(s => s.kind === 'intro').map(s => s.jp))]
+}
+// Aktueller (Live-)Sterne-Stand aus dem SRS, 0 = noch nicht abgeschlossen.
+// Schnitt über ALLE Kapitel-Vokabeln (fehlende Karte zählt als Stufe „Neu").
+function chapterStarsLive(chapter, progress) {
+  if (!(progress.completedChapters || []).includes(chapter.id)) return 0
+  const keys = chapterSrsKeys(chapter)
+  if (!keys.length) return 1
+  const srs = progress.srs || {}
+  const avg = keys.reduce((a, k) => a + srsStageIndex(srs[k]), 0) / keys.length
+  return Math.min(5, Math.max(1, 1 + Math.round(avg)))
+}
+// Höchststand fürs Anzeigen: nie unter den gespeicherten Bestwert fallen.
+function chapterStarsShown(chapter, progress) {
+  return Math.max((progress.chapterStars || {})[chapter.id] || 0, chapterStarsLive(chapter, progress))
+}
+// Live-Sterne aller Kapitel (für die Höchststand-Synchronisation).
+function computeAllChapterStars(progress) {
+  const out = {}
+  CHAPTERS.forEach(c => { const s = chapterStarsLive(c, progress); if (s > 0) out[c.id] = s })
+  return out
+}
 
 // ─── Rollenspiel-Freischaltung: Vokabeln & Grammatik müssen in der Reise dran kommen ──
 // Strikt nach Nutzerwunsch: eine Gesprächs-Szene öffnet sich erst, wenn die Wörter
@@ -3913,6 +3965,138 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
   )
 }
 
+// Sterne-Anzeige (★ gefüllt / ☆ leer). count 0–5, max standardmäßig 5.
+function Stars({ count, max = 5, size = 13, gap = 1 }) {
+  return (
+    <span style={{ display: 'inline-flex', gap, lineHeight: 1, whiteSpace: 'nowrap' }} aria-label={`${count} von ${max} Sternen`}>
+      {Array.from({ length: max }, (_, i) => (
+        <span key={i} style={{ fontSize: size, color: i < count ? '#E8B84B' : C.washiDark }}>{i < count ? '★' : '☆'}</span>
+      ))}
+    </span>
+  )
+}
+
+// Kapitel-Übung: fragt den Kenntnisstand der Kapitel-Vokabeln ab (Karteikarten mit
+// Selbstbewertung wie im SRS). Jede Bewertung aktualisiert die SRS-Karte → hebt mit
+// der Zeit die Sterne des Kapitels. Beim ersten Mal werden die Kapitel-Wörter als
+// neue Karten in den Wiederholungsplan aufgenommen (scheduleNew, idempotent).
+function ChapterPractice({ chapter, onClose }) {
+  const { progress, awardXp, reviewCard, scheduleNew } = useContext(ProgressCtx)
+  const keys = useMemo(() => chapterSrsKeys(chapter), [chapter])
+  const deck = useMemo(() => shuffled(keys), [keys])
+  const [idx, setIdx] = useState(0)
+  const [flipped, setFlipped] = useState(false)
+  const [correct, setCorrect] = useState(0)
+
+  // Kapitel-Vokabeln als SRS-Karten anlegen (falls noch nicht geplant).
+  useEffect(() => { if (keys.length) scheduleNew(keys) }, []) // eslint-disable-line
+
+  const finished = idx >= deck.length
+  const item = deck[idx]
+  const info = item ? srsItemInfo(item) : null
+
+  const rate = (q) => {
+    reviewCard(item, q)
+    if (q >= 3) { awardXp(XP_PER_CARD); setCorrect(c => c + 1) }
+    setFlipped(false)
+    setIdx(i => i + 1)
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
+      <div style={{ padding: '12px 16px', background: '#fff', borderBottom: `1px solid ${C.washiDark}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted }}>✕</button>
+        <div style={{ flex: 1, height: 6, background: C.washiDark, borderRadius: 3, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${Math.round((Math.min(idx, deck.length) / Math.max(1, deck.length)) * 100)}%`, background: C.shu, borderRadius: 3, transition: 'width 0.3s' }} />
+        </div>
+        <span style={{ fontSize: 12, color: C.textMuted }}>🎯 {chapter.title}</span>
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+        {keys.length === 0 ? (
+          <div style={{ textAlign: 'center', color: C.textMuted, marginTop: 40 }}>
+            <div style={{ fontSize: 44, marginBottom: 12 }}>🎯</div>
+            <p style={{ lineHeight: 1.6 }}>Dieses Kapitel führt keine eigenen Vokabeln ein.</p>
+          </div>
+        ) : finished ? (
+          <div style={{ textAlign: 'center', padding: '8px 0' }}>
+            <Emoji name="party" size={72} />
+            <h2 style={{ fontSize: 22, fontFamily: JP, color: C.matcha, margin: '10px 0 8px' }}>Geschafft!</h2>
+            <p style={{ lineHeight: 1.6 }}>{correct} / {deck.length} sicher gewusst. Dein Kenntnisstand zählt für die Sterne dieses Kapitels.</p>
+          </div>
+        ) : (
+          <>
+            <p style={{ textAlign: 'center', color: C.textMuted, fontSize: 13, marginBottom: 12 }}>Karte {idx + 1} / {deck.length} · Wie gut kennst du dieses Wort?</p>
+            <Card style={{ textAlign: 'center', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 16, position: 'relative' }}>
+              <button onClick={() => speakItem(item)} title="Anhören"
+                style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}>🔊</button>
+              <div style={{ fontSize: item.length > 1 ? 52 : 80, fontFamily: JP, marginBottom: 12 }}>{item}</div>
+              {flipped ? (
+                <>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: C.indigo, marginBottom: 4 }}>{info.reading}</div>
+                  {info.sub && <div style={{ fontSize: 13, color: C.textMuted }}>{info.sub}</div>}
+                </>
+              ) : (
+                <div style={{ color: C.textMuted, fontSize: 14 }}>Tippen zum Aufdecken</div>
+              )}
+            </Card>
+            {flipped && [...item].some(c => KANJI_ORIGIN[c]) && (
+              <div style={{ marginBottom: 12 }}><KanjiOrigin jp={item} /></div>
+            )}
+            {!flipped ? (
+              <Btn onClick={() => setFlipped(true)} style={{ width: '100%' }} variant="secondary">Aufdecken</Btn>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
+                {SRS_RATINGS.map(([label, color, q]) => (
+                  <button key={label} onClick={() => rate(q)}
+                    style={{ padding: '10px 4px', borderRadius: 8, border: `2px solid ${color}`, background: `${color}15`, color, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {(finished || keys.length === 0) && (
+        <div style={{ padding: '16px 20px', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
+          <Btn onClick={onClose} style={{ width: '100%' }}>Fertig ✓</Btn>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Info-Sheet beim Antippen eines abgeschlossenen Kapitels: zeigt den Sterne-Stand
+// und bietet „Geschichte erneut erleben" sowie „Kenntnisstand üben" an.
+function ChapterSheet({ chapter, stars, onReplay, onPractice, onClose }) {
+  const STAR_HINT = [
+    '', // 0 kommt hier nicht vor
+    'Kapitel abgeschlossen. Übe die Vokabeln, um mehr Sterne zu sammeln.',
+    'Du kennst die Wörter schon ein wenig. Weiter so!',
+    'Solide Kenntnisse – die Hälfte ist geschafft.',
+    'Fast gemeistert! Noch ein wenig Übung.',
+    'Gemeistert! Du beherrschst die Vokabeln dieses Kapitels. ⛩',
+  ]
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(33,31,27,0.45)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.washi, width: '100%', maxWidth: 480, borderRadius: '18px 18px 0 0', padding: '20px 20px 24px', boxShadow: '0 -8px 30px -12px rgba(33,31,27,0.4)' }}>
+        <div style={{ width: 38, height: 4, borderRadius: 2, background: C.washiDark, margin: '0 auto 16px' }} />
+        <div style={{ fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>KAPITEL</div>
+        <h3 style={{ fontSize: 18, fontFamily: JP, color: C.indigo, margin: '0 0 12px' }}>{chapter.title}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <Stars count={stars} size={26} gap={3} />
+          <span style={{ fontSize: 13, color: C.textMuted, fontWeight: 600 }}>{stars} / 5</span>
+        </div>
+        <p style={{ fontSize: 13, color: C.sumi, lineHeight: 1.6, margin: '0 0 18px' }}>{STAR_HINT[stars] || STAR_HINT[1]}</p>
+        <Btn onClick={onPractice} style={{ width: '100%', marginBottom: 10 }}>🎯 Kenntnisstand üben</Btn>
+        <Btn variant="secondary" onClick={onReplay} style={{ width: '100%' }}>📖 Geschichte erneut erleben</Btn>
+      </div>
+    </div>
+  )
+}
+
 // Das Reise-Tagebuch: alle bisher freigeschalteten Kapitel der Reise am Stück.
 // Erzählt die Geschichte aus den abgeschlossenen Kapiteln (c1–c6) nach – also
 // genau das, was man unterwegs erlebt hat, samt der dort gelernten Sätze.
@@ -3962,12 +4146,21 @@ function StoryJournal({ progress, onClose }) {
 }
 
 function ReiseScreen({ onReview }) {
-  const { progress, completeLesson, completeWordBlock, completeGrammar, completeChapter } = useContext(ProgressCtx)
+  const { progress, completeLesson, completeWordBlock, completeGrammar, completeChapter, bumpChapterStars } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
   const [showStory, setShowStory] = useState(false)
+  const [sheet, setSheet] = useState(null)        // angetipptes, bereits erledigtes Kapitel
+  const [practice, setPractice] = useState(null)  // laufende Kapitel-Übung
   const currentRef = useRef(null)
   const wrapRef = useRef(null)
   const backdropRef = useRef(null)
+
+  // Sterne-Höchststand mit dem aktuellen Kenntnisstand abgleichen. Läuft beim
+  // Öffnen der Reise und nach jeder Übung (auch im Üben-Tab, da progress.srs sich
+  // ändert) – so heben Übungen die Sterne, ohne dass sie je wieder sinken.
+  useEffect(() => {
+    bumpChapterStars(computeAllChapterStars(progress))
+  }, [progress.srs, progress.completedChapters, progress.chapterStars]) // eslint-disable-line
 
   useEffect(() => {
     try { currentRef.current?.scrollIntoView({ block: 'center' }) } catch (e) { /* egal */ }
@@ -4037,6 +4230,11 @@ function ReiseScreen({ onReview }) {
     }
   }
 
+  // ─ Kapitel-Übung als Vollbild-Overlay ─
+  if (practice) {
+    return <ChapterPractice chapter={practice} onClose={() => setPractice(null)} />
+  }
+
   // ─ Layout der Karte berechnen ─
   const R = 30, AMP = 86, CENTER = 160, XPAT = [0, 1, 0, -1]
   const bands = [], headers = [], laid = []
@@ -4076,6 +4274,15 @@ function ReiseScreen({ onReview }) {
   return (
     <div ref={wrapRef} style={{ paddingBottom: 8 }}>
       {showStory && <StoryJournal progress={progress} onClose={() => setShowStory(false)} />}
+      {sheet && (
+        <ChapterSheet
+          chapter={CHAPTER_BY_ID[sheet.id]}
+          stars={chapterStarsShown(CHAPTER_BY_ID[sheet.id], progress)}
+          onReplay={() => { setActive(sheet); setSheet(null) }}
+          onPractice={() => { setPractice(CHAPTER_BY_ID[sheet.id]); setSheet(null) }}
+          onClose={() => setSheet(null)}
+        />
+      )}
       {/* Intro + Tagesstatus + Gesamtfortschritt */}
       <div style={{ padding: '16px 16px 12px', position: 'relative', zIndex: 1 }}>
         <h2 style={{ fontSize: 20, fontFamily: JP, color: C.indigo, marginBottom: 4 }}>
@@ -4165,10 +4372,15 @@ function ReiseScreen({ onReview }) {
             const locked = n.state === 'locked'
             const isGoal = n.node.type === 'goal'
             const Rr = isGoal ? 34 : R
+            // Abgeschlossene Kapitel öffnen ein Info-Sheet (Sterne + Übung + erneut erleben),
+            // statt direkt erneut die Geschichte zu starten.
+            const doneChapter = n.node.type === 'chapter' && n.state === 'done'
+            const stars = doneChapter ? chapterStarsShown(CHAPTER_BY_ID[n.node.id], progress) : 0
+            const onTap = () => { if (locked || isGoal) return; if (doneChapter) setSheet(n.node); else setActive(n.node) }
             return (
               <div key={i} ref={n.state === 'current' ? currentRef : null}
                 style={{ position: 'absolute', left: n.x, top: n.y, transform: 'translate(-50%,-50%)', width: 2 * Rr + 64, textAlign: 'center' }}>
-                <button onClick={() => !locked && !isGoal && setActive(n.node)} disabled={locked || isGoal}
+                <button onClick={onTap} disabled={locked || isGoal}
                   style={{
                     position: 'relative', width: 2 * Rr, height: 2 * Rr, borderRadius: '50%',
                     background: bg, border: `3px solid ${edge}`, cursor: locked || isGoal ? 'default' : 'pointer',
@@ -4187,6 +4399,13 @@ function ReiseScreen({ onReview }) {
                     {meta.label}
                   </span>
                 </div>
+                {doneChapter && (
+                  <div style={{ marginTop: 3 }}>
+                    <span style={{ display: 'inline-block', background: 'rgba(239,235,224,0.85)', borderRadius: 8, padding: '1px 5px' }}>
+                      <Stars count={stars} size={11} />
+                    </span>
+                  </div>
+                )}
                 {n.state === 'current' && (
                   <div style={{ marginTop: 2 }}>
                     <span style={{ background: C.shu, color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 9px', borderRadius: 10 }}>START</span>
@@ -4294,7 +4513,7 @@ export default function TabiApp() {
   const [prevTab, setPrevTab] = useState('reise')   // Rücksprung aus den Einstellungen
   const [uebenMode, setUebenMode] = useState(null)  // gewünschter Übungsmodus beim Tab-Wechsel
   const { user, logout } = useAuth()
-  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, reset } = useProgress(user?.uid)
+  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
   const settings = getSettings(progress)
 
@@ -4324,7 +4543,7 @@ export default function TabiApp() {
   }
 
   return (
-    <ProgressCtx.Provider value={{ progress, settings, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, saveNote, saveSettings, reset }}>
+    <ProgressCtx.Provider value={{ progress, settings, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset }}>
     <div className="app-shell" style={{
       maxWidth: 480, margin: '0 auto', height: '100vh',
       display: 'flex', flexDirection: 'column', position: 'relative',
