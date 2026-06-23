@@ -47,4 +47,18 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    // Vendor-Code in eigene, langlebig cachebare Chunks (Firebase ist mit Abstand
+    // die groesste Abhaengigkeit). Die Screens splittet Vite via React.lazy selbst.
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('firebase') || id.includes('@firebase')) return 'vendor-firebase'
+            if (id.includes('/react') || id.includes('/scheduler')) return 'vendor-react'
+          }
+        },
+      },
+    },
+  },
 })
