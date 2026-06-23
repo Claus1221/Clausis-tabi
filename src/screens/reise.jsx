@@ -559,8 +559,8 @@ export default function ReiseScreen({ onReview }) {
     const done = isNodeDone(it, progress)
     let state
     if (it.type === 'goal') state = summitReached ? 'done' : 'locked'
+    else if (done) state = 'done'          // erledigt = immer „done" (Sterne + antippbar), auch nach der aktuellen Station
     else if (foundCurrent) state = 'locked'
-    else if (done) state = 'done'
     else { state = 'current'; foundCurrent = true }
 
     const x = CENTER + AMP * XPAT[ni % 4]
