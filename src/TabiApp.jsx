@@ -1216,6 +1216,12 @@ function SRSQuiz({ onClose, initialMode = 'due' }) {
         )}
       </Card>
 
+      {flipped && [...item].some(c => KANJI_ORIGIN[c]) && (
+        <div style={{ marginBottom: 12 }}>
+          <KanjiOrigin jp={item} />
+        </div>
+      )}
+
       {flipped && <CardNote itemKey={item} />}
 
       {!flipped ? (
@@ -2442,6 +2448,11 @@ function MixStep({ task, cardReview, onNext }) {
             <div style={{ color: C.textMuted, fontSize: 14 }}>Tippen zum Aufdecken</div>
           )}
         </Card>
+        {flipped && [...task.item].some(c => KANJI_ORIGIN[c]) && (
+          <div style={{ marginBottom: 12 }}>
+            <KanjiOrigin jp={task.item} />
+          </div>
+        )}
         {flipped && <CardNote itemKey={task.item} />}
         {!flipped ? (
           <Btn onClick={() => setFlipped(true)} style={{ width: '100%' }} variant="secondary">Aufdecken</Btn>
