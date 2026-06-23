@@ -18,12 +18,13 @@ Backlog der noch zu programmierenden bzw. zu überarbeitenden Features.
       oder ein Piktogramm. *(Erledigt: `KANJI_ORIGIN`-Datenbank + `KanjiOrigin`-
       Komponente in Reise-Einführung (IntroStep) und Vokabel-Detail; deckt alle 28
       aktuell eingeführten Kanji ab. Neue Kanji brauchen je einen Eintrag.)*
-- [ ] **Beispielsätze begrenzen** – In Beispielsätzen nur Grammatik und Wörter
+- [x] **Beispielsätze begrenzen** – In Beispielsätzen nur Grammatik und Wörter
       verwenden, die schon einmal dran kamen. *(Audit-Werkzeug `scripts/
-      audit-examples.mjs` erstellt; findet 35 Vorwärts-Referenzen. Wurzel:
-      Grammatik wird vor Vokabular gelehrt → Grammatik-Beispiele nutzen noch nicht
-      formal eingeführte Nomen/Adjektive (inline antippbar erklärt). Fix-Strategie
-      offen: inline akzeptieren + Ausreißer fixen vs. Pfad umsortieren.)*
+      audit-examples.mjs` erstellt. Strategie „inline akzeptieren + Ausreißer
+      fixen": die 3 klaren Fälle behoben (g6 ohne を, c5 山 statt 家, g9 猫の目 statt
+      日本) → 35 → 24 Funde. Die verbleibenden sind bewusst akzeptiert: Grammatik-/
+      Wortlektionen führen ihre Beispielwörter antippbar selbst ein, da Grammatik
+      vor dem Vokabular gelehrt wird. Audit-Tool bleibt für neue Inhalte.)*
 - [x] **Multiple-Choice randomisieren** – Bei Multiple-Choice-Antworten die richtige
       Antwort zufällig verteilen; nicht immer die erste Auswahlmöglichkeit darf
       richtig sein. *(Erledigt: Optionen werden in GrammarExercise, ChoiceStep und

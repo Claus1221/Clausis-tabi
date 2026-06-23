@@ -380,14 +380,14 @@ const GRAMMAR = [
       { text: 'Beispiel 飲む (trinken) → 飲みます / 飲みません / 飲みました.' },
     ],
     examples: [
-      { jp: '水を飲みます。', kana: 'みずをのみます。', de: 'Ich trinke Wasser.', tokens: [
-        { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'を', r: 'o', de: '(Objekt)', b: 'Objektpartikel' }, { t: '飲みます', r: 'のみます', de: 'trinke', b: 'ます-Form (Gegenwart)' }, { t: '。' } ] },
-      { jp: '水を飲みません。', kana: 'みずをのみません。', de: 'Ich trinke kein Wasser.', tokens: [
-        { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'を', r: 'o', de: '(Objekt)', b: 'Objektpartikel' }, { t: '飲みません', r: 'のみません', de: 'trinke nicht', b: 'verneinte ます-Form' }, { t: '。' } ] },
+      { jp: '飲みます。', kana: 'のみます。', de: 'Ich trinke. (Gegenwart)', tokens: [
+        { t: '飲みます', r: 'のみます', de: 'trinke', b: 'ます-Form (Gegenwart)' }, { t: '。' } ] },
+      { jp: '飲みません。', kana: 'のみません。', de: 'Ich trinke nicht. (Verneinung)', tokens: [
+        { t: '飲みません', r: 'のみません', de: 'trinke nicht', b: 'verneinte ます-Form' }, { t: '。' } ] },
     ],
     exercises: [
-      { q: '水を飲み＿。 (Ich trinke nicht.)', a: 'ません', options: ['ません', 'ます', 'ました'], hint: 'Verneinung: 〜ません.' },
-      { q: '水を飲み＿。 (Ich trank.)', a: 'ました', options: ['ました', 'ます', 'ません'], hint: 'Vergangenheit: 〜ました.' },
+      { q: '飲み＿。 (Ich trinke nicht.)', a: 'ません', options: ['ません', 'ます', 'ました'], hint: 'Verneinung: 〜ません.' },
+      { q: '飲み＿。 (Ich trank.)', a: 'ました', options: ['ました', 'ます', 'ません'], hint: 'Vergangenheit: 〜ました.' },
     ],
   },
   {
@@ -432,12 +432,12 @@ const GRAMMAR = [
     examples: [
       { jp: '私の犬。', kana: 'わたしのいぬ。', de: 'Mein Hund. (私 = ich)', tokens: [
         { t: '私', r: 'わたし', de: 'ich', b: 'Nomen' }, { t: 'の', de: 'von / -s', b: 'Verbindungspartikel (Besitz)' }, { t: '犬', r: 'いぬ', de: 'Hund', b: 'Nomen' }, { t: '。' } ] },
-      { jp: '日本の車。', kana: 'にほんのくるま。', de: 'Ein japanisches Auto. (日本 = Japan)', tokens: [
-        { t: '日本', r: 'にほん', de: 'Japan', b: 'Nomen' }, { t: 'の', de: 'von / -s', b: 'Verbindungspartikel' }, { t: '車', r: 'くるま', de: 'Auto', b: 'Nomen' }, { t: '。' } ] },
+      { jp: '猫の目。', kana: 'ねこのめ。', de: 'Das Auge der Katze.', tokens: [
+        { t: '猫', r: 'ねこ', de: 'Katze', b: 'Nomen' }, { t: 'の', de: 'von / -s', b: 'Verbindungspartikel' }, { t: '目', r: 'め', de: 'Auge', b: 'Nomen' }, { t: '。' } ] },
     ],
     exercises: [
       { q: '私＿犬。 (mein Hund)', a: 'の', options: ['の', 'は', 'が'], hint: 'A の B = „Bs A": 私 の 犬.' },
-      { q: '日本＿車。 (japanisches Auto)', a: 'の', options: ['の', 'に', 'で'], hint: 'の verbindet die zwei Nomen.' },
+      { q: '猫＿目。 (das Auge der Katze)', a: 'の', options: ['の', 'に', 'で'], hint: 'の verbindet die zwei Nomen.' },
     ],
   },
   {
@@ -3291,7 +3291,7 @@ const CHAPTERS = [
     { kind: 'audio', say: 'て', options: ['手', '目', '耳'], answer: '手', de: 'Hand' },
     { kind: 'trace', char: '目', reading: 'め', de: 'Auge' },
     { kind: 'build', prompt: 'Bilde: „Ich trinke Wasser."', tiles: ['水', 'を', '飲みます'], answer: ['水', 'を', '飲みます'], tr: '水を飲みます。' },
-    { kind: 'gap', text: '家＿帰ります。', prompt: 'Welche Partikel zeigt das Ziel (wohin)?', options: ['に', 'で', 'を'], answer: 'に', hint: 'に zeigt Ziel/Richtung.' },
+    { kind: 'gap', text: '山＿行きます。', prompt: 'Welche Partikel zeigt das Ziel (wohin)?', options: ['に', 'で', 'を'], answer: 'に', hint: 'に zeigt Ziel/Richtung.' },
     { kind: 'story', emoji: 'mountain', jp: '足(あし)が痛(いた)いです。', tr: 'Meine Füße tun weh.', text: 'Erschöpft erreichst du eine Hütte. Morgen wartet der Gipfel.' },
   ] },
   { id: 'c6', title: 'Zum Gipfel', steps: [
