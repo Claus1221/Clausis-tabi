@@ -97,6 +97,8 @@ export const CHAPTERS = [
     { kind: 'build', prompt: 'Bilde den Satz: „Das ist ein Berg."', tiles: ['これ', 'は', '山', 'です'], answer: ['これ', 'は', '山', 'です'], tr: 'これは山です。' },
     { kind: 'gap', text: 'これ＿山です。', prompt: 'Welche Partikel markiert das Thema?', options: ['は', 'を', 'が'], answer: 'は', hint: 'は markiert das Thema.' },
     { kind: 'trace', char: '川', reading: 'かわ', de: 'Fluss' },
+    { kind: 'build', prompt: 'Bilde: „Ich schaue in den Himmel."', tiles: ['空', 'を', '見ます'], answer: ['空', 'を', '見ます'], tr: '空を見ます。' },
+    { kind: 'build', prompt: 'Bilde: „Das ist ein Stern."', tiles: ['これ', 'は', '星', 'です'], answer: ['これ', 'は', '星', 'です'], tr: 'これは星です。' },
     { kind: 'story', emoji: 'river', jp: 'これは川(かわ)です。', tr: 'Das ist ein Fluss.', text: 'Das ist ein Fluss. Du benennst, was du siehst.' },
   ] },
   { id: 'c4', title: 'Begegnungen', steps: [
@@ -108,6 +110,8 @@ export const CHAPTERS = [
     { kind: 'sign', sign: 'コーヒー', prompt: 'An einem Automaten: コーヒー. Das ist…', options: ['Kaffee', 'Tee', 'Milch'], answer: 'Kaffee' },
     { kind: 'build', prompt: 'Bilde: „Der Hund rennt."', tiles: ['犬', 'が', '走ります'], answer: ['犬', 'が', '走ります'], tr: '犬が走ります。' },
     { kind: 'gap', text: '魚＿食べます。', prompt: 'Welche Partikel markiert das Objekt?', options: ['を', 'が', 'に'], answer: 'を', hint: 'を markiert das Objekt.' },
+    { kind: 'build', prompt: 'Bilde: „Die Katze sieht den Fisch."', tiles: ['猫', 'が', '魚', 'を', '見ます'], answer: ['猫', 'が', '魚', 'を', '見ます'], tr: '猫が魚を見ます。' },
+    { kind: 'build', prompt: 'Bilde: „Der Hund ist am Fluss."', tiles: ['犬', 'が', '川', 'に', 'います'], answer: ['犬', 'が', '川', 'に', 'います'], tr: '犬が川にいます。' },
     { kind: 'story', emoji: 'fish', jp: '魚(さかな)を見(み)ます。', tr: 'Ich sehe einen Fisch.', text: 'Am Fluss winkt dir ein Fischer zu.' },
   ] },
   { id: 'c5', title: 'Der Aufstieg', steps: [
@@ -119,6 +123,8 @@ export const CHAPTERS = [
     { kind: 'trace', char: '目', reading: 'め', de: 'Auge' },
     { kind: 'build', prompt: 'Bilde: „Ich trinke Wasser."', tiles: ['水', 'を', '飲みます'], answer: ['水', 'を', '飲みます'], tr: '水を飲みます。' },
     { kind: 'gap', text: '山＿行きます。', prompt: 'Welche Partikel zeigt das Ziel (wohin)?', options: ['に', 'で', 'を'], answer: 'に', hint: 'に zeigt Ziel/Richtung.' },
+    { kind: 'build', prompt: 'Bilde: „Der Berg ist hoch."', tiles: ['山', 'が', '高い', 'です'], answer: ['山', 'が', '高い', 'です'], tr: '山が高いです。' },
+    { kind: 'build', prompt: 'Bilde: „Die Augen sind schön."', tiles: ['目', 'が', 'きれい', 'です'], answer: ['目', 'が', 'きれい', 'です'], tr: '目がきれいです。' },
     { kind: 'story', emoji: 'mountain', jp: '足(あし)が痛(いた)いです。', tr: 'Meine Füße tun weh.', text: 'Erschöpft erreichst du eine Hütte. Morgen wartet der Gipfel.' },
   ] },
   { id: 'c6', title: 'Zum Gipfel', steps: [
@@ -129,6 +135,8 @@ export const CHAPTERS = [
     { kind: 'gap', text: '星＿きれいです。', prompt: 'Welche Partikel markiert das Thema „die Sterne"?', options: ['は', 'を', 'が'], answer: 'は', hint: 'は markiert das Thema.' },
     { kind: 'dialog', emoji: 'person', line: '水を飲みますか？', prompt: 'Ein Mitwanderer fragt. Du hast Durst. Antworte höflich:', options: ['はい、飲みます。', 'いいえ、飲みません。', 'こんにちは。'], answer: 'はい、飲みます。', tr: 'Ja, ich trinke.' },
     { kind: 'tf', emoji: 'fuji', jp: '日本の山です。', prompt: 'Stimmt es zum Bild?', answer: true },
+    { kind: 'build', prompt: 'Bilde: „Ist das ein Berg in Japan?"', tiles: ['これ', 'は', '日本', 'の', '山', 'です', 'か'], answer: ['これ', 'は', '日本', 'の', '山', 'です', 'か'], tr: 'これは日本の山ですか。' },
+    { kind: 'build', prompt: 'Bilde: „Sind die Sterne schön?"', tiles: ['星', 'は', 'きれい', 'です', 'か'], answer: ['星', 'は', 'きれい', 'です', 'か'], tr: '星はきれいですか。' },
     { kind: 'story', emoji: 'party', jp: 'おめでとうございます！旅(たび)は終(お)わりました。', tr: 'Herzlichen Glückwunsch! Die Reise ist zu Ende.', text: 'Du stehst auf dem Gipfel. Eine neue Reise beginnt.' },
   ] },
   { id: 'c7', title: 'Ankunft in Tokyo', steps: [
@@ -143,6 +151,8 @@ export const CHAPTERS = [
     { kind: 'gap', text: '出口は ＿ です。', prompt: '„Der Ausgang ist dort drüben." Welches Wort passt?', options: ['あそこ', 'ここ', 'どこ'], answer: 'あそこ', hint: 'あそこ = dort (weiter entfernt).' },
     { kind: 'build', prompt: 'Bilde: „Wo ist der Ausgang?"', tiles: ['出口', 'は', 'どこ', 'です', 'か'], answer: ['出口', 'は', 'どこ', 'です', 'か'], tr: '出口はどこですか。' },
     { kind: 'dialog', emoji: 'person', line: 'みぎですか、ひだりですか？', prompt: 'Der Bahnhofsangestellte fragt: rechts oder links? Der Ausgang ist rechts.', options: ['みぎです。', 'ひだりです。', 'たべます。'], answer: 'みぎです。', tr: 'Rechts.' },
+    { kind: 'build', prompt: 'Bilde: „Wo ist der Bahnhof?"', tiles: ['駅', 'は', 'どこ', 'です', 'か'], answer: ['駅', 'は', 'どこ', 'です', 'か'], tr: '駅はどこですか。' },
+    { kind: 'build', prompt: 'Bilde: „Der Ausgang ist dort drüben."', tiles: ['出口', 'は', 'あそこ', 'です'], answer: ['出口', 'は', 'あそこ', 'です'], tr: '出口はあそこです。' },
     { kind: 'story', emoji: 'city', text: 'Du findest den richtigen Ausgang und trittst hinaus: Neonlicht, Menschenmengen, unzählige Schilder. Deine Stadt-Reise hat begonnen.' },
   ] },
   { id: 'c8', title: 'Im Restaurant', steps: [
@@ -154,6 +164,8 @@ export const CHAPTERS = [
     { kind: 'gap', text: '魚を 食べ＿です。', prompt: '„Ich möchte Fisch essen." Welche Endung passt?', options: ['たい', 'ます', 'ません'], answer: 'たい', hint: '〜たいです = „möchte".' },
     { kind: 'build', prompt: 'Bilde: „Ich möchte Wasser trinken."', tiles: ['水', 'を', '飲みたい', 'です'], answer: ['水', 'を', '飲みたい', 'です'], tr: '水を飲みたいです。' },
     { kind: 'dialog', emoji: 'person', line: 'いらっしゃいませ！', prompt: 'Du möchtest Fisch essen. Was sagst du?', options: ['魚を 食べたいです。', 'さようなら。', '右です。'], answer: '魚を 食べたいです。', tr: 'Ich möchte Fisch essen.' },
+    { kind: 'build', prompt: 'Bilde: „Ich möchte in Tokyo essen."', tiles: ['東京', 'で', '食べたい', 'です'], answer: ['東京', 'で', '食べたい', 'です'], tr: '東京で食べたいです。' },
+    { kind: 'build', prompt: 'Bilde: „Ich esse im Restaurant."', tiles: ['レストラン', 'で', '食べます'], answer: ['レストラン', 'で', '食べます'], tr: 'レストランで食べます。' },
     { kind: 'story', emoji: 'fish', jp: '魚を食べました。', tr: 'Ich habe Fisch gegessen.' },
   ] },
   { id: 'c9', title: 'Im Konbini', steps: [
@@ -165,6 +177,8 @@ export const CHAPTERS = [
     { kind: 'gap', text: '水＿ あります。', prompt: '„Es gibt Wasser." Welche Partikel passt?', options: ['が', 'を', 'は'], answer: 'が', hint: '〜が あります = „es gibt ~".' },
     { kind: 'build', prompt: 'Bilde: „Es gibt einen Laden."', tiles: ['店', 'が', 'あります'], answer: ['店', 'が', 'あります'], tr: '店があります。' },
     { kind: 'dialog', emoji: 'person', line: 'いらっしゃいませ。', prompt: 'Du suchst Wasser und fragst die Person im Laden:', options: ['水が ありますか？', 'さようなら。', '大きいです。'], answer: '水が ありますか？', tr: 'Gibt es Wasser?' },
+    { kind: 'build', prompt: 'Bilde: „Es gibt einen großen Laden."', tiles: ['大きい', '店', 'が', 'あります'], answer: ['大きい', '店', 'が', 'あります'], tr: '大きい店があります。' },
+    { kind: 'build', prompt: 'Bilde: „Es gibt einen großen Fisch."', tiles: ['大きい', '魚', 'が', 'あります'], answer: ['大きい', '魚', 'が', 'あります'], tr: '大きい魚があります。' },
     { kind: 'story', emoji: 'city', jp: '小さい店です。', tr: 'Es ist ein kleiner Laden.' },
   ] },
   { id: 'c10', title: 'Mit der U-Bahn', steps: [
@@ -177,6 +191,8 @@ export const CHAPTERS = [
     { kind: 'gap', text: '駅＿ 東京まで。', prompt: '„Vom Bahnhof bis Tokyo." Welches Wort heißt „von/ab"?', options: ['から', 'まで', 'に'], answer: 'から', hint: '〜から = von/ab, 〜まで = bis.' },
     { kind: 'build', prompt: 'Bilde: „Ich gehe nach oben."', tiles: ['上', 'に', '行きます'], answer: ['上', 'に', '行きます'], tr: '上に行きます。' },
     { kind: 'dialog', emoji: 'person', line: 'きっぷは どこですか？', prompt: 'Jemand sucht die Fahrkarten – sie sind unten. Antworte:', options: ['下です。', '上です。', '魚です。'], answer: '下です。', tr: 'Unten.' },
+    { kind: 'build', prompt: 'Bilde: „Ich fahre von Tokyo bis zum Bahnhof."', tiles: ['東京', 'から', '駅', 'まで', '行きます'], answer: ['東京', 'から', '駅', 'まで', '行きます'], tr: '東京から駅まで行きます。' },
+    { kind: 'build', prompt: 'Bilde: „Unten gibt es einen Ausgang."', tiles: ['下', 'に', '出口', 'が', 'あります'], answer: ['下', 'に', '出口', 'が', 'あります'], tr: '下に出口があります。' },
     { kind: 'story', emoji: 'train', jp: '駅から東京まで行きます。', tr: 'Ich fahre vom Bahnhof bis Tokyo.' },
   ] },
   { id: 'c11', title: 'Schilder lesen', steps: [
@@ -190,6 +206,8 @@ export const CHAPTERS = [
     { kind: 'story', emoji: 'house', text: 'Neu: 〜の 中 = „in / innerhalb von ~". 店の 中 = „im Laden", 家の 中 = „im Haus".' },
     { kind: 'gap', text: '家の ＿に います。', prompt: '„Ich bin im Haus." Welches Wort passt?', options: ['中', '右', '上'], answer: '中', hint: '〜の 中 = im Inneren.' },
     { kind: 'dialog', emoji: 'person', line: 'トイレは どこですか？', prompt: 'Jemand sucht die Toilette – sie ist dort drüben. Antworte:', options: ['あそこです。', '魚です。', '大きいです。'], answer: 'あそこです。', tr: 'Dort drüben.' },
+    { kind: 'build', prompt: 'Bilde: „Ich bin im Laden."', tiles: ['店', 'の', '中', 'に', 'います'], answer: ['店', 'の', '中', 'に', 'います'], tr: '店の中にいます。' },
+    { kind: 'build', prompt: 'Bilde: „Die Toilette ist rechts."', tiles: ['トイレ', 'は', '右', 'です'], answer: ['トイレ', 'は', '右', 'です'], tr: 'トイレは右です。' },
     { kind: 'story', emoji: 'house', jp: 'トイレは中です。', tr: 'Die Toilette ist drinnen.' },
   ] },
   { id: 'c12', title: 'Beim Tempel', steps: [
@@ -201,6 +219,8 @@ export const CHAPTERS = [
     { kind: 'gap', text: '寺に 行き＿。', prompt: '„Lass uns zum Tempel gehen!" Welche Endung passt?', options: ['ましょう', 'ました', 'ません'], answer: 'ましょう', hint: '〜ましょう = „lass uns ~".' },
     { kind: 'build', prompt: 'Bilde: „Lass uns den Tempel anschauen."', tiles: ['寺', 'を', '見ましょう'], answer: ['寺', 'を', '見ましょう'], tr: '寺を見ましょう。' },
     { kind: 'dialog', emoji: 'person', line: 'しゃしんを とりましょうか？', prompt: 'Jemand bietet an, ein Foto von dir zu machen. Du freust dich:', options: ['はい、おねがいします。', 'いいえ。', 'たべます。'], answer: 'はい、おねがいします。', tr: 'Ja, bitte.' },
+    { kind: 'build', prompt: 'Bilde: „Lass uns zum Tempel in Tokyo gehen."', tiles: ['東京', 'の', '寺', 'に', '行きましょう'], answer: ['東京', 'の', '寺', 'に', '行きましょう'], tr: '東京の寺に行きましょう。' },
+    { kind: 'build', prompt: 'Bilde: „Es ist ein großer Tempel."', tiles: ['大きい', '寺', 'です'], answer: ['大きい', '寺', 'です'], tr: '大きい寺です。' },
     { kind: 'story', emoji: 'torii', jp: '寺はきれいです。', tr: 'Der Tempel ist schön.' },
   ] },
 ]

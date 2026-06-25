@@ -3,7 +3,11 @@
 // eingeführt werden („Vorwärts-Referenzen"). Reine Analyse – ändert nichts.
 //   node scripts/audit-examples.mjs
 import { readFileSync } from 'fs'
-const src = readFileSync(new URL('../src/TabiApp.jsx', import.meta.url), 'utf8')
+// Daten liegen seit dem Modul-Refactor in src/data/*.js – einlesen & verketten,
+// damit die Marker-Suche (const PATH =, const CHAPTERS = …) wie zuvor greift.
+const src = ['path', 'words', 'grammar', 'chapters', 'kanjiOrigin']
+  .map(f => readFileSync(new URL(`../src/data/${f}.js`, import.meta.url), 'utf8'))
+  .join('\n')
 const isKanji = c => /[一-鿿]/.test(c)
 
 // Klammer-Matching für ein Array, das auf `marker` folgt (Strings werden beachtet).
@@ -88,12 +92,12 @@ for (const m of gr.text.matchAll(/\bq: '([^']+)'/g)) {
   for (const c of new Set([...m[1]].filter(isKanji))) if (kanjiIntro[c] > pos) findings.push({ unit: lastAnchor(grAnchors, m.index), label: 'Grammatik-Übung', jp: m[1], kind: 'Wort', item: c })
 }
 
-// Kapitel – lernerseitige jp-Felder (story jp, dialog line/answer, sign, build tiles, gap text)
-for (const re of [/\bjp: '([^']+)'/g, /\bline: '([^']+)'/g, /\bsign: '([^']+)'/g, /\btext: '([^']*[一-鿿][^']*)'/g]) {
-  for (const m of ch.text.matchAll(re)) {
-    const unit = lastAnchor(chAnchors, m.index); const pos = posOf[unit]
-    for (const c of new Set([...m[1]].filter(isKanji))) if (kanjiIntro[c] > pos) findings.push({ unit, label: 'Kapitel', jp: m[1], kind: 'Wort', item: c })
-  }
+// Kapitel – ALLE kanji-haltigen Strings (story/intro/dialog/sign/build-tiles/answer/
+// gap/options …), jeweils gegen die Kapitel-Position geprüft. Ein intro-Wort wird
+// genau an dieser Position eingeführt (kanjiIntro == pos) und gilt daher als ok.
+for (const m of ch.text.matchAll(/'([^']*[一-鿿][^']*)'/g)) {
+  const unit = lastAnchor(chAnchors, m.index); const pos = posOf[unit]
+  for (const c of new Set([...m[1]].filter(isKanji))) if (kanjiIntro[c] > pos) findings.push({ unit, label: 'Kapitel', jp: m[1], kind: 'Wort', item: c })
 }
 
 // ─ Ausgabe ─

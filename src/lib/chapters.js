@@ -1,5 +1,20 @@
-import { CHAPTERS } from '../data/chapters.js'
+import { CHAPTERS, CHAPTER_WORD } from '../data/chapters.js'
+import { WORD_BY_KANJI } from '../data/words.js'
 import { srsStageIndex } from './srs.js'
+
+// Vokabel-Schlüssel für die Satz-Tipp-Schwelle: Wort-Kanji + Kapitel-Wörter
+// (Partikeln/Kana zählen nicht – nur „echte" Vokabeln entscheiden über Tippen).
+const SENTENCE_VOCAB = [...Object.keys(WORD_BY_KANJI), ...Object.keys(CHAPTER_WORD)]
+
+// Soll ein Satz getippt werden (statt aus Bausteinen gebaut)? Ja, sobald ALLE im
+// Satz erkannten Vokabeln Stufe „Gefestigt" (≥ 4 Sterne, srsStageIndex ≥ 3)
+// erreicht haben – dann wird Wiedererkennen zur aktiven Produktion (Tippen).
+export function shouldTypeSentence(answerStr, progress) {
+  const srs = (progress && progress.srs) || {}
+  const present = SENTENCE_VOCAB.filter(k => answerStr.includes(k))
+  if (!present.length) return false
+  return present.every(k => srsStageIndex(srs[k]) >= 3)
+}
 
 // SRS-fähige Schlüssel eines Kapitels = seine eingeführten Vokabeln (eindeutig).
 export function chapterSrsKeys(chapter) {

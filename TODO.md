@@ -2,6 +2,15 @@
 
 Backlog der noch zu programmierenden bzw. zu überarbeitenden Features.
 
+## Erledigt (zuletzt)
+
+- [x] **Mehr Satzabfragen + Tipp-Modus** – Pro Kapitel c3–c12 je 2 neue Satzbau-
+      Aufgaben (alle audit-geprüft, nur bereits eingeführter Stoff). `BuildStep` hat
+      einen `typed`-Modus (Tastatur-Eingabe); der Kapitel-Player schaltet ihn pro
+      Satz ein, sobald dessen Vokabeln ≥4 Sterne (Stufe „Gefestigt") haben
+      (`shouldTypeSentence`). Audit-Skript auf die neue Modulstruktur portiert +
+      prüft jetzt auch Satzbau-Kacheln.
+
 ## Thema Reise
 
 - [ ] **Geschichte fortführen** – Die Geschichte soll nicht am Gipfel enden. Den

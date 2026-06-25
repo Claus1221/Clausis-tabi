@@ -12,7 +12,7 @@ import { XP_PER_KANA, XP_PER_CARD, XP_PER_WORD, XP_PER_GRAMMAR, XP_PER_CHAPTER }
 import { completedKanaList } from '../lib/kanaStats.js'
 import { speak, speakItem } from '../lib/speech.js'
 import { srsItemInfo, SRS_RATINGS, shuffled } from '../lib/srs.js'
-import { chapterSrsKeys, chapterStarsShown, computeAllChapterStars } from '../lib/chapters.js'
+import { chapterSrsKeys, chapterStarsShown, computeAllChapterStars, shouldTypeSentence } from '../lib/chapters.js'
 import { renderFuri, furiPlain } from '../lib/furigana.jsx'
 import { sceneTorii, buildBackdrop, roadPath, STATE_PALETTE } from '../lib/scene.jsx'
 import { isNodeDone, pathNodeMeta } from '../lib/path.js'
@@ -202,6 +202,7 @@ function TraceStep({ step }) {
 
 // Spielt ein Geschichts-Kapitel: Erzählbeats + abwechslungsreiche Übungen.
 function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
+  const { progress: userProg } = useContext(ProgressCtx)
   const [step, setStep] = useState(0)
   const [solved, setSolved] = useState(false)
   const [finished, setFinished] = useState(false)
@@ -250,7 +251,7 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
   } else if (cur.kind === 'trace') {
     content = <TraceStep key={step} step={cur} />
   } else if (cur.kind === 'build') {
-    content = <BuildStep key={step} step={cur} onSolved={() => setSolved(true)} />
+    content = <BuildStep key={step} step={cur} typed={shouldTypeSentence(cur.answer.join(''), userProg)} onSolved={() => setSolved(true)} />
   } else {
     content = <ChoiceStep key={step} step={cur} onSolved={() => setSolved(true)} />
   }
