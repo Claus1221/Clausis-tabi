@@ -55,6 +55,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '犬＿走ります。', a: 'が', options: ['が', 'を', 'は'], hint: 'Das Subjekt (der Hund) wird mit が markiert.' },
       { q: '猫＿好きです。', a: 'が', options: ['が', 'を', 'に'], hint: 'Bei 好き steht das Gemochte mit が.' },
+      { q: 'Jemand fragt nach dem Berg. Du sprichst über DIESES Thema weiter: 山＿高いです。', a: 'は', options: ['は', 'が'], hint: 'Thema aufgreifen/fortführen → は.' },
+      { q: 'Du zeigst zum ersten Mal auf einen Berg: „Schau, der ist aber hoch!" 山＿高いです。', a: 'が', options: ['は', 'が'], hint: 'Neue, hervorgehobene Information → が.' },
     ],
   },
   {
@@ -174,10 +176,28 @@ export const GRAMMAR = [
       { q: 'Wo steht im japanischen Satz das Verb?', a: 'am Ende', options: ['am Ende', 'am Anfang', 'in der Mitte'], hint: 'SOV: Das Verb steht (fast) immer am Satzende.' },
     ],
   },
+  {
+    id: 'g11', glyph: 'て', title: 'die て-Form: Bitten', summary: 'Verb-て + ください = „Bitte tu ~"',
+    body: [
+      { text: 'Die て-Form ist eine Verb-Form ohne eigene Zeit – sie verbindet Sätze oder bildet zusammen mit ください eine höfliche Bitte: „Bitte tu ~".' },
+      { h: 'Bildung', text: 'Je nach Verb-Endung ändert sich das Muster (て / って / んで / いて). Am Anfang lohnt es sich, die て-Form einzelner Verben einfach mitzulernen.' },
+      { h: 'Beispiele', text: '食べます → 食べて (ます einfach durch て ersetzen). 飲みます → 飲んで (み-Verben → んで). 行きます → 行って (Ausnahme! nicht „行いて").' },
+    ],
+    examples: [
+      { jp: '食べてください。', kana: 'たべてください。', de: 'Bitte iss / essen Sie.', tokens: [
+        { t: '食べて', r: 'たべて', de: 'iss (て-Form)', b: 'て-Form von 食べます' }, { t: 'ください', de: 'bitte (Aufforderung)', b: 'höfliche Bitte' }, { t: '。' } ] },
+      { jp: '飲んでください。', kana: 'のんでください。', de: 'Bitte trinken Sie.', tokens: [
+        { t: '飲んで', r: 'のんで', de: 'trink (て-Form)', b: 'て-Form von 飲みます' }, { t: 'ください', de: 'bitte (Aufforderung)', b: 'höfliche Bitte' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: 'Wie lautet die て-Form von 飲みます (trinken)?', a: '飲んで', options: ['飲んで', '飲みて', '飲んだ'], hint: 'み-Verben (のむ) → んで, nicht みて.' },
+      { q: 'Wie lautet die て-Form von 行きます (gehen)? (Achtung: Ausnahme!)', a: '行って', options: ['行って', '行いて', '行きて'], hint: '行く ist eine Ausnahme: 行って, nicht 行いて.' },
+    ],
+  },
 ]
 
 // Grammatik-Reihenfolge identisch zur Reise (Satz-Grundgerüst zuerst).
-export const GRAMMAR_ORDER = ['g2', 'g1', 'g6', 'g3', 'g4', 'g5', 'g7', 'g8', 'g9', 'g10']
+export const GRAMMAR_ORDER = ['g2', 'g1', 'g6', 'g3', 'g4', 'g5', 'g7', 'g8', 'g9', 'g10', 'g11']
 export const GRAMMAR_SEQ = GRAMMAR_ORDER.map(id => GRAMMAR.find(g => g.id === id))
 
 export const GRAMMAR_GLYPH = Object.fromEntries(GRAMMAR.map(g => [g.id, g.glyph]))

@@ -27,6 +27,15 @@ export function shuffled(arr) {
   return [...arr].sort(() => Math.random() - 0.5)
 }
 
+// Rand-/Hintergrundfarbe für eine Übungs-Antwortoption nach Zustand:
+// 'correct' = richtig (Lösung, evtl. nach Aufdecken), 'wrong' = falsch gewählt,
+// 'neutral' = noch nicht aufgedeckt / nicht betroffene Option. Bündelt das
+// wiederkehrende Muster aus den Quiz-Komponenten (matcha=richtig, shu=falsch).
+export function feedbackColor(state) {
+  const color = state === 'correct' ? C.matcha : state === 'wrong' ? C.shu : C.washiDark
+  return { border: color, bg: state === 'neutral' ? '#fff' : `${color}20` }
+}
+
 // Antwortmöglichkeiten pro Multiple-Choice-Runde. Mehr Optionen = weniger
 // Treffer per Ausschlussprinzip (Raten durch Wegstreichen der offensichtlich
 // Falschen).

@@ -9,17 +9,46 @@ import { Card, LibSheet } from '../components/ui.jsx'
 import { StrokeDisplay, DrawCanvas } from '../components/kana.jsx'
 import { WordDetail, TappableSentence } from '../components/japanese.jsx'
 
+// Schlichtes Textsuchfeld, geteilt von PhraseList/WordLibrary/GrammarLibrary.
+function SearchInput({ value, onChange }) {
+  return (
+    <input value={value} onChange={e => onChange(e.target.value)} placeholder="Suchen…"
+      style={{
+        width: '100%', boxSizing: 'border-box', padding: '10px 14px', fontSize: 14,
+        borderRadius: 10, border: `1px solid ${C.washiDark}`, background: '#fff',
+        color: C.sumi, marginBottom: 14,
+      }} />
+  )
+}
+
+// Freundlicher Hinweis statt leerer Liste bei erfolgloser Suche.
+function EmptySearchHint() {
+  return (
+    <p style={{ textAlign: 'center', color: C.textMuted, fontSize: 13, padding: '20px 0' }}>
+      🔍 Keine Treffer. Versuch's mit einem anderen Suchwort.
+    </p>
+  )
+}
+
 function PhraseList() {
-  const cats = [...new Set(PHRASES.map(p => p.cat))]
+  const [q, setQ] = useState('')
+  const needle = q.trim().toLowerCase()
+  const filtered = needle
+    ? PHRASES.filter(p => p.jp.toLowerCase().includes(needle) || p.romaji.toLowerCase().includes(needle) || p.de.toLowerCase().includes(needle))
+    : PHRASES
+  const cats = [...new Set(filtered.map(p => p.cat))]
   return (
     <div>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 16 }}>
         {PHRASES.length} nützliche Sätze für deine Reise – nach Situation sortiert. 🔊 zum Anhören.
       </p>
-      {cats.map(cat => (
+      <SearchInput value={q} onChange={setQ} />
+      {filtered.length === 0 ? (
+        <EmptySearchHint />
+      ) : cats.map(cat => (
         <div key={cat} style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>{cat.toUpperCase()}</div>
-          {PHRASES.filter(p => p.cat === cat).map((p, i) => (
+          {filtered.filter(p => p.cat === cat).map((p, i) => (
             <Card key={i} style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                 <div style={{ flex: 1 }}>
@@ -96,6 +125,7 @@ function KanaLibrary() {
 // Alle Wörter zum Nachschlagen, nach Thema gruppiert.
 function WordLibrary() {
   const [sel, setSel] = useState(null)
+  const [q, setQ] = useState('')
 
   if (sel) {
     const w = WORD_BY_KANJI[sel]
@@ -106,12 +136,19 @@ function WordLibrary() {
     )
   }
 
+  const needle = q.trim().toLowerCase()
+  const matches = w => !needle || [w.kanji, w.kana, w.romaji, w.de].some(f => f.toLowerCase().includes(needle))
+  const blocks = WORD_BLOCKS.map(block => ({ ...block, words: block.words.filter(matches) })).filter(b => b.words.length)
+
   return (
     <div>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 14 }}>
         Alle Wörter mit Kanji, Lesung, Bedeutung und Beispielsatz.
       </p>
-      {WORD_BLOCKS.map(block => (
+      <SearchInput value={q} onChange={setQ} />
+      {blocks.length === 0 ? (
+        <EmptySearchHint />
+      ) : blocks.map(block => (
         <div key={block.id} style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>
             {block.theme} {block.title.toUpperCase()}
@@ -140,6 +177,7 @@ function WordLibrary() {
 // Alle Grammatik-Themen als read-only Erklärung (Beispiele antippbar, keine Übungen/XP).
 function GrammarLibrary() {
   const [sel, setSel] = useState(null)
+  const [q, setQ] = useState('')
 
   if (sel) {
     const topic = GRAMMAR.find(t => t.id === sel)
@@ -163,12 +201,20 @@ function GrammarLibrary() {
     )
   }
 
+  const needle = q.trim().toLowerCase()
+  const filtered = needle
+    ? GRAMMAR_SEQ.filter(t => [t.title, t.summary, t.glyph].some(f => (f || '').toLowerCase().includes(needle)))
+    : GRAMMAR_SEQ
+
   return (
     <div>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 14 }}>
         Alle Grammatik-Themen zum Nachlesen – mit Beispielen zum Antippen.
       </p>
-      {GRAMMAR_SEQ.map(t => (
+      <SearchInput value={q} onChange={setQ} />
+      {filtered.length === 0 ? (
+        <EmptySearchHint />
+      ) : filtered.map(t => (
         <button key={t.id} onClick={() => setSel(t.id)}
           style={{
             display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left',

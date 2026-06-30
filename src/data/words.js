@@ -81,6 +81,63 @@ export const WORD_BLOCKS = [
       ] } },
     ],
   },
+  {
+    id: 'wb5', theme: '🔢', title: 'Zahlen 1–5', words: [
+      { kanji: '一', kana: 'いち', romaji: 'ichi', de: 'eins', ex: { jp: '一番です。', kana: 'いちばんです。', de: 'Es ist die Nummer eins.', tokens: [
+        { t: '一', r: 'いち', de: 'eins', b: 'Zahl' }, { t: '番', r: 'ばん', de: 'Nummer ~', b: 'Zählwort (Ordnungszahl)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '二', kana: 'に', romaji: 'ni', de: 'zwei', ex: { jp: '二番です。', kana: 'にばんです。', de: 'Es ist die Nummer zwei.', tokens: [
+        { t: '二', r: 'に', de: 'zwei', b: 'Zahl' }, { t: '番', r: 'ばん', de: 'Nummer ~', b: 'Zählwort (Ordnungszahl)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '三', kana: 'さん', romaji: 'san', de: 'drei', ex: { jp: '三番です。', kana: 'さんばんです。', de: 'Es ist die Nummer drei.', tokens: [
+        { t: '三', r: 'さん', de: 'drei', b: 'Zahl' }, { t: '番', r: 'ばん', de: 'Nummer ~', b: 'Zählwort (Ordnungszahl)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '四', kana: 'よん', romaji: 'yon', de: 'vier', ex: { jp: '四番です。', kana: 'よんばんです。', de: 'Es ist die Nummer vier.', tokens: [
+        { t: '四', r: 'よん', de: 'vier', b: 'Zahl' }, { t: '番', r: 'ばん', de: 'Nummer ~', b: 'Zählwort (Ordnungszahl)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '五', kana: 'ご', romaji: 'go', de: 'fünf', ex: { jp: '五番です。', kana: 'ごばんです。', de: 'Es ist die Nummer fünf.', tokens: [
+        { t: '五', r: 'ご', de: 'fünf', b: 'Zahl' }, { t: '番', r: 'ばん', de: 'Nummer ~', b: 'Zählwort (Ordnungszahl)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+    ],
+  },
+  {
+    id: 'wb6', theme: '🔢', title: 'Zahlen 6–10', words: [
+      { kanji: '六', kana: 'ろく', romaji: 'roku', de: 'sechs', ex: { jp: '六番です。', kana: 'ろくばんです。', de: 'Es ist die Nummer sechs.', tokens: [
+        { t: '六', r: 'ろく', de: 'sechs', b: 'Zahl' }, { t: '番', r: 'ばん', de: 'Nummer ~', b: 'Zählwort (Ordnungszahl)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '七', kana: 'なな', romaji: 'nana', de: 'sieben', ex: { jp: '七番です。', kana: 'ななばんです。', de: 'Es ist die Nummer sieben.', tokens: [
+        { t: '七', r: 'なな', de: 'sieben', b: 'Zahl' }, { t: '番', r: 'ばん', de: 'Nummer ~', b: 'Zählwort (Ordnungszahl)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '八', kana: 'はち', romaji: 'hachi', de: 'acht', ex: { jp: '八番です。', kana: 'はちばんです。', de: 'Es ist die Nummer acht.', tokens: [
+        { t: '八', r: 'はち', de: 'acht', b: 'Zahl' }, { t: '番', r: 'ばん', de: 'Nummer ~', b: 'Zählwort (Ordnungszahl)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '九', kana: 'きゅう', romaji: 'kyuu', de: 'neun', ex: { jp: '九番です。', kana: 'きゅうばんです。', de: 'Es ist die Nummer neun.', tokens: [
+        { t: '九', r: 'きゅう', de: 'neun', b: 'Zahl' }, { t: '番', r: 'ばん', de: 'Nummer ~', b: 'Zählwort (Ordnungszahl)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '十', kana: 'じゅう', romaji: 'juu', de: 'zehn', ex: { jp: '十番です。', kana: 'じゅうばんです。', de: 'Es ist die Nummer zehn.', tokens: [
+        { t: '十', r: 'じゅう', de: 'zehn', b: 'Zahl' }, { t: '番', r: 'ばん', de: 'Nummer ~', b: 'Zählwort (Ordnungszahl)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+    ],
+  },
+  {
+    id: 'wb7', theme: '💴', title: 'Geld', words: [
+      { kanji: '百', kana: 'ひゃく', romaji: 'hyaku', de: 'hundert', ex: { jp: '百円です。', kana: 'ひゃくえんです。', de: 'Das sind 100 Yen.', tokens: [
+        { t: '百', r: 'ひゃく', de: 'hundert', b: 'Zahl' }, { t: '円', r: 'えん', de: 'Yen', b: 'Nomen (Währung)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '千', kana: 'せん', romaji: 'sen', de: 'tausend', ex: { jp: '千円です。', kana: 'せんえんです。', de: 'Das sind 1000 Yen.', tokens: [
+        { t: '千', r: 'せん', de: 'tausend', b: 'Zahl' }, { t: '円', r: 'えん', de: 'Yen', b: 'Nomen (Währung)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '万', kana: 'まん', romaji: 'man', de: 'zehntausend', ex: { jp: '一万円です。', kana: 'いちまんえんです。', de: 'Das sind 10.000 Yen.', tokens: [
+        { t: '一', r: 'いち', de: 'eins', b: 'Zahl' }, { t: '万', r: 'まん', de: 'zehntausend', b: 'Zahl' }, { t: '円', r: 'えん', de: 'Yen', b: 'Nomen (Währung)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '円', kana: 'えん', romaji: 'en', de: 'Yen', ex: { jp: '三百円です。', kana: 'さんびゃくえんです。', de: 'Das sind 300 Yen.', tokens: [
+        { t: '三百', r: 'さんびゃく', de: 'dreihundert', b: 'Zahl' }, { t: '円', r: 'えん', de: 'Yen', b: 'Nomen (Währung)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '全部', kana: 'ぜんぶ', romaji: 'zenbu', de: 'alles / insgesamt', ex: { jp: '全部で五百円です。', kana: 'ぜんぶでごひゃくえんです。', de: 'Insgesamt sind das 500 Yen.', tokens: [
+        { t: '全部', r: 'ぜんぶ', de: 'alles / insgesamt', b: 'Nomen' }, { t: 'で', de: '(Rahmen: insgesamt)', b: 'Partikel: Summe/Rahmen' }, { t: '五百', r: 'ごひゃく', de: 'fünfhundert', b: 'Zahl' }, { t: '円', r: 'えん', de: 'Yen', b: 'Nomen (Währung)' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+    ],
+  },
 ]
 export const ALL_WORDS = WORD_BLOCKS.flatMap(b => b.words)
 export const WORD_BY_KANJI = Object.fromEntries(ALL_WORDS.map(w => [w.kanji, w]))

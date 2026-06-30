@@ -12,7 +12,7 @@
 // Ersetze unten die "HIER_EINFUEGEN"-Werte durch deine echten Werte.
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: "AIzaSyAM8XRE1stHOfFQKNmf0j4pqNWQw-bOKGg",
@@ -38,5 +38,10 @@ export const isConfigured = !Object.values(firebaseConfig).some(
 
 const app = isConfigured ? initializeApp(firebaseConfig) : null
 export const auth = app ? getAuth(app) : null
-export const db = app ? getFirestore(app) : null
+// Offline-Cache (IndexedDB): Lesen/Schreiben funktioniert auch ohne Verbindung,
+// Schreibvorgänge gehen in die lokale Warteschlange und synchronisieren automatisch,
+// sobald wieder Netz da ist. Mehrere offene Tabs teilen sich den Cache.
+export const db = app ? initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+}) : null
 export const googleProvider = new GoogleAuthProvider()

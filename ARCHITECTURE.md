@@ -43,8 +43,8 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 |---|---|
 | `main.jsx` | Mount-Punkt: `<AuthGate><TabiApp/></AuthGate>`. |
 | `AuthGate.jsx` | Google-Login, erlaubte Konten, `useAuth()`-Context. |
-| `firebase.js` | Firebase-Init; exportiert `auth`, `db`, `ALLOWED_EMAILS`, `isConfigured`. |
-| `useProgress.js` | **Firestore-Hook + Fortschritts-Domäne**: `useProgress(uid)` (live-Daten + Schreib-Funktionen), `computeStats`, `dueKana`, `sm2`, `getSettings`, `localDate`, `addDays`, `SETTINGS_DEFAULTS`, `SRS_STAGE_BOUNDS`. |
+| `firebase.js` | Firebase-Init; exportiert `auth`, `db`, `ALLOWED_EMAILS`, `isConfigured`. `db` läuft mit persistentem Offline-Cache (IndexedDB, mehrere Tabs geteilt) – lesen/schreiben funktioniert auch offline, Sync folgt automatisch. |
+| `useProgress.js` | **Firestore-Hook + Fortschritts-Domäne**: `useProgress(uid)` (live-Daten + Schreib-Funktionen + `saveError`), `computeStats`, `dueKana`, `sm2`, `getSettings`, `localDate`, `addDays`, `SETTINGS_DEFAULTS`, `SRS_STAGE_BOUNDS`. Schreibvorgänge laufen über das interne `safeWrite` (try/catch → `saveError`), damit ein echter Schreibfehler (Firestore-Regel, Quota) sichtbar wird statt den Fortschritt still zu verlieren. Unit-Tests: `useProgress.test.js`. |
 | `kanaStrokes.js` | Generierte KanjiVG-Strichpfade: `HIRAGANA`, `KATAKANA`, `KANA_STROKES`, `STROKE_VIEWBOX`. (Generator: `scripts/gen-kana-strokes.mjs`.) |
 | `theme.js` | `C` (Farb-Token) · `JP` (japanische Font-Stack). |
 | `TabiApp.jsx` | Root-Orchestrator (≈120 Z.). Hält Tab-State, lädt Screens via `React.lazy`, stellt `ProgressCtx` bereit. |
@@ -73,8 +73,8 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 |---|---|---|
 | `xp.js` | `XP_PER_KANA/CARD/WORD/GRAMMAR/CHAPTER/DIALOG` | – |
 | `kanaStats.js` | `totalKanaCount`, `completedKanaList`, `completedKanaCount` | data/kana |
-| `speech.js` | `speak`, `speakItem`, `copyText` | data/words, data/chapters |
-| `srs.js` | `srsItemInfo`, `SRS_RATINGS`, `shuffled`, `buildRounds`, `OPTIONS_PER_ROUND`, `SRS_STAGES`, `srsStageIndex` | theme, data/kana, data/words, data/chapters, useProgress |
+| `speech.js` | `speak`, `speakItem`, `itemReading`, `copyText` | data/words, data/chapters |
+| `srs.js` | `srsItemInfo`, `SRS_RATINGS`, `shuffled`, `feedbackColor`, `buildRounds`, `OPTIONS_PER_ROUND`, `SRS_STAGES`, `srsStageIndex` | theme, data/kana, data/words, data/chapters, useProgress |
 | `dialog.js` | `lexTokens`, `dialogGate`, `reiseVocab`, `curriculumVocab`, `tokenGrammarId`, `ROLE_GRAMMATICAL`, … | data/dialogs, data/words, data/chapters |
 | `chapters.js` | `chapterSrsKeys`, `chapterStarsLive`, `chapterStarsShown`, `computeAllChapterStars` | data/chapters, **lib/srs** |
 | `furigana.jsx` | `renderFuri`, `furiPlain`, `HAS_JP` | – (enthält JSX → `.jsx`) |
@@ -112,6 +112,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 - **Fortschritt:** `useProgress(uid)` in `TabiApp` lädt live aus Firestore und
   liefert Schreib-Funktionen. Beides geht via `ProgressCtx` an alle Screens.
   Geschrieben wird immer per `setDoc(..., {merge:true})` (geräteübergreifend).
+  Echte Schreibfehler landen in `saveError` und zeigen ein Banner in `TabiApp`.
 - **SRS (Spaced Repetition):** Algorithmus `sm2` in `useProgress.js`; Anzeige-Stufen
   (`SRS_STAGES`) und Kartendaten (`srsItemInfo`) in `lib/srs.js`. Karten-Schlüssel =
   das japanische Zeichen/Wort.
@@ -156,7 +157,12 @@ verwendet – `STORY_TOKENS`/`DIALOG_LEX` ergänzen, damit Wörter antippbar ble
   `firebase` und `react` jeweils in eigenen, langlebig cachebaren Chunks.
 - **PWA:** `vite-plugin-pwa` (autoUpdate). `base` = `/Clausis-tabi/` für GitHub Pages.
 - **Deployment:** Push auf `main` → GitHub Actions (`.github/workflows/deploy.yml`)
-  baut (`npm ci && npm run build`) und veröffentlicht `dist/` nach GitHub Pages.
+  läuft `npm ci`, `npm test` (blockierend), `npm run audit` (informativ, blockiert
+  nicht), `npm run build` und veröffentlicht `dist/` nach GitHub Pages.
+- **Tests:** Vitest (`vitest.config.js`, eigene schlanke Konfiguration getrennt von
+  `vite.config.js`). Reine Logik-Tests neben der getesteten Datei (`*.test.js`),
+  z. B. `useProgress.test.js` (SM-2-Algorithmus), `lib/srs.test.js`. Lokal mit
+  `npm test`; läuft außerdem blockierend in der Deploy-Pipeline.
 
 ---
 
@@ -176,5 +182,6 @@ In dieser Umgebung gibt es **kein Node/npm** → kein lokaler Build. Stattdessen
 2. Kein Symbol „benutzt aber nicht importiert"; keine doppelten Top-Level-Deklarationen.
 3. Jeder React-Hook importiert; kein JSX-Tag in `.js`; jeder `<Komponente>`-Tag
    importiert oder lokal definiert.
-Endgültige Bestätigung liefert der CI-Build beim Push.
+Endgültige Bestätigung liefert CI beim Push (`npm test` + `npm run build`) – lokal
+geschriebene Tests/Code werden also nie selbst ausgeführt, nur dort.
 ```

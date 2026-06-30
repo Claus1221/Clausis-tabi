@@ -10,7 +10,7 @@ import { DIALOGS } from '../data/dialogs.js'
 import { XP_PER_CARD, XP_PER_DIALOG } from '../lib/xp.js'
 import { completedKanaList } from '../lib/kanaStats.js'
 import { speak, speakItem } from '../lib/speech.js'
-import { srsItemInfo, SRS_RATINGS, shuffled, buildRounds } from '../lib/srs.js'
+import { srsItemInfo, SRS_RATINGS, shuffled, buildRounds, feedbackColor } from '../lib/srs.js'
 import { dialogGate } from '../lib/dialog.js'
 import { MIX_LABEL, buildMixTasks } from '../lib/mix.js'
 import { Emoji, Card, Btn } from '../components/ui.jsx'
@@ -255,14 +255,14 @@ function PracticeQuiz({ mode, onClose }) {
         {cur.options.map(opt => {
           const isCorrect = opt === cur.char
           const isChosen = opt === answer
+          const fb = feedbackColor(!revealed ? 'neutral' : isCorrect ? 'correct' : isChosen ? 'wrong' : 'neutral')
           // Erkennen: Optionen sind Lesungen; Hören: Optionen sind Zeichen.
           const label = mode === 'erkennen' ? KANA_DATA[opt]?.romaji : opt
           return (
             <button key={opt} onClick={() => choose(opt)} disabled={revealed}
               style={{
-                padding: '16px 8px', borderRadius: 8, border: '2px solid',
-                borderColor: !revealed ? C.washiDark : isCorrect ? C.matcha : isChosen ? C.shu : C.washiDark,
-                background: !revealed ? '#fff' : isCorrect ? `${C.matcha}20` : isChosen ? `${C.shu}20` : '#fff',
+                padding: '16px 8px', borderRadius: 8, border: `2px solid ${fb.border}`,
+                background: fb.bg,
                 fontSize: mode === 'erkennen' ? 18 : 28,
                 fontFamily: mode === 'erkennen' ? 'inherit' : JP,
                 fontWeight: 600, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
@@ -320,7 +320,7 @@ function TypeQuiz({ onClose }) {
       <input ref={inputRef} value={val} onChange={e => setVal(e.target.value)} disabled={revealed}
         onKeyDown={e => { if (e.key === 'Enter') (revealed ? next() : check()) }}
         placeholder="Lesung tippen (z. B. ka)" autoCapitalize="none" autoCorrect="off"
-        style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', fontSize: 18, borderRadius: 10, textAlign: 'center', border: `2px solid ${revealed ? (res ? C.matcha : C.shu) : C.washiDark}` }} />
+        style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', fontSize: 18, borderRadius: 10, textAlign: 'center', border: `2px solid ${feedbackColor(!revealed ? 'neutral' : res ? 'correct' : 'wrong').border}` }} />
       {revealed && (
         <p style={{ textAlign: 'center', marginTop: 12, color: res ? C.matcha : C.shu, fontWeight: 600 }}>
           {res ? '✓ Richtig!' : `✗ Richtig: ${answer}`}
@@ -443,13 +443,13 @@ function MixStep({ task, cardReview, onNext }) {
           {task.options.map(opt => {
             const isCorrect = opt === task.char
             const isChosen = opt === answer
+            const fb = feedbackColor(!revealed ? 'neutral' : isCorrect ? 'correct' : isChosen ? 'wrong' : 'neutral')
             const label = task.type === 'erkennen' ? KANA_DATA[opt]?.romaji : opt
             return (
               <button key={opt} onClick={() => choose(opt)} disabled={revealed}
                 style={{
-                  padding: '16px 8px', borderRadius: 8, border: '2px solid',
-                  borderColor: !revealed ? C.washiDark : isCorrect ? C.matcha : isChosen ? C.shu : C.washiDark,
-                  background: !revealed ? '#fff' : isCorrect ? `${C.matcha}20` : isChosen ? `${C.shu}20` : '#fff',
+                  padding: '16px 8px', borderRadius: 8, border: `2px solid ${fb.border}`,
+                  background: fb.bg,
                   fontSize: task.type === 'erkennen' ? 18 : 28,
                   fontFamily: task.type === 'erkennen' ? 'inherit' : JP,
                   fontWeight: 600, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
@@ -484,7 +484,7 @@ function MixStep({ task, cardReview, onNext }) {
         <input ref={inputRef} value={val} onChange={e => setVal(e.target.value)} disabled={revealed}
           onKeyDown={e => { if (e.key === 'Enter') (revealed ? onNext(typed) : check()) }}
           placeholder="Lesung tippen (z. B. ka)" autoCapitalize="none" autoCorrect="off"
-          style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', fontSize: 18, borderRadius: 10, textAlign: 'center', border: `2px solid ${revealed ? (typed ? C.matcha : C.shu) : C.washiDark}` }} />
+          style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', fontSize: 18, borderRadius: 10, textAlign: 'center', border: `2px solid ${feedbackColor(!revealed ? 'neutral' : typed ? 'correct' : 'wrong').border}` }} />
         {revealed && (
           <p style={{ textAlign: 'center', marginTop: 12, color: typed ? C.matcha : C.shu, fontWeight: 600 }}>
             {typed ? '✓ Richtig!' : `✗ Richtig: ${ans}`}
@@ -683,10 +683,11 @@ function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
         {options.map(o => {
           const correct = o === t.answer, chosen = o === ans
+          const fb = feedbackColor(!revealed ? 'neutral' : correct ? 'correct' : chosen ? 'wrong' : 'neutral')
           return (
             <button key={o} onClick={() => choose(o)} disabled={revealed}
-              style={{ padding: '12px 14px', borderRadius: 10, border: `2px solid ${!revealed ? C.washiDark : correct ? C.matcha : chosen ? C.shu : C.washiDark}`,
-                background: !revealed ? '#fff' : correct ? `${C.matcha}20` : chosen ? `${C.shu}20` : '#fff',
+              style={{ padding: '12px 14px', borderRadius: 10, border: `2px solid ${fb.border}`,
+                background: fb.bg,
                 fontSize: 17, fontFamily: JP, color: C.sumi, cursor: revealed ? 'default' : 'pointer', textAlign: 'left' }}>{o}</button>
           )
         })}
@@ -725,6 +726,33 @@ export default function UebenScreen({ initialMode, onConsumeInitial }) {
   const learnedAll = [...completedKanaList(progress.completedLessons || []), ...learnedWordKanji(progress.completedWordBlocks || [])]
   const dueCount = dueKana(progress, learnedAll).length
   const dialogsDone = (progress.completedDialogs || []).length
+
+  // Fällig-Banner: direkter Sprung in den SRS-Quiz im "due"-Modus (Standard von
+  // SRSQuiz). Zahl kommt aus demselben dueKana-Mechanismus wie DailyStrip auf der
+  // Reise – damit stimmt sie exakt mit der dortigen Anzeige überein.
+  const dueBanner = dueCount > 0 ? (
+    <button onClick={() => setMode('srs')} style={{
+      width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+      background: `${C.shu}12`, border: `2px solid ${C.shu}40`, borderRadius: 14,
+      padding: '14px 16px', marginBottom: 16, cursor: 'pointer',
+    }}>
+      <span style={{ fontSize: 26 }}>🎯</span>
+      <span style={{ flex: 1 }}>
+        <span style={{ display: 'block', fontWeight: 700, fontSize: 15, color: C.shu }}>{dueCount} Karten fällig</span>
+        <span style={{ display: 'block', fontSize: 12, color: C.textMuted }}>Jetzt wiederholen, bevor sie aus dem Kopf rutschen</span>
+      </span>
+      <span style={{ fontSize: 18, color: C.shu }}>›</span>
+    </button>
+  ) : (
+    <Card style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+      <span style={{ fontSize: 26 }}>✅</span>
+      <span style={{ flex: 1 }}>
+        <span style={{ display: 'block', fontWeight: 600, fontSize: 14, color: C.sumi }}>Alles erledigt</span>
+        <span style={{ display: 'block', fontSize: 12, color: C.textMuted }}>Aktuell ist nichts zur Wiederholung fällig</span>
+      </span>
+    </Card>
+  )
+
   const exercises = [
     { id: 'mix', icon: '🎲', title: 'Gemischte Wiederholung', sub: 'Alle Übungsarten bunt gemischt', color: C.indigo },
     { id: 'srs', icon: '🗂', title: 'SRS-Wiederholungen', sub: dueCount > 0 ? `${dueCount} Karten fällig` : 'Nichts fällig', color: C.shu },
@@ -741,7 +769,9 @@ export default function UebenScreen({ initialMode, onConsumeInitial }) {
       <h2 style={{ fontSize: 20, fontFamily: JP, color: C.indigo, marginBottom: 4 }}>
         Üben
       </h2>
-      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 20 }}>Wähle einen Übungstyp</p>
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 16 }}>Wähle einen Übungstyp</p>
+
+      {dueBanner}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         {exercises.map(e => (

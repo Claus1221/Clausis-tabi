@@ -18,6 +18,12 @@ jobs:
           node-version: 20
 
       - run: npm ci
+      - run: npm test
+
+      - name: Vorwärts-Referenzen-Audit (informativ, blockiert nicht)
+        run: npm run audit
+        continue-on-error: true
+
       - run: npm run build
 
       - uses: peaceiris/actions-gh-pages@v4

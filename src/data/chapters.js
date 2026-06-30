@@ -61,6 +61,12 @@ export const STORY_TOKENS = {
   '猫(ねこ)は寺(てら)の前(まえ)です。': [
     { t: '猫', r: 'ねこ', de: 'Katze', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '寺', r: 'てら', de: 'Tempel', b: 'Nomen' }, { t: 'の', de: 'von / -s', b: 'Verbindungspartikel (Genitiv)' }, { t: '前', r: 'まえ', de: 'vor / davor', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
   ],
+  '全部(ぜんぶ)で五百円(ごひゃくえん)です。': [
+    { t: '全部', r: 'ぜんぶ', de: 'alles / insgesamt', b: 'Nomen' }, { t: 'で', de: '(Rahmen: insgesamt)', b: 'Partikel: Summe/Rahmen' }, { t: '五百円', r: 'ごひゃくえん', de: '500 Yen', b: 'Zahl + Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+  ],
+  '飛行機(ひこうき)に乗(の)ります。': [
+    { t: '飛行機', r: 'ひこうき', de: 'Flugzeug', b: 'Nomen' }, { t: 'に', de: '(Ziel)', b: 'Partikel: einsteigen in' }, { t: '乗ります', r: 'のります', de: 'einsteigen / fahren', b: 'Verb, höflich (乗る)' }, { t: '。' },
+  ],
 }
 
 // ─── Geschichts-Kapitel (eine Episode pro Welt) ──────────────────────────────
@@ -207,6 +213,7 @@ export const CHAPTERS = [
     { kind: 'intro', emoji: 'person', jp: '男', reading: 'おとこ', de: 'Mann' },
     { kind: 'intro', emoji: 'person', jp: '女', reading: 'おんな', de: 'Frau' },
     { kind: 'intro', emoji: 'house', jp: 'トイレ', reading: 'トイレ', de: 'Toilette' },
+    { kind: 'story', emoji: 'house', text: 'Kultur-Tipp: Vor vielen japanischen Toiletten stehen extra Toiletten-Pantoffeln – kurz die Schuhe wechseln, bevor man hineingeht, und beim Rausgehen nicht vergessen, sie wieder auszuziehen!' },
     { kind: 'sign', sign: '男', prompt: 'Auf einer Toilettentür steht 男. Das ist…', options: ['Herren', 'Damen', 'Ausgang'], answer: 'Herren' },
     { kind: 'sign', sign: '女', prompt: 'Und auf der anderen Tür: 女. Das ist…', options: ['Damen', 'Herren', 'Eingang'], answer: 'Damen' },
     { kind: 'intro', emoji: 'house', jp: '中', reading: 'なか', de: 'Mitte / drinnen' },
@@ -219,6 +226,7 @@ export const CHAPTERS = [
   ] },
   { id: 'c12', title: 'Beim Tempel', steps: [
     { kind: 'story', emoji: 'torii', text: 'Am Stadtrand liegt ein alter Tempel. Hinter dem roten Torii wird es still. Du möchtest diesen Moment festhalten.' },
+    { kind: 'story', emoji: 'torii', text: 'Kultur-Tipp: Viele Besucher verbeugen sich kurz vor dem Torii, bevor sie hindurchgehen – die Mitte des Wegs gilt traditionell als Pfad der Gottheit, man geht meist am Rand.' },
     { kind: 'intro', emoji: 'torii', jp: '寺', reading: 'てら', de: 'Tempel' },
     { kind: 'intro', emoji: 'city', jp: 'カメラ', reading: 'カメラ', de: 'Kamera' },
     { kind: 'audio', say: 'てら', options: ['寺', '店', '家'], answer: '寺', de: 'Tempel' },
@@ -257,8 +265,39 @@ export const CHAPTERS = [
     { kind: 'tf', emoji: 'cat', jp: '猫は寺の前です。', prompt: 'Stimmt es zum Bild?', answer: true },
     { kind: 'story', emoji: 'torii', jp: '猫(ねこ)は寺(てら)の前(まえ)です。', tr: 'Die Katze ist vor dem Tempel.', text: 'Du findest die Katze – sie schläft friedlich im Schatten des Tempels. Deine Reise durch Japan geht weiter.' },
   ] },
+  { id: 'c15', title: 'Souvenirs kaufen', steps: [
+    { kind: 'story', emoji: 'city', text: 'Vor dem Tempel reihen sich kleine Läden mit Andenken aneinander. Du möchtest ein Geschenk mitnehmen.' },
+    { kind: 'intro', emoji: 'city', jp: 'お土産', reading: 'おみやげ', de: 'Souvenir' },
+    { kind: 'sign', sign: '三百円', prompt: 'Auf einem Preisschild steht das. Wie viel ist das?', options: ['300 Yen', '3000 Yen', '30 Yen'], answer: '300 Yen' },
+    { kind: 'story', emoji: 'city', text: 'Kultur-Tipp: Beim Einkaufen wird in Japan normalerweise nicht gehandelt – der angeschriebene Preis gilt. Und wenn du unsicher bist, wie man Dinge zählt: die Reihe 一つ(ひとつ)・二つ(ふたつ)・三つ(みっつ)…十(とお) passt für die meisten Gegenstände.' },
+    { kind: 'gap', text: 'これは ＿円です。 (300 Yen)', prompt: 'Welche Zahl passt für „300"?', options: ['三百', '三', '三千'], answer: '三百', hint: '三百 = drei-hundert.' },
+    { kind: 'build', prompt: 'Bilde: „Das kostet 300 Yen."', tiles: ['これ', 'は', '三百円', 'です'], answer: ['これ', 'は', '三百円', 'です'], tr: 'これは三百円です。' },
+    { kind: 'dialog', emoji: 'person', line: 'これは三百円です。', prompt: 'Die Verkäuferin nennt den Preis. Du nimmst es.', options: ['じゃあ、これを ください。', 'さようなら。', '大きいです。'], answer: 'じゃあ、これを ください。', tr: 'Dann nehme ich das, bitte.' },
+    { kind: 'build', prompt: 'Bilde: „Insgesamt sind das 500 Yen."', tiles: ['全部', 'で', '五百円', 'です'], answer: ['全部', 'で', '五百円', 'です'], tr: '全部で五百円です。' },
+    { kind: 'story', emoji: 'city', jp: '全部(ぜんぶ)で五百円(ごひゃくえん)です。', tr: 'Insgesamt sind das 500 Yen.', text: 'Mit der Tüte in der Hand verlässt du den Laden – ein schönes Andenken für zu Hause.' },
+  ] },
+  { id: 'c16', title: 'Abschied', steps: [
+    { kind: 'story', emoji: 'airplane', text: 'Die Zeit ist gekommen – dein Flug nach Hause wartet. Am Flughafen ist es hektisch.' },
+    { kind: 'intro', emoji: 'person', jp: '待ちます', reading: 'まちます', de: 'warten' },
+    { kind: 'story', emoji: 'person', text: 'Neu: Verb-て + ください = „Bitte tu ~". 食べます → 食べて, 飲みます → 飲んで, 待ちます → 待って.' },
+    { kind: 'gap', text: '少し 待＿ください。', prompt: '„Bitte warte einen Moment." Welche Endung passt?', options: ['って', 'ります', 'たい'], answer: 'って', hint: '待ちます → 待って (wie 行きます → 行って).' },
+    { kind: 'build', prompt: 'Bilde: „Bitte iss."', tiles: ['食べて', 'ください'], answer: ['食べて', 'ください'], tr: '食べてください。' },
+    { kind: 'dialog', emoji: 'person', line: 'もうすぐ 出発です。', prompt: 'Die Durchsage: Bald geht’s los. Du brauchst noch einen Moment und bittest darum zu warten.', options: ['ちょっと 待ってください。', 'いただきます。', 'みぎです。'], answer: 'ちょっと 待ってください。', tr: 'Einen Moment, bitte warten Sie.' },
+    { kind: 'build', prompt: 'Bilde: „Bitte trinken Sie."', tiles: ['飲んで', 'ください'], answer: ['飲んで', 'ください'], tr: '飲んでください。' },
+    { kind: 'tf', emoji: 'airplane', jp: '飛行機に乗ります。', prompt: 'Stimmt es zum Bild?', answer: true },
+    { kind: 'story', emoji: 'airplane', jp: '飛行機(ひこうき)に乗(の)ります。', tr: 'Ich steige ins Flugzeug.', text: 'Genau wie am ersten Tag stehst du wieder vor einem Flugzeug – diesmal auf dem Heimweg. Deine Reise durch Japan ist zu Ende, aber das Gelernte bleibt. また ね！' },
+  ] },
 ]
 export const CHAPTER_BY_ID = Object.fromEntries(CHAPTERS.map(c => [c.id, c]))
+
+// ─── Vokabel-Behandlung: zwei Stufen (bewusst, kein Versehen) ────────────────
+// Konkrete, gut bebilderbare NOMEN (山, 犬, 寺 …) und ein paar Schlüsselverben
+// (食べます in c8) bekommen eine eigene „intro"-Karteikarte → SRS-Tracking,
+// Bild+Schrift+Audio. Häufige „Trägerverben" wie 見ます/飲みます/行きます/
+// います/あります werden NIE eigens eingeführt – sie tauchen von Anfang an in
+// Beispielsätzen auf und werden dort über antippbare STORY_TOKENS erklärt.
+// Das hält den Karteikarten-Stapel auf hochwertiges, eindeutiges Vokabular
+// fokussiert, statt jedes Hilfsverb separat abzufragen.
 
 // ─── Kapitel-Sternesystem (Kenntnisstand je Kapitel) ─────────────────────────
 // Jedes Kapitel führt in seinen „intro"-Schritten Vokabeln ein. Diese Wörter

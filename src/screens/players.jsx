@@ -5,7 +5,7 @@ import { KANA_DATA } from '../data/kana.js'
 import { ALL_WORDS } from '../data/words.js'
 import { XP_PER_CARD } from '../lib/xp.js'
 import { speak, copyText } from '../lib/speech.js'
-import { shuffled } from '../lib/srs.js'
+import { shuffled, feedbackColor } from '../lib/srs.js'
 import { HAS_JP } from '../lib/furigana.jsx'
 import { Card, Btn } from '../components/ui.jsx'
 import { StrokeDisplay, DrawCanvas } from '../components/kana.jsx'
@@ -18,16 +18,16 @@ function QuizStep({ kana, onFinish }) {
   const [quiz] = useState(() => {
     const pool = [...new Set(kana)]
     const allRomaji = [...new Set(Object.values(KANA_DATA).map(v => v.romaji))]
-    return [...pool].sort(() => Math.random() - 0.5).map(ch => {
+    return shuffled(pool).map(ch => {
       const correct = KANA_DATA[ch]?.romaji
       let distractors = [...new Set(pool.filter(k => k !== ch).map(k => KANA_DATA[k]?.romaji))]
         .filter(r => r && r !== correct)
-      for (const r of allRomaji.sort(() => Math.random() - 0.5)) {
+      for (const r of shuffled(allRomaji)) {
         if (distractors.length >= 2) break
         if (r !== correct && !distractors.includes(r)) distractors.push(r)
       }
-      distractors = distractors.sort(() => Math.random() - 0.5).slice(0, 2)
-      const options = [correct, ...distractors].sort(() => Math.random() - 0.5)
+      distractors = shuffled(distractors).slice(0, 2)
+      const options = shuffled([correct, ...distractors])
       return { char: ch, correct, options }
     })
   })
@@ -57,12 +57,12 @@ function QuizStep({ kana, onFinish }) {
         {cur.options.map(o => {
           const isCorrect = o === cur.correct
           const isChosen = o === answer
+          const fb = feedbackColor(!revealed ? 'neutral' : isCorrect ? 'correct' : isChosen ? 'wrong' : 'neutral')
           return (
             <button key={o} onClick={() => !revealed && setAnswer(o)} disabled={revealed}
               style={{
-                padding: '14px 8px', borderRadius: 8, border: '2px solid',
-                borderColor: !revealed ? C.washiDark : isCorrect ? C.matcha : isChosen ? C.shu : C.washiDark,
-                background: !revealed ? '#fff' : isCorrect ? `${C.matcha}20` : isChosen ? `${C.shu}20` : '#fff',
+                padding: '14px 8px', borderRadius: 8, border: `2px solid ${fb.border}`,
+                background: fb.bg,
                 fontSize: 18, fontWeight: 600, color: C.sumi,
                 cursor: revealed ? 'default' : 'pointer',
               }}>{o}</button>
@@ -294,12 +294,12 @@ function BlockQuiz({ words, onFinish }) {
         {cur.options.map(o => {
           const isCorrect = o === cur.correct
           const isChosen = o === answer
+          const fb = feedbackColor(!revealed ? 'neutral' : isCorrect ? 'correct' : isChosen ? 'wrong' : 'neutral')
           return (
             <button key={o} onClick={() => !revealed && setAnswer(o)} disabled={revealed}
               style={{
-                padding: '14px 8px', borderRadius: 8, border: '2px solid',
-                borderColor: !revealed ? C.washiDark : isCorrect ? C.matcha : isChosen ? C.shu : C.washiDark,
-                background: !revealed ? '#fff' : isCorrect ? `${C.matcha}20` : isChosen ? `${C.shu}20` : '#fff',
+                padding: '14px 8px', borderRadius: 8, border: `2px solid ${fb.border}`,
+                background: fb.bg,
                 fontSize: 15, fontWeight: 600, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
               }}>{o}</button>
           )
@@ -432,12 +432,12 @@ function GrammarExercise({ ex, idx, total, onNext, isLast }) {
         {options.map(o => {
           const isCorrect = o === ex.a
           const isChosen = o === ans
+          const fb = feedbackColor(!revealed ? 'neutral' : isCorrect ? 'correct' : isChosen ? 'wrong' : 'neutral')
           return (
             <button key={o} onClick={() => choose(o)} disabled={revealed}
               style={{
-                padding: '14px 8px', borderRadius: 8, border: '2px solid',
-                borderColor: !revealed ? C.washiDark : isCorrect ? C.matcha : isChosen ? C.shu : C.washiDark,
-                background: !revealed ? '#fff' : isCorrect ? `${C.matcha}20` : isChosen ? `${C.shu}20` : '#fff',
+                padding: '14px 8px', borderRadius: 8, border: `2px solid ${fb.border}`,
+                background: fb.bg,
                 fontSize: HAS_JP.test(o) ? 20 : 14,
                 fontFamily: HAS_JP.test(o) ? JP : 'inherit',
                 fontWeight: 600, color: C.sumi, cursor: revealed ? 'default' : 'pointer',

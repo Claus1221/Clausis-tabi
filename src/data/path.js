@@ -63,4 +63,12 @@ export const PATH = [
   { world: '東京・四', sub: 'Richtungen & Lage' },
   { type: 'chapter', id: 'c13' },
   { type: 'chapter', id: 'c14' },
+  { world: '東京・五', sub: 'Zahlen & Einkaufen' },
+  { type: 'word', id: 'wb5' },
+  { type: 'word', id: 'wb6' },
+  { type: 'word', id: 'wb7' },
+  { type: 'chapter', id: 'c15' },
+  { world: '東京・六', sub: 'Abschied' },
+  { type: 'grammar', id: 'g11' },
+  { type: 'chapter', id: 'c16' },
 ]

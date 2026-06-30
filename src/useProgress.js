@@ -129,6 +129,10 @@ export function computeStats(progress) {
 export function useProgress(uid) {
   const [progress, setProgress] = useState(DEFAULT)
   const [loading, setLoading] = useState(true)
+  // Echter Schreibfehler (z. B. von Firestore-Regeln verweigert) – NICHT bloßes
+  // Offline-Sein: das fängt der lokale Cache (firebase.js) unsichtbar ab und
+  // synchronisiert automatisch, sobald wieder Netz da ist.
+  const [saveError, setSaveError] = useState(null)
 
   useEffect(() => {
     if (!uid || !db) { setLoading(false); return }
@@ -146,17 +150,28 @@ export function useProgress(uid) {
 
   const ref = () => doc(db, 'users', uid)
 
+  // Schreibt sicher: fängt echte Fehler ab (Firestore-Regel verweigert, Quota,
+  // korrupte Daten) und macht sie über `saveError` sichtbar, statt den
+  // Fortschritt kommentarlos verschwinden zu lassen.
+  const safeWrite = async (data, opts) => {
+    try {
+      await setDoc(ref(), data, opts)
+      setSaveError(null)
+    } catch (err) {
+      setSaveError(err?.message || 'Speichern fehlgeschlagen')
+    }
+  }
+
   // XP für heute gutschreiben (atomar per increment, auch geräteübergreifend korrekt).
   const awardXp = async (amount) => {
     if (!uid || !db || !amount) return
-    await setDoc(ref(), { xpByDate: { [localDate()]: increment(amount) } }, { merge: true })
+    await safeWrite({ xpByDate: { [localDate()]: increment(amount) } }, { merge: true })
   }
 
   // Lektion abschließen: als erledigt markieren UND XP gutschreiben.
   const completeLesson = async (id, xp = 0) => {
     if (!uid || !db) return
-    await setDoc(
-      ref(),
+    await safeWrite(
       { completedLessons: arrayUnion(id), xpByDate: { [localDate()]: increment(xp) } },
       { merge: true },
     )
@@ -165,8 +180,7 @@ export function useProgress(uid) {
   // Einen Wort-Block als abgeschlossen markieren + XP gutschreiben.
   const completeWordBlock = async (blockId, xp = 0) => {
     if (!uid || !db) return
-    await setDoc(
-      ref(),
+    await safeWrite(
       { completedWordBlocks: arrayUnion(blockId), xpByDate: { [localDate()]: increment(xp) } },
       { merge: true },
     )
@@ -175,8 +189,7 @@ export function useProgress(uid) {
   // Ein Grammatik-Thema als gelernt markieren + XP gutschreiben.
   const completeGrammar = async (grammarId, xp = 0) => {
     if (!uid || !db) return
-    await setDoc(
-      ref(),
+    await safeWrite(
       { completedGrammar: arrayUnion(grammarId), xpByDate: { [localDate()]: increment(xp) } },
       { merge: true },
     )
@@ -185,8 +198,7 @@ export function useProgress(uid) {
   // Ein Geschichts-Kapitel als abgeschlossen markieren + XP gutschreiben.
   const completeChapter = async (chapterId, xp = 0) => {
     if (!uid || !db) return
-    await setDoc(
-      ref(),
+    await safeWrite(
       { completedChapters: arrayUnion(chapterId), xpByDate: { [localDate()]: increment(xp) } },
       { merge: true },
     )
@@ -195,8 +207,7 @@ export function useProgress(uid) {
   // Eine Gesprächs-Szene als abgeschlossen markieren + XP gutschreiben.
   const completeDialog = async (dialogId, xp = 0) => {
     if (!uid || !db) return
-    await setDoc(
-      ref(),
+    await safeWrite(
       { completedDialogs: arrayUnion(dialogId), xpByDate: { [localDate()]: increment(xp) } },
       { merge: true },
     )
@@ -206,7 +217,7 @@ export function useProgress(uid) {
   const reviewCard = async (key, quality) => {
     if (!uid || !db) return
     const next = sm2((progress.srs || {})[key], quality)
-    await setDoc(ref(), { srs: { [key]: next } }, { merge: true })
+    await safeWrite({ srs: { [key]: next } }, { merge: true })
   }
 
   // Neu gelernte Items in den Wiederholungsplan aufnehmen: Fälligkeit in der
@@ -224,7 +235,7 @@ export function useProgress(uid) {
     fresh.forEach((k, i) => {
       updates[k] = { ease: 2.5, interval: 0, reps: 0, due: addDays(1 + Math.floor(i / 8)) }
     })
-    await setDoc(ref(), { srs: updates }, { merge: true })
+    await safeWrite({ srs: updates }, { merge: true })
   }
 
   // Sterne-Höchststand je Kapitel anheben (monoton: nur Anstiege werden gespeichert,
@@ -237,7 +248,7 @@ export function useProgress(uid) {
       if ((n || 0) > (cur[id] || 0)) patch[id] = n
     }
     if (!Object.keys(patch).length) return
-    await setDoc(ref(), { chapterStars: patch }, { merge: true })
+    await safeWrite({ chapterStars: patch }, { merge: true })
   }
 
   // Merkhilfe/Notiz zu einer SRS-Karte speichern (leerer Text löscht sie). Wird
@@ -245,21 +256,21 @@ export function useProgress(uid) {
   // unberührt; reviewCard wiederum lässt die Notiz unberührt.
   const saveNote = async (key, note) => {
     if (!uid || !db || !key) return
-    await setDoc(ref(), { srs: { [key]: { note: (note || '').trim() } } }, { merge: true })
+    await safeWrite({ srs: { [key]: { note: (note || '').trim() } } }, { merge: true })
   }
 
   // Einstellungen (teil-)speichern. Merge lässt unveränderte Werte unberührt.
   const saveSettings = async (patch) => {
     if (!uid || !db || !patch) return
-    await setDoc(ref(), { settings: patch }, { merge: true })
+    await safeWrite({ settings: patch }, { merge: true })
   }
 
   // Kompletter Reset auf 0 (überschreibt das Dokument). Einstellungen bleiben erhalten:
   // volles Überschreiben (löscht srs/xpByDate sicher), aber settings werden mitgenommen.
   const reset = async () => {
     if (!uid || !db) return
-    await setDoc(ref(), { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], chapterStars: {}, xpByDate: {}, srs: {}, settings: progress.settings || {} })
+    await safeWrite({ completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], chapterStars: {}, xpByDate: {}, srs: {}, settings: progress.settings || {} })
   }
 
-  return { progress, loading, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset }
+  return { progress, loading, saveError, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset }
 }

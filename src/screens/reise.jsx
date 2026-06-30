@@ -11,7 +11,7 @@ import { PATH } from '../data/path.js'
 import { XP_PER_KANA, XP_PER_CARD, XP_PER_WORD, XP_PER_GRAMMAR, XP_PER_CHAPTER } from '../lib/xp.js'
 import { completedKanaList } from '../lib/kanaStats.js'
 import { speak, speakItem } from '../lib/speech.js'
-import { srsItemInfo, SRS_RATINGS, shuffled } from '../lib/srs.js'
+import { srsItemInfo, SRS_RATINGS, shuffled, feedbackColor } from '../lib/srs.js'
 import { chapterSrsKeys, chapterStarsShown, computeAllChapterStars, shouldTypeSentence } from '../lib/chapters.js'
 import { renderFuri, furiPlain } from '../lib/furigana.jsx'
 import { sceneTorii, buildBackdrop, roadPath, STATE_PALETTE } from '../lib/scene.jsx'
@@ -134,13 +134,13 @@ function ChoiceStep({ step, onSolved }) {
       <div style={{ display: emojiOptions ? 'flex' : 'grid', gridTemplateColumns: step.kind === 'tf' ? '1fr 1fr' : '1fr', gap: 10, justifyContent: 'center' }}>
         {options.map(o => {
           const correct = o.value === answerValue, chosen = o.value === ans
-          const bc = !revealed ? C.washiDark : correct ? C.matcha : chosen ? C.shu : C.washiDark
+          const fb = feedbackColor(!revealed ? 'neutral' : correct ? 'correct' : chosen ? 'wrong' : 'neutral')
           const isJa = /[぀-ヿ一-龯]/.test(o.value)
           return (
             <button key={o.value} onClick={() => choose(o.value)} disabled={revealed}
               style={{
-                padding: emojiOptions ? 10 : '12px 14px', borderRadius: 10, border: `2px solid ${bc}`,
-                background: !revealed ? '#fff' : correct ? `${C.matcha}20` : chosen ? `${C.shu}20` : '#fff',
+                padding: emojiOptions ? 10 : '12px 14px', borderRadius: 10, border: `2px solid ${fb.border}`,
+                background: fb.bg,
                 cursor: revealed ? 'default' : 'pointer', flex: emojiOptions ? 1 : undefined,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 fontSize: isJa ? 22 : 15, fontFamily: isJa ? JP : 'inherit',
@@ -592,7 +592,7 @@ export default function ReiseScreen({ onReview }) {
   // Parallax-Hintergrund je Welt-Band: Land (Ankunft) → Berge (Natur/Aufstieg) →
   // Stadt (Tokyo) → Tempelgarten (Schluss). Reihenfolge folgt PATH-Welt-Index;
   // bei neuen Welten hier ergänzen (Default „mountain").
-  const BAND_THEMES = ['country', 'country', 'mountain', 'mountain', 'mountain', 'mountain', 'city', 'city', 'city', 'garden']
+  const BAND_THEMES = ['country', 'country', 'mountain', 'mountain', 'mountain', 'mountain', 'city', 'city', 'city', 'garden', 'city', 'country']
   const backdropH = trackH + 80
   const bandsForBackdrop = bands.map((b, i) => ({
     ...b,

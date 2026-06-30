@@ -24,7 +24,7 @@ export default function TabiApp() {
   const [prevTab, setPrevTab] = useState('reise')   // Rücksprung aus den Einstellungen
   const [uebenMode, setUebenMode] = useState(null)  // gewünschter Übungsmodus beim Tab-Wechsel
   const { user, logout } = useAuth()
-  const { progress, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset } = useProgress(user?.uid)
+  const { progress, saveError, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset } = useProgress(user?.uid)
   const { level } = computeStats(progress)
   const settings = getSettings(progress)
 
@@ -102,6 +102,17 @@ export default function TabiApp() {
           </button>
         </div>
       </div>
+
+      {/* Speicherfehler-Banner: echte Schreibfehler (nicht bloß offline, das fängt
+          der lokale Cache ab) sichtbar machen statt Fortschritt still zu verlieren. */}
+      {saveError && (
+        <div style={{
+          padding: '8px 16px', background: `${C.shu}14`, borderBottom: `1px solid ${C.shu}40`,
+          fontSize: 12, color: C.shu, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <span>⚠ Speichern fehlgeschlagen – Fortschritt wird lokal gehalten, bitte Verbindung prüfen.</span>
+        </div>
+      )}
 
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 80 }}>

@@ -52,17 +52,19 @@ export default function FortschrittScreen({ onReview }) {
 
   const hiraDone = LESSONS.filter(l => l.script === 'Hiragana').every(l => completed.includes(l.id))
   const kataDone = LESSONS.filter(l => l.script === 'Katakana').every(l => completed.includes(l.id))
+  // Restdistanz nur dort, wo sie sich eindeutig aus vorhandenen Werten ergibt
+  // (Streak-Stufen, Level) – sonst bleibt es beim reinen 🔒 (keine geratenen Zahlen).
   const achievements = [
     { icon: '✍️', label: 'Erste Lektion', sub: 'Die Reise beginnt', earned: completed.length >= 1 },
-    { icon: '🔥', label: '3-Tage-Streak', sub: 'Drei Tage in Folge', earned: stats.streak >= 3 },
-    { icon: '🔥', label: '7-Tage-Streak', sub: 'Eine ganze Woche dran', earned: stats.streak >= 7 },
+    { icon: '🔥', label: '3-Tage-Streak', sub: 'Drei Tage in Folge', earned: stats.streak >= 3, remaining: 3 - stats.streak, unit: 'Tag' },
+    { icon: '🔥', label: '7-Tage-Streak', sub: 'Eine ganze Woche dran', earned: stats.streak >= 7, remaining: 7 - stats.streak, unit: 'Tag' },
     { icon: '🈂️', label: 'Alle Hiragana', sub: '46 Hiragana gelernt', earned: hiraDone },
     { icon: '🈁', label: 'Alle Katakana', sub: '46 Katakana gelernt', earned: kataDone },
     { icon: '🗣️', label: 'Erste Wörter', sub: 'Ersten Wort-Block geschafft', earned: (progress.completedWordBlocks || []).length >= 1 },
     { icon: '📐', label: 'Grammatik-Start', sub: 'Erstes Thema verstanden', earned: grammarDone >= 1 },
     { icon: '📖', label: 'Erstes Kapitel', sub: 'Erste Episode erlebt', earned: chaptersDone >= 1 },
     { icon: '🎓', label: 'Vokabel gemeistert', sub: 'Ein Wort fest im Kopf', earned: stageCounts[4].n >= 1 },
-    { icon: '⭐', label: 'Level 5', sub: '5000 XP gesammelt', earned: stats.level >= 5 },
+    { icon: '⭐', label: 'Level 5', sub: '5000 XP gesammelt', earned: stats.level >= 5, remaining: stats.level >= 5 ? 0 : (5 - stats.level) * 1000 - xpInLevel, unit: 'XP' },
     { icon: '🗻', label: 'Gipfel erreicht', sub: 'Alle Kapitel abgeschlossen', earned: chaptersDone >= CHAPTERS.length },
   ]
   const earnedCount = achievements.filter(a => a.earned).length
@@ -185,15 +187,22 @@ export default function FortschrittScreen({ onReview }) {
         <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 12, fontWeight: 600, letterSpacing: 1 }}>
           ERRUNGENSCHAFTEN · {earnedCount}/{achievements.length}
         </div>
-        {achievements.map((a, i) => (
-          <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '9px 0', borderBottom: i < achievements.length - 1 ? `1px solid ${C.washiDark}` : 'none', opacity: a.earned ? 1 : 0.45 }}>
-            <div style={{ fontSize: 22, filter: a.earned ? 'none' : 'grayscale(1)' }}>{a.earned ? a.icon : '🔒'}</div>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{a.label}</div>
-              <div style={{ fontSize: 12, color: C.textMuted }}>{a.earned ? a.sub : 'Noch nicht erreicht'}</div>
+        {achievements.map((a, i) => {
+          // Restdistanz nur anzeigen, wenn sauber berechenbar und positiv – sonst
+          // bleibt es beim neutralen „Noch nicht erreicht" (keine geratenen Zahlen).
+          const hint = a.earned ? a.sub
+            : a.remaining > 0 ? `noch ${a.remaining} ${a.unit}${a.remaining === 1 ? '' : a.unit === 'Tag' ? 'e' : ''}`
+            : 'Noch nicht erreicht'
+          return (
+            <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '9px 0', borderBottom: i < achievements.length - 1 ? `1px solid ${C.washiDark}` : 'none', opacity: a.earned ? 1 : 0.45 }}>
+              <div style={{ fontSize: 22, filter: a.earned ? 'none' : 'grayscale(1)' }}>{a.earned ? a.icon : '🔒'}</div>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{a.label}</div>
+                <div style={{ fontSize: 12, color: C.textMuted }}>{hint}</div>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </Card>
 
       {/* Reset */}
