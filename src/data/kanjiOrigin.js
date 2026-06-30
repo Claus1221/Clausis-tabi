@@ -46,4 +46,10 @@ export const KANJI_ORIGIN = {
   '女': { type: 'Piktogramm', radical: true, note: 'Eine kniende Frau – „Frau".' },
   '中': { type: 'Ideogramm', note: 'Ein senkrechter Strich mitten durch ein Feld – „Mitte / innen".' },
   '寺': { type: 'Zusammengesetzt', parts: [{ c: '土', de: 'Erde' }, { c: '寸', de: 'Hand/Maß' }], note: 'Erde 土 und Hand 寸 – einst ein Amt, später der Tempel.' },
+  '北': { type: 'Piktogramm', radical: true, note: 'Zwei Menschen Rücken an Rücken – „sich abwenden". Der Herrscher blickte nach Süden, der Rücken zeigte nach Norden.' },
+  '南': { type: 'Ideogramm', note: 'Ursprünglich ein Musikinstrument oder eine Pflanze aus dem warmen Süden – wurde zur Richtung Süden.' },
+  '西': { type: 'Piktogramm', note: 'Ein Vogel im Nest bei Sonnenuntergang – dort, im Westen, geht die Sonne unter.' },
+  '前': { type: 'Zusammengesetzt', parts: [{ c: '止', de: 'Fuß – vorwärtsgehen' }, { c: '舟', de: 'Boot' }], note: 'Ein Fuß über einem Boot 舟 – sich nach vorne bewegen: „vor / davor".' },
+  '後': { type: 'Zusammengesetzt', parts: [{ c: '彳', de: 'Schritt – Bedeutung' }, { c: '幺', de: 'kleiner Faden – verzögern' }], note: 'Ein zögernder Schritt 彳 mit „Faden" 幺 – wer zurückbleibt, ist hinten/danach.' },
+  '隣': { type: 'Zusammengesetzt', parts: [{ c: '阝', de: 'Ort/Hügel – Bedeutung' }, { c: '粦', de: 'rin – Lautgeber' }], note: 'Orts-Radikal 阝 – ein benachbarter Ort; 粦 gibt den Klang.' },
 }

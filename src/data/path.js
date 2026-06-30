@@ -60,4 +60,7 @@ export const PATH = [
   { type: 'chapter', id: 'c10' },
   { type: 'chapter', id: 'c11' },
   { type: 'chapter', id: 'c12' },
+  { world: '東京・四', sub: 'Richtungen & Lage' },
+  { type: 'chapter', id: 'c13' },
+  { type: 'chapter', id: 'c14' },
 ]

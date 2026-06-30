@@ -55,6 +55,12 @@ export const STORY_TOKENS = {
   '寺はきれいです。': [
     { t: '寺', r: 'てら', de: 'Tempel', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: 'きれい', de: 'schön', b: 'な-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
   ],
+  '寺(てら)は東(ひがし)です。': [
+    { t: '寺', r: 'てら', de: 'Tempel', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '東', r: 'ひがし', de: 'Osten', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+  ],
+  '猫(ねこ)は寺(てら)の前(まえ)です。': [
+    { t: '猫', r: 'ねこ', de: 'Katze', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '寺', r: 'てら', de: 'Tempel', b: 'Nomen' }, { t: 'の', de: 'von / -s', b: 'Verbindungspartikel (Genitiv)' }, { t: '前', r: 'まえ', de: 'vor / davor', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+  ],
 }
 
 // ─── Geschichts-Kapitel (eine Episode pro Welt) ──────────────────────────────
@@ -222,6 +228,33 @@ export const CHAPTERS = [
     { kind: 'build', prompt: 'Bilde: „Lass uns zum Tempel in Tokyo gehen."', tiles: ['東京', 'の', '寺', 'に', '行きましょう'], answer: ['東京', 'の', '寺', 'に', '行きましょう'], tr: '東京の寺に行きましょう。' },
     { kind: 'build', prompt: 'Bilde: „Es ist ein großer Tempel."', tiles: ['大きい', '寺', 'です'], answer: ['大きい', '寺', 'です'], tr: '大きい寺です。' },
     { kind: 'story', emoji: 'torii', jp: '寺はきれいです。', tr: 'Der Tempel ist schön.' },
+  ] },
+  { id: 'c13', title: 'Himmelsrichtungen', steps: [
+    { kind: 'story', emoji: 'map', text: 'Am Tor des Tempels hängt eine Wegweiser-Tafel. Pfeile zeigen in alle vier Richtungen – Zeit, dich zu orientieren.' },
+    { kind: 'intro', emoji: 'map', jp: '北', reading: 'きた', de: 'Norden' },
+    { kind: 'intro', emoji: 'map', jp: '南', reading: 'みなみ', de: 'Süden' },
+    { kind: 'intro', emoji: 'map', jp: '東', reading: 'ひがし', de: 'Osten' },
+    { kind: 'intro', emoji: 'map', jp: '西', reading: 'にし', de: 'Westen' },
+    { kind: 'sign', sign: '北', prompt: 'Ein Pfeil auf der Tafel zeigt dieses Zeichen. Welche Richtung ist das?', options: ['Norden', 'Süden', 'Westen'], answer: 'Norden' },
+    { kind: 'audio', say: 'にし', options: ['西', '東', '南'], answer: '西', de: 'Westen' },
+    { kind: 'story', emoji: 'map', text: 'Neu: 〜は 北です／南です／東です／西です sagt, wo etwas liegt. „駅は北です" = „Der Bahnhof liegt im Norden."' },
+    { kind: 'gap', text: '駅は ＿です。', prompt: '„Der Bahnhof liegt im Süden." Welches Wort passt?', options: ['南', '北', '東'], answer: '南', hint: '南 = Süden.' },
+    { kind: 'build', prompt: 'Bilde: „Der Tempel liegt im Osten."', tiles: ['寺', 'は', '東', 'です'], answer: ['寺', 'は', '東', 'です'], tr: '寺は東です。' },
+    { kind: 'dialog', emoji: 'person', line: '駅は どちらですか？', prompt: 'Ein Wanderer fragt nach dem Bahnhof. Er liegt im Westen. Antworte:', options: ['西です。', '東です。', '北です。'], answer: '西です。', tr: 'Im Westen.' },
+    { kind: 'story', emoji: 'map', jp: '寺(てら)は東(ひがし)です。', tr: 'Der Tempel liegt im Osten.', text: 'Mit der Karte in der Hand findest du die Richtung – weiter geht deine Reise.' },
+  ] },
+  { id: 'c14', title: 'Im Tempelgarten', steps: [
+    { kind: 'story', emoji: 'torii', text: 'Hinter dem Tempel liegt ein stiller Garten. Dort soll die Tempelkatze schlafen – du machst dich auf die Suche.' },
+    { kind: 'intro', emoji: 'torii', jp: '前', reading: 'まえ', de: 'vor' },
+    { kind: 'intro', emoji: 'torii', jp: '後ろ', reading: 'うしろ', de: 'hinter' },
+    { kind: 'intro', emoji: 'torii', jp: '隣', reading: 'となり', de: 'neben' },
+    { kind: 'audio', say: 'まえ', options: ['前', '後ろ', '隣'], answer: '前', de: 'vor' },
+    { kind: 'story', emoji: 'torii', text: 'Neu: Bei Lebewesen heißt „es gibt / ist da" 〜が います (nicht あります). 猫が います＝„Da ist eine Katze." Schon bekannt: 〜の上に＝auf/über ~, 〜の下に＝unter ~, 〜の中に＝in ~. Neu dazu: 〜の前に／後ろに／隣に＝vor／hinter／neben ~.' },
+    { kind: 'gap', text: '寺の ＿に 猫が います。', prompt: '„Die Katze ist hinter dem Tempel." Welches Wort passt?', options: ['後ろ', '前', '隣'], answer: '後ろ', hint: '後ろ = hinter.' },
+    { kind: 'build', prompt: 'Bilde: „Die Katze ist neben dem Tempel."', tiles: ['猫', 'は', '寺', 'の', '隣', 'です'], answer: ['猫', 'は', '寺', 'の', '隣', 'です'], tr: '猫は寺の隣です。' },
+    { kind: 'dialog', emoji: 'person', line: '猫は どこですか？', prompt: 'Ein Mönch fragt nach der Katze. Sie liegt vor dem Tempel. Antworte:', options: ['寺の前です。', '寺の中です。', '右です。'], answer: '寺の前です。', tr: 'Vor dem Tempel.' },
+    { kind: 'tf', emoji: 'cat', jp: '猫は寺の前です。', prompt: 'Stimmt es zum Bild?', answer: true },
+    { kind: 'story', emoji: 'torii', jp: '猫(ねこ)は寺(てら)の前(まえ)です。', tr: 'Die Katze ist vor dem Tempel.', text: 'Du findest die Katze – sie schläft friedlich im Schatten des Tempels. Deine Reise durch Japan geht weiter.' },
   ] },
 ]
 export const CHAPTER_BY_ID = Object.fromEntries(CHAPTERS.map(c => [c.id, c]))
