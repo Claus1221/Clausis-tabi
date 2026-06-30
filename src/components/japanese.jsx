@@ -1,7 +1,7 @@
 import { useState, useContext } from 'react'
 import { C, JP } from '../theme.js'
 import { KANJI_ORIGIN } from '../data/kanjiOrigin.js'
-import { speak, copyText } from '../lib/speech.js'
+import { speak, speakTokens, copyText } from '../lib/speech.js'
 import { lexTokens } from '../lib/dialog.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
 import { Card, Btn } from './ui.jsx'
@@ -139,7 +139,7 @@ export function WordDetail({ word }) {
       <Card>
         <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 10, display: 'flex', justifyContent: 'space-between' }}>
           <span>BEISPIELSATZ</span>
-          <button onClick={() => speak(word.ex.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🔊</button>
+          <button onClick={() => speakTokens(word.ex.tokens)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🔊</button>
         </div>
 
         <div style={{ fontSize: 32, fontFamily: JP, lineHeight: 1.5, marginBottom: 8 }}>
@@ -218,7 +218,7 @@ export function TappableSentence({ ex }) {
             )
           }) : ex.jp}
         </div>
-        <button onClick={() => speak(ex.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}>🔊</button>
+        <button onClick={() => tokens ? speakTokens(tokens) : speak(ex.jp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}>🔊</button>
       </div>
       <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>{ex.kana}</div>
       <div style={{ fontSize: 15, color: C.indigo }}>„{ex.de}"</div>
@@ -282,7 +282,6 @@ export function TappableJp({ text, size = 19, hint = false }) {
 export function StoryLine({ tokens, tr }) {
   const [active, setActive] = useState(null)
   const tk = active != null ? tokens[active] : null
-  const plain = tokens.map(t => t.t).join('')
   return (
     <div>
       <div style={{ fontSize: 24, fontFamily: JP, lineHeight: 2.1, color: C.sumi }}>
@@ -298,7 +297,7 @@ export function StoryLine({ tokens, tr }) {
             </span>
           )
         })}
-        <button onClick={() => speak(plain)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, marginLeft: 6, verticalAlign: 'middle' }}>🔊</button>
+        <button onClick={() => speakTokens(tokens)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, marginLeft: 6, verticalAlign: 'middle' }}>🔊</button>
       </div>
       {tr && <div style={{ fontSize: 15, color: C.indigo, marginTop: 6 }}>„{tr}"</div>}
       {tk ? (

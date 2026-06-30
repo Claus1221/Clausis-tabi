@@ -2,7 +2,7 @@ import { useState, useContext } from 'react'
 import { C, JP } from '../theme.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
 import { shuffled } from '../lib/srs.js'
-import { speak } from '../lib/speech.js'
+import { speak, itemReading } from '../lib/speech.js'
 import { XP_PER_CARD } from '../lib/xp.js'
 import { Btn } from './ui.jsx'
 
@@ -20,7 +20,7 @@ export function BuildStep({ step, onSolved, typed = false }) {
   const target = step.answer.join('')
   const norm = (s) => s.replace(/[\s　。、!！?？]/g, '')
 
-  const add = (tile) => { if (result != null) return; speak(tile.t); setPool(p => p.filter(x => x.id !== tile.id)); setLine(l => [...l, tile]) }
+  const add = (tile) => { if (result != null) return; speak(itemReading(tile.t)); setPool(p => p.filter(x => x.id !== tile.id)); setLine(l => [...l, tile]) }
   const back = (tile) => { if (result != null) return; setLine(l => l.filter(x => x.id !== tile.id)); setPool(p => [...p, tile]) }
   const check = () => { const ok = line.map(x => x.t).join('') === target; setResult(ok); if (ok) awardXp(XP_PER_CARD); onSolved(ok) }
   const checkTyped = () => { if (!val.trim()) return; const ok = norm(val) === norm(target); setResult(ok); if (ok) awardXp(XP_PER_CARD); onSolved(ok) }
@@ -37,7 +37,7 @@ export function BuildStep({ step, onSolved, typed = false }) {
       {result ? '✓ Richtig!' : '✗ Nicht ganz'}
       <span style={{ display: 'block', fontWeight: 400, fontSize: 14, color: C.sumi, marginTop: 4, fontFamily: JP }}>
         {target}
-        <button onClick={() => speak(target)} style={{ background: 'none', border: 'none', fontSize: 15, cursor: 'pointer', marginLeft: 6 }}>🔊</button>
+        <button onClick={() => speak(step.answer.map(itemReading).join(''))} style={{ background: 'none', border: 'none', fontSize: 15, cursor: 'pointer', marginLeft: 6 }}>🔊</button>
       </span>
       <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted }}>„{step.tr}"</span>
     </div>
