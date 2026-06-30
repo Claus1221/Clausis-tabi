@@ -67,27 +67,69 @@ const SCENE_THEMES = {
 // lückenlos aneinandergereiht (vom Aufrufer auf die volle Höhe ausgedehnt).
 // Jedes Band bekommt eigenen Himmel, fernen/nahen Rücken und passendes Dekor –
 // so wandelt sich die Kulisse mit der erzählten Welt statt einer Landschaft
-// über die ganze Reise.
+// über die ganze Reise. Die Bandgrenzen selbst sind weiche Verläufe (Himmel als
+// EIN durchgehender Gradient, Rücken mit grenznahen Übergangs-Stops), damit kein
+// harter Farbsprung zwischen z. B. Bergen und Stadt entsteht.
+const TRANSITION_PX = 70 // Übergangs-Distanz an jeder Bandgrenze
+
 export function buildBackdrop(bands) {
   const W = 400
+  const totalTop = bands[0]?.top ?? 0
+  const totalBottom = bands[bands.length - 1]?.bottom ?? 0
+  const totalH = totalBottom - totalTop || 1
   const els = []
+
+  // Ein durchgehender Himmel-Gradient über die volle Höhe statt eines Rechtecks
+  // je Band: jedes Band setzt seine 3 Stops etwas EINGERÜCKT von der Bandgrenze
+  // (nicht direkt darauf). Die so entstehende Lücke zwischen dem letzten Stop
+  // eines Bands und dem ersten Stop des nächsten blendet von selbst weich –
+  // weil beide Teil DESSELBEN Gradienten sind, nicht zweier getrennter.
+  const skyStops = []
+  bands.forEach(b => {
+    const theme = SCENE_THEMES[b.theme] || SCENE_THEMES.mountain
+    const half = Math.min(TRANSITION_PX / 2, (b.bottom - b.top) * 0.2)
+    skyStops.push(
+      { o: (b.top + half - totalTop) / totalH, c: theme.sky[0] },
+      { o: ((b.top + b.bottom) / 2 - totalTop) / totalH, c: theme.sky[1] },
+      { o: (b.bottom - half - totalTop) / totalH, c: theme.sky[2] },
+    )
+  })
+  els.push(
+    <linearGradient key="skyGrad" id="tabiSky" gradientUnits="userSpaceOnUse" x1="0" y1={totalTop} x2="0" y2={totalBottom}>
+      {skyStops.map((s, i) => <stop key={i} offset={s.o} stopColor={s.c} />)}
+    </linearGradient>,
+  )
+  els.push(<rect key="sky" x="0" y={totalTop} width={W} height={totalBottom - totalTop} fill="url(#tabiSky)" />)
+
   bands.forEach((b, bi) => {
     const theme = SCENE_THEMES[b.theme] || SCENE_THEMES.mountain
-    const gid = `tabiSky${bi}`
+    // Nur der NÄCHSTE Nachbar zählt: jedes Band hält seine eigene Farbe bis kurz
+    // vor dem Ende und blendet dort zur Farbe des nächsten Bands. Das vorige Band
+    // hat sein Ende bereits genauso zur Farbe DIESES Bands hin ausgeblendet –
+    // an der Nahtstelle (gemeinsame Grenz-Koordinate) stimmen beide exakt überein.
+    // (Würde stattdessen jedes Band auch noch von der VORIGEN Farbe einblenden,
+    // träfen sich an der Naht zwei unterschiedliche Farben statt einer.)
+    const nextTheme = bi < bands.length - 1 ? (SCENE_THEMES[bands[bi + 1].theme] || theme) : theme
+    const tFrac = Math.min(0.4, TRANSITION_PX / (b.bottom - b.top))
+    const farGid = `tabiFar${bi}`, nearGid = `tabiNear${bi}`
     els.push(
-      <linearGradient key={`grad${bi}`} id={gid} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor={theme.sky[0]} />
-        <stop offset="0.5" stopColor={theme.sky[1]} />
-        <stop offset="1" stopColor={theme.sky[2]} />
+      <linearGradient key={`fgrad${bi}`} id={farGid} gradientUnits="userSpaceOnUse" x1="0" y1={b.top} x2="0" y2={b.bottom}>
+        <stop offset="0" stopColor={theme.far} />
+        <stop offset={1 - tFrac} stopColor={theme.far} />
+        <stop offset="1" stopColor={nextTheme.far} />
+      </linearGradient>,
+      <linearGradient key={`ngrad${bi}`} id={nearGid} gradientUnits="userSpaceOnUse" x1="0" y1={b.top} x2="0" y2={b.bottom}>
+        <stop offset="0" stopColor={theme.near} />
+        <stop offset={1 - tFrac} stopColor={theme.near} />
+        <stop offset="1" stopColor={nextTheme.near} />
       </linearGradient>,
     )
-    els.push(<rect key={`sky${bi}`} x="0" y={b.top} width={W} height={b.bottom - b.top} fill={`url(#${gid})`} />)
     // ferner, blasser Rücken
-    els.push(verticalRidge('L', b.top, b.bottom, 96, 24, theme.period + 200, bi, theme.far, `fl${bi}`))
-    els.push(verticalRidge('R', b.top, b.bottom, 96, 24, theme.period + 240, 1.4 + bi, theme.far, `fr${bi}`))
+    els.push(verticalRidge('L', b.top, b.bottom, 96, 24, theme.period + 200, bi, `url(#${farGid})`, `fl${bi}`))
+    els.push(verticalRidge('R', b.top, b.bottom, 96, 24, theme.period + 240, 1.4 + bi, `url(#${farGid})`, `fr${bi}`))
     // naher Rücken
-    els.push(verticalRidge('L', b.top, b.bottom, 58, theme.amp, theme.period, 0.6 + bi, theme.near, `nl${bi}`))
-    els.push(verticalRidge('R', b.top, b.bottom, 58, theme.amp, theme.period + 20, 2.1 + bi, theme.near, `nr${bi}`))
+    els.push(verticalRidge('L', b.top, b.bottom, 58, theme.amp, theme.period, 0.6 + bi, `url(#${nearGid})`, `nl${bi}`))
+    els.push(verticalRidge('R', b.top, b.bottom, 58, theme.amp, theme.period + 20, 2.1 + bi, `url(#${nearGid})`, `nr${bi}`))
     // Dekor entlang der nahen Rücken
     let k = 0
     for (let yy = b.top + 30; yy < b.bottom - 30; yy += 110, k++) {
