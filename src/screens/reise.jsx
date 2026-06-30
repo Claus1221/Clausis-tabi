@@ -589,9 +589,18 @@ export default function ReiseScreen({ onReview }) {
     }
   })
 
-  // Durchgängiger Parallax-Hintergrund (eine Tal-Landschaft über die volle Höhe).
+  // Parallax-Hintergrund je Welt-Band: Land (Ankunft) → Berge (Natur/Aufstieg) →
+  // Stadt (Tokyo) → Tempelgarten (Schluss). Reihenfolge folgt PATH-Welt-Index;
+  // bei neuen Welten hier ergänzen (Default „mountain").
+  const BAND_THEMES = ['country', 'country', 'mountain', 'mountain', 'mountain', 'mountain', 'city', 'city', 'city', 'garden']
   const backdropH = trackH + 80
-  const backdrop = buildBackdrop(backdropH)
+  const bandsForBackdrop = bands.map((b, i) => ({
+    ...b,
+    top: i === 0 ? 0 : b.top,
+    bottom: i === bands.length - 1 ? backdropH : b.bottom,
+    theme: BAND_THEMES[b.idx] || 'mountain',
+  }))
+  const backdrop = buildBackdrop(bandsForBackdrop)
 
   return (
     <div ref={wrapRef} style={{ paddingBottom: 8 }}>
@@ -649,13 +658,6 @@ export default function ReiseScreen({ onReview }) {
         {/* Durchgängiger Parallax-Hintergrund */}
         <div ref={backdropRef} aria-hidden="true" style={{ position: 'absolute', top: -40, left: 0, right: 0, height: backdropH, zIndex: 0, willChange: 'transform' }}>
           <svg width="100%" height={backdropH} viewBox={`0 0 400 ${backdropH}`} preserveAspectRatio="none" style={{ display: 'block' }}>
-            <defs>
-              <linearGradient id="tabiSky" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#DCE7EE" />
-                <stop offset="0.5" stopColor="#E7EDE6" />
-                <stop offset="1" stopColor="#EEEADF" />
-              </linearGradient>
-            </defs>
             {backdrop}
           </svg>
         </div>

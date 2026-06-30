@@ -78,7 +78,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `dialog.js` | `lexTokens`, `dialogGate`, `reiseVocab`, `curriculumVocab`, `tokenGrammarId`, `ROLE_GRAMMATICAL`, … | data/dialogs, data/words, data/chapters |
 | `chapters.js` | `chapterSrsKeys`, `chapterStarsLive`, `chapterStarsShown`, `computeAllChapterStars` | data/chapters, **lib/srs** |
 | `furigana.jsx` | `renderFuri`, `furiPlain`, `HAS_JP` | – (enthält JSX → `.jsx`) |
-| `scene.jsx` | `sceneTree`, `sceneTorii`, `verticalRidge`, `buildBackdrop`, `roadPath`, `STATE_PALETTE` | – (SVG-JSX → `.jsx`) |
+| `scene.jsx` | `sceneTree`, `sceneTorii`, `verticalRidge`, `buildBackdrop(bands)`, `roadPath`, `STATE_PALETTE` | – (SVG-JSX → `.jsx`) |
 | `path.js` | `isNodeDone`, `pathNodeMeta` | data/kana, data/words, data/grammar, data/chapters |
 | `mix.js` | `MIX_LABEL`, `buildMixTasks` | **lib/srs** |
 | `progress.js` | `periodBuckets` (XP-Aggregation für Diagramme) | – |
@@ -118,6 +118,10 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 - **Reise = roter Faden:** `data/path.js` (`PATH`) ordnet Kana-, Wort-, Grammatik-
   und Kapitel-Stationen. `ReiseScreen` rendert die Karte und öffnet je Station das
   passende Overlay aus `screens/players.jsx` bzw. den Kapitel-`ChapterPlayer`.
+- **Themen-Hintergrund:** `ReiseScreen` ordnet jedem PATH-Welt-Band (per Index) ein
+  Thema zu (`BAND_THEMES`: Land → Berge → Stadt → Tempelgarten, passend zur erzählten
+  Welt) und übergibt das an `lib/scene.jsx` (`buildBackdrop(bands)`), das je Band
+  eigenen Himmel/Rücken/Dekor zeichnet. Neue Welt in `PATH` → `BAND_THEMES` ergänzen.
 - **Rollenspiel-Freischaltung:** `lib/dialog.js` (`dialogGate`) leitet Vokabel-/
   Grammatik-Bedarf aus den Antwortsätzen ab und prüft gegen das, was die Reise lehrt.
 - **Kapitel-Sterne:** `lib/chapters.js` berechnet Sterne aus dem SRS-Stand der
