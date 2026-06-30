@@ -157,8 +157,11 @@ verwendet – `STORY_TOKENS`/`DIALOG_LEX` ergänzen, damit Wörter antippbar ble
   `firebase` und `react` jeweils in eigenen, langlebig cachebaren Chunks.
 - **PWA:** `vite-plugin-pwa` (autoUpdate). `base` = `/Clausis-tabi/` für GitHub Pages.
 - **Deployment:** Push auf `main` → GitHub Actions (`.github/workflows/deploy.yml`)
-  läuft `npm ci`, `npm test` (blockierend), `npm run audit` (informativ, blockiert
-  nicht), `npm run build` und veröffentlicht `dist/` nach GitHub Pages.
+  läuft `npm install` (bewusst statt `npm ci` – package-lock.json kann hier
+  mangels Node/npm nicht lokal neu generiert werden und gerät nach
+  Dependency-Änderungen leicht außer Sync), `npm test` (blockierend), `npm run
+  audit` (informativ, blockiert nicht), `npm run build` und veröffentlicht
+  `dist/` nach GitHub Pages.
 - **Tests:** Vitest (`vitest.config.js`, eigene schlanke Konfiguration getrennt von
   `vite.config.js`). Reine Logik-Tests neben der getesteten Datei (`*.test.js`),
   z. B. `useProgress.test.js` (SM-2-Algorithmus), `lib/srs.test.js`. Lokal mit

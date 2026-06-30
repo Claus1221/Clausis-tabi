@@ -17,7 +17,11 @@ jobs:
         with:
           node-version: 20
 
-      - run: npm ci
+      # npm install statt npm ci: package-lock.json kann hier nicht lokal neu
+      # generiert werden (kein Node/npm verfügbar), daher gerät sie nach
+      # Dependency-Änderungen leicht außer Sync. npm install löst das live auf
+      # (etwas weniger strikt reproduzierbar als ci, für dieses Projekt ok).
+      - run: npm install
       - run: npm test
 
       - name: Vorwärts-Referenzen-Audit (informativ, blockiert nicht)
