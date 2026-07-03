@@ -43,12 +43,16 @@ function sceneLantern(x, baseY, s, key) {
 }
 
 // Ein vertikaler Bergrücken (gewundene Silhouette) zwischen yTop und yBottom.
-export function verticalRidge(side, yTop, yBottom, base, amp, period, phase, color, key, W = 400) {
-  let d = side === 'L' ? `M0,${yTop} L${base},${yTop}` : `M${W},${yTop} L${W - base},${yTop}`
-  for (let yy = yTop; yy <= yBottom; yy += 34) {
-    const o = base + amp * Math.sin(yy / period + phase)
+// `offsetAt(y)` liefert den Versatz von der Bildkante; die letzte Stützstelle
+// liegt exakt auf yBottom, damit benachbarte Bänder nahtlos aneinanderschließen.
+export function verticalRidge(side, yTop, yBottom, offsetAt, color, key, W = 400) {
+  let d = side === 'L' ? `M0,${yTop}` : `M${W},${yTop}`
+  for (let yy = yTop; yy < yBottom; yy += 34) {
+    const o = offsetAt(yy)
     d += ` L${side === 'L' ? o : W - o},${yy}`
   }
+  const oEnd = offsetAt(yBottom)
+  d += ` L${side === 'L' ? oEnd : W - oEnd},${yBottom}`
   d += side === 'L' ? ` L0,${yBottom} Z` : ` L${W},${yBottom} Z`
   return <path key={key} d={d} fill={color} />
 }
@@ -58,9 +62,39 @@ export function verticalRidge(side, yTop, yBottom, base, amp, period, phase, col
 // des nahen Rückens, `period`/`amp` formen die Silhouette (eng+hoch = Häuserzeile).
 const SCENE_THEMES = {
   country: { sky: ['#E8EEDC', '#EEEEDC', '#F2EEDE'], far: '#DCE2CB', near: '#B9CE9F', period: 360, amp: 30, deco: sceneBush },
-  mountain: { sky: ['#DCE7EE', '#E7EDE6', '#EEEADF'], far: '#D3DBD7', near: '#C0D2B9', period: 360, amp: 36, deco: sceneTree },
+  mountain: { sky: ['#DCE7EE', '#E7EDE6', '#EEEADF'], far: '#D3DBD7', near: '#C0D2B9', period: 360, amp: 32, deco: sceneTree },
   city: { sky: ['#D3DEE8', '#DDE0E3', '#E9E4DA'], far: '#C6CCD5', near: '#5B6478', period: 140, amp: 30, deco: sceneWindow },
   garden: { sky: ['#E2E9DC', '#ECE8DB', '#F1E7DB'], far: '#CFD9C6', near: '#7F9C73', period: 360, amp: 30, deco: sceneLantern },
+}
+
+// Ferner Rücken: fester Rahmen VOR den Themen-Amplituden. min (104-10=94) liegt
+// bewusst ÜBER dem Maximum der nahen Rücken (58+32=90) – kreuzen sich die
+// Schichten, verschwinden Bänder abrupt hintereinander und tauchen als spitze
+// Keile wieder auf (die „schlagartigen Wechsel" von früher).
+const FAR_BASE = 104, FAR_AMP = 10
+
+// Silhouetten-Versatz eines Bands an Höhe y (Basis + Sinuswelle des Themas).
+function bandOffset(b, bi, y, layer, side) {
+  const theme = SCENE_THEMES[b.theme] || SCENE_THEMES.mountain
+  if (layer === 'far') {
+    return FAR_BASE + FAR_AMP * Math.sin(y / (theme.period + (side === 'L' ? 200 : 240)) + (side === 'L' ? 0 : 1.4) + bi)
+  }
+  return 58 + theme.amp * Math.sin(y / (theme.period + (side === 'L' ? 0 : 20)) + (side === 'L' ? 0.6 : 2.1) + bi)
+}
+
+// Versatz MIT weichem Silhouetten-Übergang an der Bandgrenze: die Farb-Gradients
+// blenden nur die FARBE – ohne dieses Blending springt die FORM an jeder Naht,
+// weil jedes Band eigene Amplitude/Periode/Phase hat (smoothstep über dieselbe
+// Übergangszone wie die Farben).
+function ridgeOffset(bands, bi, y, layer, side) {
+  const b = bands[bi]
+  const o = bandOffset(b, bi, y, layer, side)
+  if (bi >= bands.length - 1) return o
+  const zone = Math.min(TRANSITION_PX, (b.bottom - b.top) / 2)
+  if (y < b.bottom - zone) return o
+  const s = (y - (b.bottom - zone)) / zone
+  const sm = s * s * (3 - 2 * s)
+  return o + (bandOffset(bands[bi + 1], bi + 1, y, layer, side) - o) * sm
 }
 
 // Themen-Hintergrund für den Parallax-Track: `bands` = [{top,bottom,theme}, …],
@@ -125,19 +159,19 @@ export function buildBackdrop(bands) {
       </linearGradient>,
     )
     // ferner, blasser Rücken
-    els.push(verticalRidge('L', b.top, b.bottom, 96, 24, theme.period + 200, bi, `url(#${farGid})`, `fl${bi}`))
-    els.push(verticalRidge('R', b.top, b.bottom, 96, 24, theme.period + 240, 1.4 + bi, `url(#${farGid})`, `fr${bi}`))
+    els.push(verticalRidge('L', b.top, b.bottom, y => ridgeOffset(bands, bi, y, 'far', 'L'), `url(#${farGid})`, `fl${bi}`))
+    els.push(verticalRidge('R', b.top, b.bottom, y => ridgeOffset(bands, bi, y, 'far', 'R'), `url(#${farGid})`, `fr${bi}`))
     // naher Rücken
-    els.push(verticalRidge('L', b.top, b.bottom, 58, theme.amp, theme.period, 0.6 + bi, `url(#${nearGid})`, `nl${bi}`))
-    els.push(verticalRidge('R', b.top, b.bottom, 58, theme.amp, theme.period + 20, 2.1 + bi, `url(#${nearGid})`, `nr${bi}`))
-    // Dekor entlang der nahen Rücken
+    els.push(verticalRidge('L', b.top, b.bottom, y => ridgeOffset(bands, bi, y, 'near', 'L'), `url(#${nearGid})`, `nl${bi}`))
+    els.push(verticalRidge('R', b.top, b.bottom, y => ridgeOffset(bands, bi, y, 'near', 'R'), `url(#${nearGid})`, `nr${bi}`))
+    // Dekor entlang der nahen Rücken (gleiche Versatz-Funktion wie die Silhouette)
     let k = 0
     for (let yy = b.top + 30; yy < b.bottom - 30; yy += 110, k++) {
-      const lx = 58 + theme.amp * Math.sin(yy / theme.period + 0.6 + bi)
+      const lx = ridgeOffset(bands, bi, yy, 'near', 'L')
       els.push(theme.deco(lx + 16, yy, 0.8, `dl${bi}_${k}`))
       const ry = yy + 60
       if (ry < b.bottom - 20) {
-        const rx = W - (58 + theme.amp * Math.sin(ry / (theme.period + 20) + 2.1 + bi))
+        const rx = W - ridgeOffset(bands, bi, ry, 'near', 'R')
         els.push(theme.deco(rx - 16, ry, 0.7, `dr${bi}_${k}`))
       }
     }
