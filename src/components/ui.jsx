@@ -11,6 +11,9 @@ const EMOJI = {
   hand: '270b', foot: '1f9b6', ear: '1f442', house: '1f3e0', hotel: '1f3e8',
   food: '1f374', taxi: '1f695', bus: '1f68c', torii: '26e9', oldwoman: '1f475',
   person: '1f9cd', star: '2b50', night: '1f303', party: '1f389', japan: '1f5fe', hello: '1f44b',
+  up: '2b06', down: '2b07', right: '27a1', left: '2b05', door: '1f6aa', restroom: '1f6bb',
+  man: '1f468', woman: '1f469', camera: '1f4f7', gift: '1f381', restaurant: '1f37d',
+  elephant: '1f418', ant: '1f41c', sky: '1f324',
 }
 export function Emoji({ name, size = 48, style }) {
   const cp = EMOJI[name]
