@@ -25,8 +25,8 @@ export const STORY_TOKENS = {
   '魚(さかな)を見(み)ます。': [
     { t: '魚', r: 'さかな', de: 'Fisch', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '見ます', r: 'みます', de: 'sehen / anschauen', b: 'Verb, höflich (見る)' }, { t: '。' },
   ],
-  '山(やま)を登(のぼ)ります。': [
-    { t: '山', r: 'やま', de: 'Berg', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '登ります', r: 'のぼります', de: 'besteigen / hinaufgehen', b: 'Verb, höflich (登る)' }, { t: '。' },
+  '山(やま)に登(のぼ)ります。': [
+    { t: '山', r: 'やま', de: 'Berg', b: 'Nomen' }, { t: 'に', de: '(Ziel)', b: 'Partikel: wohin (Standard bei 登る)' }, { t: '登ります', r: 'のぼります', de: 'besteigen / hinaufgehen', b: 'Verb, höflich (登る)' }, { t: '。' },
   ],
   '足(あし)が痛(いた)いです。': [
     { t: '足', r: 'あし', de: 'Fuß / Bein', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '痛い', r: 'いたい', de: 'schmerzhaft / weh', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
@@ -46,8 +46,8 @@ export const STORY_TOKENS = {
   '小さい店です。': [
     { t: '小さい', r: 'ちいさい', de: 'klein', b: 'い-Adjektiv' }, { t: '店', r: 'みせ', de: 'Laden', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
   ],
-  '駅から東京まで行きます。': [
-    { t: '駅', r: 'えき', de: 'Bahnhof', b: 'Nomen' }, { t: 'から', de: 'von / ab', b: 'Partikel' }, { t: '東京', r: 'とうきょう', de: 'Tokyo', b: 'Nomen' }, { t: 'まで', de: 'bis', b: 'Partikel' }, { t: '行きます', r: 'いきます', de: 'fahren / gehen', b: 'Verb, höflich' }, { t: '。' },
+  'ここから東京駅まで行きます。': [
+    { t: 'ここ', de: 'hier', b: 'Ortswort (bei mir)' }, { t: 'から', de: 'von / ab', b: 'Partikel' }, { t: '東京駅', r: 'とうきょうえき', de: 'Bahnhof Tokyo', b: 'Nomen (東京 + 駅)' }, { t: 'まで', de: 'bis', b: 'Partikel' }, { t: '行きます', r: 'いきます', de: 'fahren / gehen', b: 'Verb, höflich' }, { t: '。' },
   ],
   'トイレは中です。': [
     { t: 'トイレ', de: 'Toilette', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '中', r: 'なか', de: 'Mitte / drinnen', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
@@ -94,7 +94,7 @@ export const CHAPTERS = [
     { kind: 'story', emoji: 'city', text: 'Der Zug hält in einer kleinen Stadt. Du schlenderst durch enge Gassen voller Schilder.' },
     { kind: 'intro', emoji: 'tea', jp: 'お茶', reading: 'おちゃ', de: 'Tee' },
     { kind: 'intro', emoji: 'mountain', jp: '山', reading: 'やま', de: 'Berg' },
-    { kind: 'pic', emoji: 'tea', options: ['お茶', '山', '空'], answer: 'お茶', de: 'Tee' },
+    { kind: 'pic', emoji: 'tea', options: ['お茶', '山', '駅'], answer: 'お茶', de: 'Tee' },
     { kind: 'pic_choice', jp: '山', options: ['mountain', 'wave', 'city'], answer: 'mountain', de: 'Berg' },
     { kind: 'trace', char: '山', reading: 'やま', de: 'Berg' },
     { kind: 'dialog', emoji: 'person', line: 'いらっしゃいませ！', prompt: 'Der Händler begrüßt dich. Du möchtest Tee. Was sagst du?', options: ['お茶、おねがいします。', 'さようなら。', 'こんばんは。'], answer: 'お茶、おねがいします。', tr: 'Tee, bitte.' },
@@ -128,7 +128,7 @@ export const CHAPTERS = [
     { kind: 'story', emoji: 'fish', jp: '魚(さかな)を見(み)ます。', tr: 'Ich sehe einen Fisch.', text: 'Am Fluss winkt dir ein Fischer zu.' },
   ] },
   { id: 'c5', title: 'Der Aufstieg', steps: [
-    { kind: 'story', emoji: 'person', jp: '山(やま)を登(のぼ)ります。', tr: 'Ich besteige den Berg.', text: 'Der Aufstieg wird hart. Du spürst jeden Muskel.' },
+    { kind: 'story', emoji: 'person', jp: '山(やま)に登(のぼ)ります。', tr: 'Ich besteige den Berg.', text: 'Der Aufstieg wird hart. Du spürst jeden Muskel.' },
     { kind: 'intro', emoji: 'eye', jp: '目', reading: 'め', de: 'Auge' },
     { kind: 'intro', emoji: 'hand', jp: '手', reading: 'て', de: 'Hand' },
     { kind: 'pic', emoji: 'eye', options: ['目', '手', '耳'], answer: '目', de: 'Auge' },
@@ -137,7 +137,7 @@ export const CHAPTERS = [
     { kind: 'build', prompt: 'Bilde: „Die Hand tut weh."', tiles: ['手', 'が', '痛い', 'です'], answer: ['手', 'が', '痛い', 'です'], tr: '手が痛いです。' },
     { kind: 'gap', text: '山＿行きます。', prompt: 'Welche Partikel zeigt das Ziel (wohin)?', options: ['に', 'で', 'を'], answer: 'に', hint: 'に zeigt Ziel/Richtung.' },
     { kind: 'build', prompt: 'Bilde: „Der Berg ist hoch."', tiles: ['山', 'が', '高い', 'です'], answer: ['山', 'が', '高い', 'です'], tr: '山が高いです。' },
-    { kind: 'build', prompt: 'Bilde: „Die Augen sind schön."', tiles: ['目', 'が', 'きれい', 'です'], answer: ['目', 'が', 'きれい', 'です'], tr: '目がきれいです。' },
+    { kind: 'build', prompt: 'Bilde: „Die Sterne sind schön."', tiles: ['星', 'が', 'きれい', 'です'], answer: ['星', 'が', 'きれい', 'です'], tr: '星がきれいです。' },
     { kind: 'story', emoji: 'mountain', jp: '足(あし)が痛(いた)いです。', tr: 'Meine Füße tun weh.', text: 'Erschöpft erreichst du eine Hütte. Morgen wartet der Gipfel.' },
   ] },
   { id: 'c6', title: 'Zum Gipfel', steps: [
@@ -191,7 +191,7 @@ export const CHAPTERS = [
     { kind: 'build', prompt: 'Bilde: „Es gibt einen Laden."', tiles: ['店', 'が', 'あります'], answer: ['店', 'が', 'あります'], tr: '店があります。' },
     { kind: 'dialog', emoji: 'person', line: 'いらっしゃいませ。', prompt: 'Du suchst Wasser und fragst die Person im Laden:', options: ['水が ありますか？', 'さようなら。', '大きいです。'], answer: '水が ありますか？', tr: 'Gibt es Wasser?' },
     { kind: 'build', prompt: 'Bilde: „Es gibt einen großen Laden."', tiles: ['大きい', '店', 'が', 'あります'], answer: ['大きい', '店', 'が', 'あります'], tr: '大きい店があります。' },
-    { kind: 'build', prompt: 'Bilde: „Es gibt einen großen Fisch."', tiles: ['大きい', '魚', 'が', 'あります'], answer: ['大きい', '魚', 'が', 'あります'], tr: '大きい魚があります。' },
+    { kind: 'build', prompt: 'Bilde die Frage: „Gibt es Tee?"', tiles: ['お茶', 'が', 'あります', 'か'], answer: ['お茶', 'が', 'あります', 'か'], tr: 'お茶がありますか。' },
     { kind: 'story', emoji: 'city', jp: '小さい店です。', tr: 'Es ist ein kleiner Laden.' },
   ] },
   { id: 'c10', title: 'Mit der U-Bahn', steps: [
@@ -200,13 +200,13 @@ export const CHAPTERS = [
     { kind: 'intro', emoji: 'map', jp: '下', reading: 'した', de: 'unten' },
     { kind: 'sign', sign: '下', prompt: 'Ein Pfeil mit diesem Zeichen zeigt…', options: ['nach unten', 'nach oben', 'geradeaus'], answer: 'nach unten' },
     { kind: 'audio', say: 'うえ', options: ['上', '下', '右'], answer: '上', de: 'oben' },
-    { kind: 'story', emoji: 'train', text: 'Neu: 〜から = „von/ab", 〜まで = „bis". 駅から 東京まで = „vom Bahnhof bis Tokyo".' },
-    { kind: 'gap', text: '駅＿ 東京まで。', prompt: '„Vom Bahnhof bis Tokyo." Welches Wort heißt „von/ab"?', options: ['から', 'まで', 'に'], answer: 'から', hint: '〜から = von/ab, 〜まで = bis.' },
+    { kind: 'story', emoji: 'train', text: 'Neu: 〜から = „von/ab", 〜まで = „bis". ここから 東京駅まで = „von hier bis zum Bahnhof Tokyo".' },
+    { kind: 'gap', text: 'ここ＿ 東京駅まで。', prompt: '„Von hier bis zum Bahnhof Tokyo." Welches Wort heißt „von/ab"?', options: ['から', 'まで', 'に'], answer: 'から', hint: '〜から = von/ab, 〜まで = bis.' },
     { kind: 'build', prompt: 'Bilde: „Ich gehe nach oben."', tiles: ['上', 'に', '行きます'], answer: ['上', 'に', '行きます'], tr: '上に行きます。' },
     { kind: 'dialog', emoji: 'person', line: 'きっぷは どこですか？', prompt: 'Jemand sucht die Fahrkarten – sie sind unten. Antworte:', options: ['下です。', '上です。', '魚です。'], answer: '下です。', tr: 'Unten.' },
-    { kind: 'build', prompt: 'Bilde: „Ich fahre von Tokyo bis zum Bahnhof."', tiles: ['東京', 'から', '駅', 'まで', '行きます'], answer: ['東京', 'から', '駅', 'まで', '行きます'], tr: '東京から駅まで行きます。' },
+    { kind: 'build', prompt: 'Bilde: „Ich gehe von zu Hause bis zum Bahnhof."', tiles: ['家', 'から', '駅', 'まで', '行きます'], answer: ['家', 'から', '駅', 'まで', '行きます'], tr: '家から駅まで行きます。' },
     { kind: 'build', prompt: 'Bilde: „Unten gibt es einen Ausgang."', tiles: ['下', 'に', '出口', 'が', 'あります'], answer: ['下', 'に', '出口', 'が', 'あります'], tr: '下に出口があります。' },
-    { kind: 'story', emoji: 'train', jp: '駅から東京まで行きます。', tr: 'Ich fahre vom Bahnhof bis Tokyo.' },
+    { kind: 'story', emoji: 'train', jp: 'ここから東京駅まで行きます。', tr: 'Von hier fahre ich bis zum Bahnhof Tokyo.' },
   ] },
   { id: 'c11', title: 'Schilder lesen', steps: [
     { kind: 'story', emoji: 'map', text: 'Überall Schilder. Du musst dringend zur Toilette – und lernst, die wichtigsten Zeichen zu erkennen.' },

@@ -14,14 +14,14 @@ export const PHRASES = [
   // Verständigung
   { jp: 'わかりません', romaji: 'wakarimasen', de: 'Ich verstehe nicht', cat: 'Verständigung' },
   { jp: 'わかりました', romaji: 'wakarimashita', de: 'Ich habe verstanden', cat: 'Verständigung' },
-  { jp: 'えいごをはなせますか？', romaji: 'eigo o hanasemasu ka?', de: 'Sprechen Sie Englisch?', cat: 'Verständigung' },
+  { jp: 'えいごが はなせますか？', romaji: 'eigo ga hanasemasu ka?', de: 'Sprechen Sie Englisch?', cat: 'Verständigung' },
   { jp: 'もういちど おねがいします', romaji: 'mou ichido onegai shimasu', de: 'Noch einmal, bitte', cat: 'Verständigung' },
   { jp: 'ゆっくり おねがいします', romaji: 'yukkuri onegai shimasu', de: 'Langsamer, bitte', cat: 'Verständigung' },
   { jp: 'にほんごが すこし わかります', romaji: 'nihongo ga sukoshi wakarimasu', de: 'Ich verstehe etwas Japanisch', cat: 'Verständigung' },
   { jp: 'これは にほんごで なんですか？', romaji: 'kore wa nihongo de nan desu ka?', de: 'Wie heißt das auf Japanisch?', cat: 'Verständigung' },
   { jp: 'たすけて ください', romaji: 'tasukete kudasai', de: 'Bitte helfen Sie mir', cat: 'Verständigung' },
   // Orientierung
-  { jp: 'すみません、どこですか？', romaji: 'sumimasen, doko desu ka?', de: 'Entschuldigung, wo ist …?', cat: 'Orientierung' },
+  { jp: 'すみません、○○は どこですか？', romaji: 'sumimasen, ○○ wa doko desu ka?', de: 'Entschuldigung, wo ist ○○?', cat: 'Orientierung' },
   { jp: 'えきは どこですか？', romaji: 'eki wa doko desu ka?', de: 'Wo ist der Bahnhof?', cat: 'Orientierung' },
   { jp: 'トイレは どこですか？', romaji: 'toire wa doko desu ka?', de: 'Wo ist die Toilette?', cat: 'Orientierung' },
   { jp: 'ちかいですか？', romaji: 'chikai desu ka?', de: 'Ist es in der Nähe?', cat: 'Orientierung' },
@@ -41,7 +41,7 @@ export const PHRASES = [
   { jp: 'おすすめは なんですか？', romaji: 'osusume wa nan desu ka?', de: 'Was empfehlen Sie?', cat: 'Restaurant' },
   { jp: 'おみずを ください', romaji: 'omizu o kudasai', de: 'Wasser, bitte', cat: 'Restaurant' },
   { jp: 'おいしいです！', romaji: 'oishii desu!', de: 'Das ist lecker!', cat: 'Restaurant' },
-  { jp: 'おかんじょう おねがいします', romaji: 'okanjou onegai shimasu', de: 'Die Rechnung, bitte', cat: 'Restaurant' },
+  { jp: 'おかいけい おねがいします', romaji: 'okaikei onegai shimasu', de: 'Die Rechnung, bitte', cat: 'Restaurant' },
   { jp: 'にくは たべません', romaji: 'niku wa tabemasen', de: 'Ich esse kein Fleisch', cat: 'Restaurant' },
   { jp: 'アレルギーが あります', romaji: 'arerugii ga arimasu', de: 'Ich habe eine Allergie', cat: 'Restaurant' },
   // Einkaufen

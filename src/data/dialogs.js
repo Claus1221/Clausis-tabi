@@ -15,7 +15,7 @@ export const DIALOGS = [
   { id: 'd1', title: 'Begrüßung', goal: 'Begrüße jemanden und stell dich vor.', emoji: 'hello', scaffold: 'voll', turns: [
     { npc: 'こんにちは！', de: 'Guten Tag!', options: ['こんにちは。', 'さようなら。', 'すみません。'], answer: 'こんにちは。' },
     { npc: 'おなまえは？', de: 'Wie heißen Sie?', options: ['クラウスです。', 'いくらですか？', 'みぎです。'], answer: 'クラウスです。' },
-    { npc: 'どこから？', de: 'Woher kommen Sie?', options: ['ドイツからです。', 'たべます。', 'たかいです。'], answer: 'ドイツからです。' },
+    { npc: 'どちらから？', de: 'Woher kommen Sie?', options: ['ドイツからです。', 'たべます。', 'たかいです。'], answer: 'ドイツからです。' },
   ] },
   { id: 'd2', title: 'Mit dem Taxi', goal: 'Lass dich zum Hotel fahren.', emoji: 'taxi', scaffold: 'voll', turns: [
     { npc: 'どちらまで？', de: 'Wohin?', options: ['ホテルまで おねがいします。', 'いただきます。', 'おやすみなさい。'], answer: 'ホテルまで おねがいします。' },
@@ -25,7 +25,7 @@ export const DIALOGS = [
   { section: 'ホテル', sub: 'Im Hotel' },
   { id: 'd3', title: 'Check-in', goal: 'Checke im Hotel ein.', emoji: 'hotel', scaffold: 'voll', turns: [
     { npc: 'いらっしゃいませ。', de: 'Willkommen.', options: ['チェックイン おねがいします。', 'メニューを ください。', 'みぎです。'], answer: 'チェックイン おねがいします。' },
-    { npc: 'おなまえを どうぞ。', de: 'Ihren Namen, bitte.', options: ['クラウスです。', 'みずです。', 'やすいです。'], answer: 'クラウスです。' },
+    { npc: 'おなまえを おねがいします。', de: 'Ihren Namen, bitte.', options: ['クラウスです。', 'みずです。', 'やすいです。'], answer: 'クラウスです。' },
     { npc: 'パスポートを おねがいします。', de: 'Ihren Pass, bitte.', options: ['はい、どうぞ。', 'いいえ、けっこうです。', 'たべません。'], answer: 'はい、どうぞ。' },
   ] },
   { id: 'dr1', review: true, title: 'Wiederholung 1', goal: 'Gemischte Wechsel aus Ankunft & Hotel.', emoji: 'star', from: ['d1', 'd2', 'd3'] },
@@ -34,12 +34,12 @@ export const DIALOGS = [
     { npc: 'いらっしゃいませ！', de: 'Willkommen!', options: ['こんにちは。', 'さようなら。', 'いくらですか？'], answer: 'こんにちは。' },
     { npc: 'ごちゅうもんは？', de: 'Ihre Bestellung?', options: ['メニューを ください。', 'たすけて！', 'みぎです。'], answer: 'メニューを ください。' },
     { npc: 'おのみものは？', de: 'Etwas zu trinken?', options: ['おみずを ください。', 'さようなら。', 'わかりません。'], answer: 'おみずを ください。' },
-    { npc: 'ありがとうございました！', de: 'Vielen Dank!', options: ['おかんじょう おねがいします。', 'こんばんは。', 'たかいです。'], answer: 'おかんじょう おねがいします。' },
+    { npc: 'はい、なんでしょう？', de: 'Ja, bitte?', options: ['おかいけい おねがいします。', 'こんばんは。', 'たかいです。'], answer: 'おかいけい おねがいします。' },
   ] },
   { id: 'd5', title: 'Im Café', goal: 'Bestelle einen Kaffee.', emoji: 'coffee', scaffold: 'mittel', turns: [
     { npc: 'いらっしゃいませ。', de: 'Willkommen.', options: ['コーヒーを ください。', 'えきは どこですか？', 'たすけて！'], answer: 'コーヒーを ください。' },
-    { npc: 'ホットですか、アイスですか？', de: 'Heiß oder kalt?', options: ['ホットを おねがいします。', 'みぎです。', 'さようなら。'], answer: 'ホットを おねがいします。' },
-    { npc: 'いじょうで よろしいですか？', de: 'Ist das alles?', options: ['はい、けっこうです。', 'いくらですか？', 'たべません。'], answer: 'はい、けっこうです。' },
+    { npc: 'ホットですか、アイスですか？', de: 'Heiß oder kalt?', options: ['ホットで おねがいします。', 'みぎです。', 'さようなら。'], answer: 'ホットで おねがいします。' },
+    { npc: 'いじょうで よろしいですか？', de: 'Ist das alles?', options: ['はい、いじょうです。', 'いくらですか？', 'たべません。'], answer: 'はい、いじょうです。' },
   ] },
   { id: 'dr2', review: true, title: 'Wiederholung 2', goal: 'Gemischte Wechsel aus den Essens-Szenen.', emoji: 'star', from: ['d4', 'd5'] },
   { section: '移動', sub: 'Unterwegs' },
@@ -119,7 +119,7 @@ export const DIALOG_LEX = {
   'チェックイン': { de: 'Check-in', b: 'Nomen', r: 'chekku-in' },
   'ごちゅうもん': { de: 'Bestellung', b: 'Nomen, höflich (ご＋注文)' },
   'おのみもの': { de: 'Getränk', b: 'Nomen, höflich (お＋飲み物)' },
-  'おかんじょう': { de: 'Rechnung', b: 'Nomen, höflich (お＋勘定)' },
+  'おかいけい': { de: 'Rechnung', b: 'Nomen, höflich (お＋会計)' },
   'ホット': { de: 'heiß (Getränk)', b: 'Nomen (engl. hot)', r: 'hotto' },
   'アイス': { de: 'kalt / Eis (Getränk)', b: 'Nomen (engl. ice)', r: 'aisu' },
   'いじょう': { de: 'das ist alles / Ende', b: 'Nomen (以上)' },
@@ -134,7 +134,7 @@ export const DIALOG_LEX = {
   // Frage- & Demonstrativwörter
   'いくら': { de: 'wie viel (Preis)', b: 'Fragewort' },
   'どこ': { de: 'wo', b: 'Fragewort' },
-  'どちら': { de: 'wohin / welches (höflich)', b: 'Fragewort (höflich)' },
+  'どちら': { de: 'wohin / woher / welches (höflich)', b: 'Fragewort (höflich)' },
   'これ': { de: 'das / dies (hier)', b: 'Demonstrativpronomen' },
   // Adjektive
   'たかい': { de: 'teuer / hoch', b: 'い-Adjektiv (高い)' },

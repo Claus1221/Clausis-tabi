@@ -28,7 +28,7 @@ export const KANJI_ORIGIN = {
   '行': { type: 'Piktogramm', radical: true, note: 'Eine Kreuzung zweier Wege – gehen.' },
   '機': { type: 'Zusammengesetzt', parts: [{ c: '木', de: 'Holz – Bedeutung' }, { c: '幾', de: 'ki – Lautgeber' }], note: 'Holz-Radikal 木 (Maschinen waren aus Holz); 幾 gibt den Klang.' },
   '駅': { type: 'Zusammengesetzt', parts: [{ c: '馬', de: 'Pferd – Bedeutung' }, { c: '尺', de: 'Lautgeber' }], note: 'Pferd-Radikal 馬 – früher eine Poststation für Pferde.' },
-  '電': { type: 'Zusammengesetzt', parts: [{ c: '雨', de: 'Regen – Bedeutung' }, { c: '电', de: 'Blitz' }], note: 'Unter dem Regen-Radikal 雨; 电 ist der Blitz – Elektrizität.' },
+  '電': { type: 'Zusammengesetzt', parts: [{ c: '雨', de: 'Regen – Bedeutung' }, { c: '申', de: 'Blitz (abgewandelt)' }], note: 'Unter dem Regen-Radikal 雨; darunter ein gezackter Blitz – Elektrizität.' },
   '茶': { type: 'Zusammengesetzt', parts: [{ c: '艹', de: 'Pflanze – Bedeutung' }, { c: '余', de: 'Lautgeber' }], note: 'Pflanzen-Radikal 艹 – Tee ist ein Strauch.' },
   '日': { type: 'Piktogramm', radical: true, note: 'Die Sonne mit einem Punkt in der Mitte.' },
   '本': { type: 'Ideogramm', parts: [{ c: '木', de: 'Baum' }, { c: '一', de: 'Markierung' }], note: 'Ein Baum 木 mit Markierung an der Wurzel – der „Ursprung".' },

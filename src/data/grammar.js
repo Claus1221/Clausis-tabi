@@ -12,14 +12,14 @@ export const GRAMMAR = [
       { h: 'Muster', text: '〈Thema〉 は 〈Aussage〉。  →  oft „A は B です" = „A ist B".' },
     ],
     examples: [
-      { jp: 'これは水です。', kana: 'これはみずです。', de: 'Das ist Wasser.', tokens: [
-        { t: 'これ', r: 'これ', de: 'das / dies', b: 'Demonstrativpronomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
+      { jp: 'これはお茶です。', kana: 'これはおちゃです。', de: 'Das ist Tee.', tokens: [
+        { t: 'これ', r: 'これ', de: 'das / dies', b: 'Demonstrativpronomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: 'お茶', r: 'おちゃ', de: 'Tee', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
       { jp: '山は高いです。', kana: 'やまはたかいです。', de: 'Der Berg ist hoch.', tokens: [
         { t: '山', r: 'やま', de: 'Berg', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '高い', r: 'たかい', de: 'hoch', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
     ],
     exercises: [
       { q: '山＿高いです。', a: 'は', options: ['は', 'を', 'に'], hint: 'は markiert das Thema: „Was den Berg betrifft – hoch."' },
-      { q: 'これ＿水です。', a: 'は', options: ['は', 'が', 'で'], hint: 'A は B です = „A ist B".' },
+      { q: 'これ＿お茶です。', a: 'は', options: ['は', 'が', 'で'], hint: 'A は B です = „A ist B".' },
     ],
   },
   {
@@ -30,14 +30,14 @@ export const GRAMMAR = [
       { h: 'Vergangenheit', text: '„でした" = „war".' },
     ],
     examples: [
-      { jp: '猫です。', kana: 'ねこです。', de: 'Es ist eine Katze.', tokens: [
-        { t: '猫', r: 'ねこ', de: 'Katze', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
-      { jp: '水ではありません。', kana: 'みずではありません。', de: 'Es ist kein Wasser.', tokens: [
-        { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'ではありません', de: 'ist nicht', b: 'Verneinung von です' }, { t: '。' } ] },
+      { jp: '山です。', kana: 'やまです。', de: 'Es ist ein Berg.', tokens: [
+        { t: '山', r: 'やま', de: 'Berg', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
+      { jp: 'お茶ではありません。', kana: 'おちゃではありません。', de: 'Es ist kein Tee.', tokens: [
+        { t: 'お茶', r: 'おちゃ', de: 'Tee', b: 'Nomen' }, { t: 'ではありません', de: 'ist nicht', b: 'Verneinung von です' }, { t: '。' } ] },
     ],
     exercises: [
-      { q: '猫＿。 (Es ist eine Katze.)', a: 'です', options: ['です', 'ます', 'を'], hint: 'Nomen + です = „ist".' },
-      { q: '水＿。 (Es ist kein Wasser.)', a: 'ではありません', options: ['ではありません', 'です', 'でした'], hint: 'Verneinung von です = ではありません.' },
+      { q: '山＿。 (Es ist ein Berg.)', a: 'です', options: ['です', 'ます', 'を'], hint: 'Nomen + です = „ist".' },
+      { q: 'お茶＿。 (Es ist kein Tee.)', a: 'ではありません', options: ['ではありません', 'です', 'でした'], hint: 'Verneinung von です = ではありません.' },
     ],
   },
   {
@@ -47,14 +47,14 @@ export const GRAMMAR = [
       { h: 'は vs が', text: 'は hebt das Thema hervor („was X betrifft …"), が betont das Subjekt selbst („gerade DIESES").' },
     ],
     examples: [
-      { jp: '犬が走ります。', kana: 'いぬがはしります。', de: 'Der Hund rennt.', tokens: [
-        { t: '犬', r: 'いぬ', de: 'Hund', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '走ります', r: 'はしります', de: 'rennen', b: 'Verb, höflich' }, { t: '。' } ] },
-      { jp: '猫が好きです。', kana: 'ねこがすきです。', de: 'Ich mag Katzen.', tokens: [
-        { t: '猫', r: 'ねこ', de: 'Katze', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Partikel bei 好き' }, { t: '好き', r: 'すき', de: 'mögen', b: 'な-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
+      { jp: '電車が来ます。', kana: 'でんしゃがきます。', de: 'Der Zug kommt.', tokens: [
+        { t: '電車', r: 'でんしゃ', de: 'Zug', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Subjektpartikel' }, { t: '来ます', r: 'きます', de: 'kommen', b: 'Verb, höflich' }, { t: '。' } ] },
+      { jp: 'お茶が好きです。', kana: 'おちゃがすきです。', de: 'Ich mag Tee.', tokens: [
+        { t: 'お茶', r: 'おちゃ', de: 'Tee', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Partikel bei 好き' }, { t: '好き', r: 'すき', de: 'mögen', b: 'な-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' } ] },
     ],
     exercises: [
-      { q: '犬＿走ります。', a: 'が', options: ['が', 'を', 'は'], hint: 'Das Subjekt (der Hund) wird mit が markiert.' },
-      { q: '猫＿好きです。', a: 'が', options: ['が', 'を', 'に'], hint: 'Bei 好き steht das Gemochte mit が.' },
+      { q: '電車＿来ます。', a: 'が', options: ['が', 'を', 'は'], hint: 'Das Subjekt (der Zug) wird mit が markiert.' },
+      { q: 'お茶＿好きです。', a: 'が', options: ['が', 'を', 'に'], hint: 'Bei 好き steht das Gemochte mit が.' },
       { q: 'Jemand fragt nach dem Berg. Du sprichst über DIESES Thema weiter: 山＿高いです。', a: 'は', options: ['は', 'が'], hint: 'Thema aufgreifen/fortführen → は.' },
       { q: 'Du zeigst zum ersten Mal auf einen Berg: „Schau, der ist aber hoch!" 山＿高いです。', a: 'が', options: ['は', 'が'], hint: 'Neue, hervorgehobene Information → が.' },
     ],
@@ -66,14 +66,14 @@ export const GRAMMAR = [
       { h: 'Muster', text: '〈Objekt〉 を 〈Verb〉。' },
     ],
     examples: [
-      { jp: '水を飲みます。', kana: 'みずをのみます。', de: 'Ich trinke Wasser.', tokens: [
-        { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'を', r: 'o', de: '(Objekt)', b: 'Objektpartikel' }, { t: '飲みます', r: 'のみます', de: 'trinken', b: 'Verb, höflich' }, { t: '。' } ] },
-      { jp: '魚を食べます。', kana: 'さかなをたべます。', de: 'Ich esse Fisch.', tokens: [
-        { t: '魚', r: 'さかな', de: 'Fisch', b: 'Nomen' }, { t: 'を', r: 'o', de: '(Objekt)', b: 'Objektpartikel' }, { t: '食べます', r: 'たべます', de: 'essen', b: 'Verb, höflich' }, { t: '。' } ] },
+      { jp: 'お茶を飲みます。', kana: 'おちゃをのみます。', de: 'Ich trinke Tee.', tokens: [
+        { t: 'お茶', r: 'おちゃ', de: 'Tee', b: 'Nomen' }, { t: 'を', r: 'o', de: '(Objekt)', b: 'Objektpartikel' }, { t: '飲みます', r: 'のみます', de: 'trinken', b: 'Verb, höflich' }, { t: '。' } ] },
+      { jp: '山を見ます。', kana: 'やまをみます。', de: 'Ich schaue den Berg an.', tokens: [
+        { t: '山', r: 'やま', de: 'Berg', b: 'Nomen' }, { t: 'を', r: 'o', de: '(Objekt)', b: 'Objektpartikel' }, { t: '見ます', r: 'みます', de: 'sehen / anschauen', b: 'Verb, höflich' }, { t: '。' } ] },
     ],
     exercises: [
-      { q: '水＿飲みます。', a: 'を', options: ['を', 'が', 'は'], hint: 'Das Objekt vor dem Verb → を.' },
-      { q: '魚＿食べます。', a: 'を', options: ['を', 'に', 'で'], hint: 'Was gegessen wird, ist das Objekt → を.' },
+      { q: 'お茶＿飲みます。', a: 'を', options: ['を', 'が', 'は'], hint: 'Das Objekt vor dem Verb → を.' },
+      { q: '山＿見ます。', a: 'を', options: ['を', 'に', 'で'], hint: 'Was angeschaut wird, ist das Objekt → を.' },
     ],
   },
   {
@@ -83,14 +83,14 @@ export const GRAMMAR = [
       { h: 'で', text: 'で zeigt den Ort einer Handlung („wo") oder das Mittel („womit").' },
     ],
     examples: [
-      { jp: '家に帰ります。', kana: 'いえにかえります。', de: 'Ich gehe nach Hause. (Ziel)', tokens: [
-        { t: '家', r: 'いえ', de: 'Haus / Zuhause', b: 'Nomen' }, { t: 'に', de: '(Richtung)', b: 'Richtungspartikel (wohin)' }, { t: '帰ります', r: 'かえります', de: 'zurückkehren', b: 'Verb, höflich' }, { t: '。' } ] },
-      { jp: '車で行きます。', kana: 'くるまでいきます。', de: 'Ich fahre mit dem Auto. (Mittel)', tokens: [
-        { t: '車', r: 'くるま', de: 'Auto', b: 'Nomen' }, { t: 'で', de: '(Mittel)', b: 'Partikel: womit' }, { t: '行きます', r: 'いきます', de: 'gehen / fahren', b: 'Verb, höflich' }, { t: '。' } ] },
+      { jp: '駅に行きます。', kana: 'えきにいきます。', de: 'Ich gehe zum Bahnhof. (Ziel)', tokens: [
+        { t: '駅', r: 'えき', de: 'Bahnhof', b: 'Nomen' }, { t: 'に', de: '(Richtung)', b: 'Richtungspartikel (wohin)' }, { t: '行きます', r: 'いきます', de: 'gehen / fahren', b: 'Verb, höflich' }, { t: '。' } ] },
+      { jp: '電車で行きます。', kana: 'でんしゃでいきます。', de: 'Ich fahre mit dem Zug. (Mittel)', tokens: [
+        { t: '電車', r: 'でんしゃ', de: 'Zug', b: 'Nomen' }, { t: 'で', de: '(Mittel)', b: 'Partikel: womit' }, { t: '行きます', r: 'いきます', de: 'gehen / fahren', b: 'Verb, höflich' }, { t: '。' } ] },
     ],
     exercises: [
-      { q: '家＿帰ります。', a: 'に', options: ['に', 'で', 'を'], hint: 'Ziel/Richtung („wohin") → に.' },
-      { q: '車＿行きます。', a: 'で', options: ['で', 'に', 'を'], hint: 'Mittel („womit") → で.' },
+      { q: '駅＿行きます。', a: 'に', options: ['に', 'で', 'を'], hint: 'Ziel/Richtung („wohin") → に.' },
+      { q: '電車＿行きます。', a: 'で', options: ['で', 'に', 'を'], hint: 'Mittel („womit") → で.' },
     ],
   },
   {
