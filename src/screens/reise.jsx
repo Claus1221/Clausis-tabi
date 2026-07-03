@@ -461,7 +461,6 @@ export default function ReiseScreen({ onReview }) {
   const [practice, setPractice] = useState(null)  // laufende Kapitel-Übung
   const currentRef = useRef(null)
   const wrapRef = useRef(null)
-  const backdropRef = useRef(null)
 
   // Sterne-Höchststand mit dem aktuellen Kenntnisstand abgleichen. Läuft beim
   // Öffnen der Reise und nach jeder Übung (auch im Üben-Tab, da progress.srs sich
@@ -470,23 +469,11 @@ export default function ReiseScreen({ onReview }) {
     bumpChapterStars(computeAllChapterStars(progress))
   }, [progress.srs, progress.completedChapters, progress.chapterStars]) // eslint-disable-line
 
+  // KEIN Parallax mehr: der Hintergrund steht 1:1 zur Spur. Mit den klar
+  // unterscheidbaren Landschaften je Welt würde ein Scroll-Versatz die Kulisse
+  // sichtbar gegen ihre Welt verschieben (Hochhäuser neben dem Tempelgarten).
   useEffect(() => {
     try { currentRef.current?.scrollIntoView({ block: 'center' }) } catch (e) { /* egal */ }
-    // Nächsten scrollbaren Vorfahren finden und leichten Parallax aufsetzen.
-    let el = wrapRef.current
-    while (el && el.scrollHeight <= el.clientHeight + 4) el = el.parentElement
-    if (!el) return
-    let raf = 0
-    const onScroll = () => {
-      if (raf) return
-      raf = requestAnimationFrame(() => {
-        raf = 0
-        if (backdropRef.current) backdropRef.current.style.transform = `translateY(${el.scrollTop * 0.1}px)`
-      })
-    }
-    el.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => { el.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
   }, [])
 
   const contentNodes = PATH.filter(n => n.type && n.type !== 'goal')
@@ -656,7 +643,7 @@ export default function ReiseScreen({ onReview }) {
       {/* Karte */}
       <div style={{ position: 'relative', width: '100%', height: trackH, overflow: 'hidden' }}>
         {/* Durchgängiger Parallax-Hintergrund */}
-        <div ref={backdropRef} aria-hidden="true" style={{ position: 'absolute', top: -40, left: 0, right: 0, height: backdropH, zIndex: 0, willChange: 'transform' }}>
+        <div aria-hidden="true" style={{ position: 'absolute', top: -40, left: 0, right: 0, height: backdropH, zIndex: 0 }}>
           <svg width="100%" height={backdropH} viewBox={`0 0 400 ${backdropH}`} preserveAspectRatio="none" style={{ display: 'block' }}>
             {backdrop}
           </svg>
