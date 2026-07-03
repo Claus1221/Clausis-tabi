@@ -2,9 +2,13 @@ import { WORD_BY_KANJI } from '../data/words.js'
 import { CHAPTER_WORD } from '../data/chapters.js'
 
 // ─── Sprachausgabe (TTS, ja-JP) & Zwischenablage ────────────────────────────
-// Explizit eine japanische Stimme wählen: nur `lang` zu setzen reicht nicht –
-// fehlt eine ja-Stimme, liest sonst die deutsche Standardstimme den Text
-// (aus „ひと" wird Kauderwelsch). Lokale Stimmen zuerst (starten zuverlässiger).
+// Zielgerät ist ein Android-Handy (Chrome/PWA); Desktop dient nur zum Testen.
+const IS_ANDROID = /android/i.test(navigator.userAgent)
+
+// Explizit eine japanische Stimme wählen, wo die Liste verlässlich ist (Desktop):
+// nur `lang` zu setzen reicht dort nicht – fehlt eine ja-Stimme, liest sonst die
+// deutsche Standardstimme den Text (aus „ひと" wird Kauderwelsch). Lokale
+// Stimmen zuerst (starten zuverlässiger, funktionieren offline).
 let jaVoice = null
 function pickJaVoice() {
   const ja = speechSynthesis.getVoices().filter(v => (v.lang || '').toLowerCase().startsWith('ja'))
@@ -16,14 +20,16 @@ if ('speechSynthesis' in window) {
   speechSynthesis.addEventListener?.('voiceschanged', pickJaVoice)
 }
 
-// Ohne japanische Stimme NICHT sprechen, sondern einmalig erklären, wie man
-// eine installiert.
+// Wenn keine japanische Ausgabe möglich ist: einmalig erklären, wie man die
+// Sprachdaten installiert (Pfad je Plattform).
 let hintShown = false
 function showVoiceHint() {
   if (hintShown) return
   hintShown = true
   const el = document.createElement('div')
-  el.textContent = '🔇 Keine japanische Stimme installiert. Windows: Einstellungen → Zeit und Sprache → Sprache und Region → Sprache hinzufügen → „日本語 (Japanisch)" mit Sprachausgabe installieren. Danach die App neu laden.'
+  el.textContent = IS_ANDROID
+    ? '🔇 Japanische Sprachdaten fehlen. Android: Einstellungen → Bedienungshilfen → Text-in-Sprache-Ausgabe → Google Speech-Dienste → ⚙ Einstellungen → Sprachen installieren → 日本語 (Japanisch). Danach die App neu starten.'
+    : '🔇 Keine japanische Stimme installiert. Windows: Einstellungen → Zeit und Sprache → Sprache und Region → Sprache hinzufügen → „日本語 (Japanisch)" mit Sprachausgabe installieren. Danach die App neu laden.'
   el.style.cssText = 'position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:9999;' +
     'max-width:340px;background:#211F1B;color:#EFEBE0;font-size:13px;line-height:1.5;' +
     'padding:12px 16px;border-radius:12px;box-shadow:0 6px 24px rgba(33,31,27,0.35);'
@@ -35,15 +41,25 @@ let pendingSpeak = 0
 export function speak(text) {
   if (!('speechSynthesis' in window) || !text) return
   if (!jaVoice) pickJaVoice() // Stimmenliste lädt evtl. erst nach dem ersten Klick
-  if (!jaVoice) { showVoiceHint(); return }
+  // Desktop ohne ja-Stimme: NICHT sprechen (die Standardstimme liest Kauderwelsch).
+  // Android dagegen meldet die Stimmenliste oft leer/unvollständig, obwohl das
+  // System-TTS Japanisch kann – dort immer sprechen und über `lang` routen lassen.
+  if (!jaVoice && !IS_ANDROID) { showVoiceHint(); return }
   const u = new SpeechSynthesisUtterance(text)
   u.lang = 'ja-JP'
-  u.voice = jaVoice
+  if (jaVoice) u.voice = jaVoice
+  // Scheitert die Ausgabe an fehlenden Sprachdaten, den Installations-Hinweis
+  // zeigen. „interrupted/canceled" (normale Folge von cancel()) zählt nicht.
+  u.onerror = (e) => {
+    if (e.error === 'language-unavailable' || e.error === 'voice-unavailable' || e.error === 'synthesis-failed' || e.error === 'synthesis-unavailable') showVoiceHint()
+  }
   clearTimeout(pendingSpeak)
   speechSynthesis.cancel()
   // Kurz warten statt sofort sprechen: cancel() + speak() im selben Tick
-  // schneidet in Chrome/Edge den Wortanfang ab („hito" → „to").
-  pendingSpeak = setTimeout(() => speechSynthesis.speak(u), 60)
+  // schneidet in Chrome den Wortanfang ab („hito" → „to"). resume() löst den
+  // bekannten Chrome/Android-Hänger, wenn die Synthese pausiert stecken bleibt
+  // (z. B. nach Tab-Wechsel oder Bildschirm-Aus).
+  pendingSpeak = setTimeout(() => { speechSynthesis.resume(); speechSynthesis.speak(u) }, 60)
 }
 
 // Lesung eines bekannten Wort-/Kapitel-Items auflösen (sonst der Text selbst –
