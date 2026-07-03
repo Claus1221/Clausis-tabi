@@ -20,7 +20,10 @@ export function BuildStep({ step, onSolved, typed = false }) {
   const target = step.answer.join('')
   const norm = (s) => s.replace(/[\s　。、!！?？]/g, '')
 
-  const add = (tile) => { if (result != null) return; speak(itemReading(tile.t)); setPool(p => p.filter(x => x.id !== tile.id)); setLine(l => [...l, tile]) }
+  // Einzelne Kachel: Partikeln mit Sprech-Lesung (alleinstehendes は liest die
+  // TTS sonst „ha" statt „wa" – ohne Satzkontext), Vokabeln über itemReading.
+  const sayTile = (t) => speak(t === 'は' ? 'わ' : t === 'へ' ? 'え' : itemReading(t))
+  const add = (tile) => { if (result != null) return; sayTile(tile.t); setPool(p => p.filter(x => x.id !== tile.id)); setLine(l => [...l, tile]) }
   const back = (tile) => { if (result != null) return; setLine(l => l.filter(x => x.id !== tile.id)); setPool(p => [...p, tile]) }
   const check = () => { const ok = line.map(x => x.t).join('') === target; setResult(ok); if (ok) awardXp(XP_PER_CARD); onSolved(ok) }
   const checkTyped = () => { if (!val.trim()) return; const ok = norm(val) === norm(target); setResult(ok); if (ok) awardXp(XP_PER_CARD); onSolved(ok) }

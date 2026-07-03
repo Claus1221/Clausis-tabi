@@ -167,13 +167,7 @@ export function LessonPlayer({ lesson, onComplete, onClose }) {
                 <div style={{ fontSize: 14, color: C.sumi }}>wie „{data?.romaji}" im Deutschen</div>
               </div>
             </div>
-            <button onClick={() => {
-              if ('speechSynthesis' in window) {
-                const u = new SpeechSynthesisUtterance(char)
-                u.lang = 'ja-JP'
-                speechSynthesis.speak(u)
-              }
-            }} style={{
+            <button onClick={() => speak(char)} style={{
               background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`,
               borderRadius: 20, padding: '6px 16px', fontSize: 13, cursor: 'pointer',
               color: C.indigo, marginBottom: 16,
