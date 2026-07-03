@@ -107,6 +107,10 @@ function SetupScreen() {
   )
 }
 
+// Nur lokal (vite dev): mit ?dev in der URL ohne Anmeldung ansehen. Ohne uid
+// wird nichts gespeichert (useProgress prüft uid) – rein zum Entwickeln/Testen.
+const DEV_BYPASS = import.meta.env.DEV && new URLSearchParams(window.location.search).has('dev')
+
 // ─── Die Wand: entscheidet, was angezeigt wird ───────────────────────────────
 export function AuthGate({ children }) {
   const [user, setUser] = useState(null)
@@ -133,6 +137,13 @@ export function AuthGate({ children }) {
   }
   const logout = () => signOut(auth)
 
+  if (DEV_BYPASS) {
+    return (
+      <AuthContext.Provider value={{ user: null, logout: () => {} }}>
+        {children}
+      </AuthContext.Provider>
+    )
+  }
   if (!isConfigured) return <SetupScreen />
   if (loading) return <Splash text="Lädt…" />
   if (!user) return <LoginScreen onLogin={login} error={error} busy={busy} />
