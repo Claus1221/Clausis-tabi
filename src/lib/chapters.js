@@ -1,4 +1,4 @@
-import { CHAPTERS, CHAPTER_WORD } from '../data/chapters.js'
+import { CHAPTERS, CHAPTER_BY_ID, CHAPTER_WORD } from '../data/chapters.js'
 import { WORD_BY_KANJI } from '../data/words.js'
 import { srsStageIndex } from './srs.js'
 
@@ -40,3 +40,16 @@ export function computeAllChapterStars(progress) {
   CHAPTERS.forEach(c => { const s = chapterStarsLive(c, progress); if (s > 0) out[c.id] = s })
   return out
 }
+
+// ─── Kapitel-Bremse ──────────────────────────────────────────────────────────
+// Erlebte Kapitel, deren Wörter noch nicht „halbwegs sitzen" (unter 2 Sternen),
+// schwächste zuerst. Ab ZWEI solchen Kapiteln startet die Reise kein neues
+// Kapitel, sondern zeigt das Festigen-Sheet – Sterne wachsen nur über fällige
+// Wiederholungen, die Bremse verteilt neue Kapitel also automatisch über Tage.
+export function weakChapterList(progress) {
+  return (progress.completedChapters || [])
+    .map(id => CHAPTER_BY_ID[id])
+    .filter(c => c && chapterStarsShown(c, progress) < 2)
+    .sort((a, b) => chapterStarsShown(a, progress) - chapterStarsShown(b, progress))
+}
+export const BRAKE_LIMIT = 2

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useContext } from 'react'
 import { C, JP } from '../theme.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
-import { computeStats, dueKana } from '../useProgress.js'
+import { computeStats, dueKana, localDate } from '../useProgress.js'
 import { LESSONS } from '../data/kana.js'
 import { WORD_BLOCKS, learnedWordKanji } from '../data/words.js'
 import { KANJI_ORIGIN } from '../data/kanjiOrigin.js'
@@ -13,7 +13,7 @@ import { DIALOGS } from '../data/dialogs.js'
 import { completedKanaList } from '../lib/kanaStats.js'
 import { speak, speakItem } from '../lib/speech.js'
 import { srsItemInfo, SRS_RATINGS, shuffled, feedbackColor } from '../lib/srs.js'
-import { chapterSrsKeys, chapterStarsShown, computeAllChapterStars, shouldTypeSentence } from '../lib/chapters.js'
+import { chapterSrsKeys, chapterStarsShown, computeAllChapterStars, shouldTypeSentence, weakChapterList, BRAKE_LIMIT } from '../lib/chapters.js'
 import { renderFuri, furiPlain } from '../lib/furigana.jsx'
 import { sceneTorii, buildBackdrop, roadPath, STATE_PALETTE } from '../lib/scene.jsx'
 import { isNodeDone, pathNodeMeta } from '../lib/path.js'
@@ -292,9 +292,12 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
 
 
 // Kapitel-Übung: fragt den Kenntnisstand der Kapitel-Vokabeln ab (Karteikarten mit
-// Selbstbewertung wie im SRS). Jede Bewertung aktualisiert die SRS-Karte → hebt mit
-// der Zeit die Sterne des Kapitels. Beim ersten Mal werden die Kapitel-Wörter als
+// Selbstbewertung wie im SRS). Beim ersten Mal werden die Kapitel-Wörter als
 // neue Karten in den Wiederholungsplan aufgenommen (scheduleNew, idempotent).
+// WICHTIG wie im Üben-Tab: nur FÄLLIGE Karten verschieben den Wiederholungsplan.
+// Sonst ließe sich das Intervall (und damit die Kapitel-Sterne) am selben Tag
+// durch mehrfaches Durchspielen hochpumpen – Sterne sollen messen, wie lange
+// Wissen HÄLT, nicht wie oft geklickt wurde.
 function ChapterPractice({ chapter, onClose }) {
   const { progress, awardXp, reviewCard, scheduleNew } = useContext(ProgressCtx)
   const keys = useMemo(() => chapterSrsKeys(chapter), [chapter])
@@ -311,7 +314,9 @@ function ChapterPractice({ chapter, onClose }) {
   const info = item ? srsItemInfo(item) : null
 
   const rate = (q) => {
-    reviewCard(item, q)
+    const e = (progress.srs || {})[item]
+    const isDue = !e || !e.due || e.due <= localDate()
+    if (isDue) reviewCard(item, q)
     if (q >= 3) { awardXp(XP_PER_CARD); setCorrect(c => c + 1) }
     setFlipped(false)
     setIdx(i => i + 1)
@@ -412,6 +417,32 @@ function ChapterSheet({ chapter, stars, onReplay, onPractice, onClose }) {
   )
 }
 
+// Bremsen-Sheet: erscheint, wenn das nächste Kapitel ansteht, aber zwei oder
+// mehr erlebte Kapitel noch unter 2 Sternen liegen. Erst festigen, dann weiter.
+function BrakeSheet({ chapters, progress, onPractice, onReview, onClose }) {
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(33,31,27,0.45)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.washi, width: '100%', maxWidth: 480, borderRadius: '18px 18px 0 0', padding: '20px 20px 24px', boxShadow: '0 -8px 30px -12px rgba(33,31,27,0.4)' }}>
+        <div style={{ width: 38, height: 4, borderRadius: 2, background: C.washiDark, margin: '0 auto 16px' }} />
+        <div style={{ fontSize: 11, color: '#E8A020', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>KURZ FESTIGEN</div>
+        <h3 style={{ fontSize: 18, fontFamily: JP, color: C.indigo, margin: '0 0 10px' }}>Erst üben, dann weiterreisen</h3>
+        <p style={{ fontSize: 13, color: C.sumi, lineHeight: 1.6, margin: '0 0 12px' }}>
+          Die Wörter dieser Kapitel sitzen noch nicht (unter 2 ⭐). Übe sie – mit den
+          fälligen Wiederholungen steigen die Sterne, und das nächste Kapitel öffnet sich.
+        </p>
+        {chapters.map(c => (
+          <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 10, padding: '8px 12px', marginBottom: 8 }}>
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: C.sumi }}>{c.title}</span>
+            <Stars count={chapterStarsShown(c, progress)} size={13} />
+          </div>
+        ))}
+        <Btn onClick={() => onPractice(chapters[0])} style={{ width: '100%', margin: '6px 0 10px' }}>🎯 „{chapters[0].title}" üben</Btn>
+        <Btn variant="secondary" onClick={onReview} style={{ width: '100%' }}>Alle fälligen Karten wiederholen</Btn>
+      </div>
+    </div>
+  )
+}
+
 // Das Reise-Tagebuch: alle bisher freigeschalteten Kapitel der Reise am Stück.
 // Erzählt die Geschichte aus den abgeschlossenen Kapiteln (c1–c6) nach – also
 // genau das, was man unterwegs erlebt hat, samt der dort gelernten Sätze.
@@ -466,6 +497,7 @@ export default function ReiseScreen({ onReview }) {
   const [showStory, setShowStory] = useState(false)
   const [sheet, setSheet] = useState(null)        // angetipptes, bereits erledigtes Kapitel
   const [practice, setPractice] = useState(null)  // laufende Kapitel-Übung
+  const [showBrake, setShowBrake] = useState(false) // Kapitel-Bremse-Sheet
   const currentRef = useRef(null)
   const wrapRef = useRef(null)
 
@@ -577,6 +609,13 @@ export default function ReiseScreen({ onReview }) {
   const goal = laid.find(n => n.node.type === 'goal')
   const current = laid.find(n => n.state === 'current')   // nächste offene Station
 
+  // ─ Kapitel-Bremse: erst festigen, dann Neues ─
+  // Ein neues Kapitel öffnet erst, wenn höchstens EIN bereits erlebtes Kapitel
+  // noch unter 2 Sternen liegt. Andere Stationstypen (Kana, Grammatik,
+  // Gespräche) bleiben offen – die Bremse bremst nur Kapitel.
+  const weakChapters = weakChapterList(progress)
+  const braked = current?.node.type === 'chapter' && weakChapters.length >= BRAKE_LIMIT
+
   // Sterne für Ziel-Knoten (z. B. Gipfel): gerundeter Schnitt der Kapitel-Sterne im
   // Pfad-Abschnitt bis zu diesem Ziel (ab Reisebeginn bzw. dem vorigen Ziel) – spiegelt,
   // wie gut die Reise bis dahin sitzt. Funktioniert auch bei mehreren Zielen.
@@ -607,6 +646,12 @@ export default function ReiseScreen({ onReview }) {
   return (
     <div ref={wrapRef} style={{ paddingBottom: 8 }}>
       {showStory && <StoryJournal progress={progress} onClose={() => setShowStory(false)} />}
+      {showBrake && (
+        <BrakeSheet chapters={weakChapters} progress={progress}
+          onPractice={(c) => { setPractice(c); setShowBrake(false) }}
+          onReview={() => { setShowBrake(false); onReview() }}
+          onClose={() => setShowBrake(false)} />
+      )}
       {sheet && (
         <ChapterSheet
           chapter={CHAPTER_BY_ID[sheet.id]}
@@ -628,12 +673,16 @@ export default function ReiseScreen({ onReview }) {
         {/* Tagesstatus — eingebettet aus dem früheren „Heute"-Tab */}
         <DailyStrip onReview={onReview} />
 
-        {/* Direkt an der nächsten offenen Station weitermachen */}
-        {current ? (
+        {/* Direkt an der nächsten offenen Station weitermachen – oder erst festigen */}
+        {current ? (braked ? (
+          <Btn variant="secondary" onClick={() => setShowBrake(true)} style={{ width: '100%', marginBottom: 12, borderColor: '#E8A020', color: '#B07800' }}>
+            🎯 Erst festigen: {weakChapters.length} Kapitel unter 2 ⭐ →
+          </Btn>
+        ) : (
           <Btn onClick={() => setActive(current.node)} style={{ width: '100%', marginBottom: 12 }}>
             Weiter: {pathNodeMeta(current.node).label} →
           </Btn>
-        ) : (
+        )) : (
           <Btn variant="secondary" onClick={onReview} style={{ width: '100%', marginBottom: 12 }}>
             Alles gemeistert 🎉 – Wiederholen
           </Btn>
@@ -704,7 +753,13 @@ export default function ReiseScreen({ onReview }) {
             const goalDone = n.node.type === 'goal' && n.state === 'done'
             const stars = doneChapter ? chapterStarsShown(CHAPTER_BY_ID[n.node.id], progress)
               : goalDone ? (goalStarsById[n.node.id] || 0) : 0
-            const onTap = () => { if (locked || isGoal) return; if (doneChapter) setSheet(n.node); else setActive(n.node) }
+            const isBrakedCurrent = braked && n.state === 'current'
+            const onTap = () => {
+              if (locked || isGoal) return
+              if (doneChapter) { setSheet(n.node); return }
+              if (isBrakedCurrent) { setShowBrake(true); return }
+              setActive(n.node)
+            }
             return (
               <div key={i} ref={n.state === 'current' ? currentRef : null}
                 style={{ position: 'absolute', left: n.x, top: n.y, transform: 'translate(-50%,-50%)', width: 2 * Rr + 64, textAlign: 'center' }}>
@@ -736,7 +791,9 @@ export default function ReiseScreen({ onReview }) {
                 )}
                 {n.state === 'current' && (
                   <div style={{ marginTop: 2 }}>
-                    <span style={{ background: C.shu, color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 9px', borderRadius: 10 }}>START</span>
+                    <span style={{ background: isBrakedCurrent ? '#E8A020' : C.shu, color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 9px', borderRadius: 10 }}>
+                      {isBrakedCurrent ? 'ERST ÜBEN' : 'START'}
+                    </span>
                   </div>
                 )}
               </div>
