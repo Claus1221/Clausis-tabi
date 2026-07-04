@@ -11,6 +11,7 @@ const DEFAULT = {
   completedDialogs: [],    // IDs abgeschlossener Gesprächs-Szenen, z.B. ['d1']
   chapterStars: {},        // { 'c1': 3 }  → höchster je erreichter Sterne-Stand je Kapitel (1–5)
   xpByDate: {},            // { 'YYYY-MM-DD': XP }  → XP heute, Streak, Wochenchart
+  history: {},             // { 'YYYY-MM-DD': { kana, words, grammar, chapters, scenes } } → Wochen-Rückblick
   srs: {},                 // { '山': { ease, interval, reps, due } }  → Wiederholungsplan
   settings: {},            // Nutzer-Einstellungen (s. SETTINGS_DEFAULTS)
 }
@@ -168,47 +169,56 @@ export function useProgress(uid) {
     await safeWrite({ xpByDate: { [localDate()]: increment(amount) } }, { merge: true })
   }
 
+  // Tages-Journal für den Wochen-Rückblick: kleine Zähler je Datum (z. B.
+  // { kana: 5 } oder { chapters: 1, words: 5 }). Läuft atomar im selben
+  // Schreibvorgang wie der Abschluss mit.
+  const histPatch = (stats) => {
+    const inc = {}
+    for (const [k, v] of Object.entries(stats || {})) if (v) inc[k] = increment(v)
+    return Object.keys(inc).length ? { history: { [localDate()]: inc } } : {}
+  }
+
   // Lektion abschließen: als erledigt markieren UND XP gutschreiben.
-  const completeLesson = async (id, xp = 0) => {
+  const completeLesson = async (id, xp = 0, stats) => {
     if (!uid || !db) return
     await safeWrite(
-      { completedLessons: arrayUnion(id), xpByDate: { [localDate()]: increment(xp) } },
+      { completedLessons: arrayUnion(id), xpByDate: { [localDate()]: increment(xp) }, ...histPatch(stats) },
       { merge: true },
     )
   }
 
   // Einen Wort-Block als abgeschlossen markieren + XP gutschreiben.
-  const completeWordBlock = async (blockId, xp = 0) => {
+  const completeWordBlock = async (blockId, xp = 0, stats) => {
     if (!uid || !db) return
     await safeWrite(
-      { completedWordBlocks: arrayUnion(blockId), xpByDate: { [localDate()]: increment(xp) } },
+      { completedWordBlocks: arrayUnion(blockId), xpByDate: { [localDate()]: increment(xp) }, ...histPatch(stats) },
       { merge: true },
     )
   }
 
   // Ein Grammatik-Thema als gelernt markieren + XP gutschreiben.
-  const completeGrammar = async (grammarId, xp = 0) => {
+  const completeGrammar = async (grammarId, xp = 0, stats = { grammar: 1 }) => {
     if (!uid || !db) return
     await safeWrite(
-      { completedGrammar: arrayUnion(grammarId), xpByDate: { [localDate()]: increment(xp) } },
+      { completedGrammar: arrayUnion(grammarId), xpByDate: { [localDate()]: increment(xp) }, ...histPatch(stats) },
       { merge: true },
     )
   }
 
   // Ein Geschichts-Kapitel als abgeschlossen markieren + XP gutschreiben.
-  const completeChapter = async (chapterId, xp = 0) => {
+  const completeChapter = async (chapterId, xp = 0, stats = { chapters: 1 }) => {
     if (!uid || !db) return
     await safeWrite(
-      { completedChapters: arrayUnion(chapterId), xpByDate: { [localDate()]: increment(xp) } },
+      { completedChapters: arrayUnion(chapterId), xpByDate: { [localDate()]: increment(xp) }, ...histPatch(stats) },
       { merge: true },
     )
   }
 
   // Eine Gesprächs-Szene als abgeschlossen markieren + XP gutschreiben.
-  const completeDialog = async (dialogId, xp = 0) => {
+  const completeDialog = async (dialogId, xp = 0, stats = { scenes: 1 }) => {
     if (!uid || !db) return
     await safeWrite(
-      { completedDialogs: arrayUnion(dialogId), xpByDate: { [localDate()]: increment(xp) } },
+      { completedDialogs: arrayUnion(dialogId), xpByDate: { [localDate()]: increment(xp) }, ...histPatch(stats) },
       { merge: true },
     )
   }
@@ -269,7 +279,7 @@ export function useProgress(uid) {
   // volles Überschreiben (löscht srs/xpByDate sicher), aber settings werden mitgenommen.
   const reset = async () => {
     if (!uid || !db) return
-    await safeWrite({ completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], chapterStars: {}, xpByDate: {}, srs: {}, settings: progress.settings || {} })
+    await safeWrite({ completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], chapterStars: {}, xpByDate: {}, history: {}, srs: {}, settings: progress.settings || {} })
   }
 
   return { progress, loading, saveError, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset }

@@ -499,7 +499,7 @@ export default function ReiseScreen({ onReview }) {
       return (
         <LessonPlayer lesson={lesson} onClose={close}
           onComplete={() => {
-            if (!(progress.completedLessons || []).includes(active.id)) completeLesson(active.id, lesson.kana.length * XP_PER_KANA)
+            if (!(progress.completedLessons || []).includes(active.id)) completeLesson(active.id, lesson.kana.length * XP_PER_KANA, { kana: lesson.kana.length })
             close()
           }} />
       )
@@ -509,7 +509,7 @@ export default function ReiseScreen({ onReview }) {
       return (
         <BlockCourse block={block} onClose={close}
           onComplete={() => {
-            if (!(progress.completedWordBlocks || []).includes(active.id)) completeWordBlock(active.id, block.words.length * XP_PER_WORD)
+            if (!(progress.completedWordBlocks || []).includes(active.id)) completeWordBlock(active.id, block.words.length * XP_PER_WORD, { words: block.words.length })
             close()
           }} />
       )
@@ -527,7 +527,7 @@ export default function ReiseScreen({ onReview }) {
       const already = (progress.completedChapters || []).includes(active.id)
       return (
         <ChapterPlayer chapter={chapter} alreadyDone={already} onClose={close}
-          onComplete={() => { if (!already) completeChapter(active.id, XP_PER_CHAPTER); close() }} />
+          onComplete={() => { if (!already) completeChapter(active.id, XP_PER_CHAPTER, { chapters: 1, words: chapterSrsKeys(chapter).length }); close() }} />
       )
     }
     if (active.type === 'dialog') {

@@ -1,3 +1,23 @@
+// Wochen-Rückblick: summiert die letzten 7 Tage aus dem Tages-Journal
+// (progress.history: { 'YYYY-MM-DD': { kana, words, grammar, chapters, scenes } })
+// und dem XP-Kalender. `days` = Tage mit XP > 0.
+export function weekSummary(progress) {
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const hist = progress.history || {}
+  const xpByDate = progress.xpByDate || {}
+  const sum = { xp: 0, days: 0, kana: 0, words: 0, grammar: 0, chapters: 0, scenes: 0 }
+  for (let o = -6; o <= 0; o++) {
+    const d = new Date(); d.setDate(d.getDate() + o)
+    const key = fmt(d)
+    const xp = xpByDate[key] || 0
+    sum.xp += xp
+    if (xp > 0) sum.days++
+    const h = hist[key] || {}
+    for (const k of ['kana', 'words', 'grammar', 'chapters', 'scenes']) sum[k] += h[k] || 0
+  }
+  return sum
+}
+
 // Aggregiert XP nach Zeitraum (Woche/Monat/Jahr) fuer die Fortschritt-Diagramme.
 export function periodBuckets(xpByDate, period) {
   const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`

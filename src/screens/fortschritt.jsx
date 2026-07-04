@@ -6,14 +6,19 @@ import { LESSONS } from '../data/kana.js'
 import { ALL_WORDS, learnedWordKanji } from '../data/words.js'
 import { GRAMMAR } from '../data/grammar.js'
 import { CHAPTERS } from '../data/chapters.js'
+import { DIALOGS } from '../data/dialogs.js'
+import { PATH } from '../data/path.js'
 import { totalKanaCount, completedKanaList, completedKanaCount } from '../lib/kanaStats.js'
 import { SRS_STAGES } from '../lib/srs.js'
-import { periodBuckets } from '../lib/progress.js'
+import { periodBuckets, weekSummary } from '../lib/progress.js'
+import { chapterSrsKeys } from '../lib/chapters.js'
+import { isNodeDone } from '../lib/path.js'
 import { Card } from '../components/ui.jsx'
 
 export default function FortschrittScreen({ onReview }) {
   const { progress, reset } = useContext(ProgressCtx)
   const [period, setPeriod] = useState('woche')
+  const [selBadge, setSelBadge] = useState(null)  // angetipptes Abzeichen (Detailzeile)
   const stats = computeStats(progress)
   const pct = (a, b) => b ? Math.round(a / b * 100) : 0
 
@@ -50,24 +55,45 @@ export default function FortschrittScreen({ onReview }) {
     { label: 'Geschichte', value: pct(chaptersDone, CHAPTERS.length), detail: `${chaptersDone} / ${CHAPTERS.length} Kapitel erlebt`, color: C.matcha },
   ]
 
-  const hiraDone = LESSONS.filter(l => l.script === 'Hiragana').every(l => completed.includes(l.id))
-  const kataDone = LESSONS.filter(l => l.script === 'Katakana').every(l => completed.includes(l.id))
-  // Restdistanz nur dort, wo sie sich eindeutig aus vorhandenen Werten ergibt
-  // (Streak-Stufen, Level) – sonst bleibt es beim reinen 🔒 (keine geratenen Zahlen).
-  const achievements = [
-    { icon: '✍️', label: 'Erste Lektion', sub: 'Die Reise beginnt', earned: completed.length >= 1 },
-    { icon: '🔥', label: '3-Tage-Streak', sub: 'Drei Tage in Folge', earned: stats.streak >= 3, remaining: 3 - stats.streak, unit: 'Tag' },
-    { icon: '🔥', label: '7-Tage-Streak', sub: 'Eine ganze Woche dran', earned: stats.streak >= 7, remaining: 7 - stats.streak, unit: 'Tag' },
-    { icon: '🈂️', label: 'Alle Hiragana', sub: '46 Hiragana gelernt', earned: hiraDone },
-    { icon: '🈁', label: 'Alle Katakana', sub: '46 Katakana gelernt', earned: kataDone },
-    { icon: '🗣️', label: 'Erste Wörter', sub: 'Ersten Wort-Block geschafft', earned: (progress.completedWordBlocks || []).length >= 1 },
-    { icon: '📐', label: 'Grammatik-Start', sub: 'Erstes Thema verstanden', earned: grammarDone >= 1 },
-    { icon: '📖', label: 'Erstes Kapitel', sub: 'Erste Episode erlebt', earned: chaptersDone >= 1 },
-    { icon: '🎓', label: 'Vokabel gemeistert', sub: 'Ein Wort fest im Kopf', earned: stageCounts[4].n >= 1 },
-    { icon: '⭐', label: 'Level 5', sub: '5000 XP gesammelt', earned: stats.level >= 5, remaining: stats.level >= 5 ? 0 : (5 - stats.level) * 1000 - xpInLevel, unit: 'XP' },
-    { icon: '🗻', label: 'Gipfel erreicht', sub: 'Alle Kapitel abgeschlossen', earned: chaptersDone >= CHAPTERS.length },
-  ]
-  const earnedCount = achievements.filter(a => a.earned).length
+  // Wochen-Rückblick aus dem Tages-Journal (kana/words/chapters/scenes je Datum).
+  const week = weekSummary(progress)
+
+  // ─ Meilenstein-Abzeichen: jedes mit messbarem Stand (now/goal) ─
+  const hiraNow = LESSONS.filter(l => l.script === 'Hiragana' && completed.includes(l.id)).reduce((a, l) => a + l.kana.length, 0)
+  const kataNow = LESSONS.filter(l => l.script === 'Katakana' && completed.includes(l.id)).reduce((a, l) => a + l.kana.length, 0)
+  const dialogsDone = (progress.completedDialogs || []).length
+  const dialogsTotal = DIALOGS.filter(d => !d.section).length
+  // Gelernte Wörter gesamt: Wort-Blöcke + Kapitel-Vokabeln (eindeutig).
+  const wordsKnown = new Set([
+    ...learnedWordKanji(progress.completedWordBlocks || []),
+    ...(progress.completedChapters || []).flatMap(id => { const c = CHAPTERS.find(x => x.id === id); return c ? chapterSrsKeys(c) : [] }),
+  ]).size
+  const fiveStar = Object.values(progress.chapterStars || {}).filter(v => v >= 5).length
+  const goalPos = PATH.findIndex(n => n.type === 'goal')
+  const preGoal = PATH.slice(0, goalPos).filter(n => n.type && n.type !== 'goal')
+  const preGoalDone = preGoal.filter(n => isNodeDone(n, progress)).length
+  const contentNodes = PATH.filter(n => n.type && n.type !== 'goal')
+  const nodesDone = contentNodes.filter(n => isNodeDone(n, progress)).length
+
+  const badges = [
+    { icon: '👣', label: 'Erste Schritte', sub: 'Erste Lektion geschafft', now: Math.min(completed.length, 1), goal: 1 },
+    { icon: '🈴', label: 'Hiragana-Meister', sub: 'Alle 46 Hiragana gelernt', now: hiraNow, goal: 46 },
+    { icon: '🈚', label: 'Katakana-Meister', sub: 'Alle 46 Katakana gelernt', now: kataNow, goal: 46 },
+    { icon: '🔥', label: '3-Tage-Serie', sub: 'Drei Tage in Folge gelernt', now: Math.min(stats.streak, 3), goal: 3 },
+    { icon: '🎯', label: '7-Tage-Serie', sub: 'Eine ganze Woche dran', now: Math.min(stats.streak, 7), goal: 7 },
+    { icon: '🌸', label: 'Wortsammler', sub: '25 Wörter gelernt', now: Math.min(wordsKnown, 25), goal: 25 },
+    { icon: '💮', label: 'Wortschatz-Profi', sub: '100 Wörter gelernt', now: Math.min(wordsKnown, 100), goal: 100 },
+    { icon: '💬', label: 'Erstes Gespräch', sub: 'Erste Szene gemeistert', now: Math.min(dialogsDone, 1), goal: 1 },
+    { icon: '🎭', label: 'Gesprächs-Profi', sub: 'Alle Gesprächs-Szenen gemeistert', now: dialogsDone, goal: dialogsTotal },
+    { icon: '📐', label: 'Grammatik-Kenner', sub: 'Alle Grammatik-Themen verstanden', now: grammarDone, goal: GRAMMAR.length },
+    { icon: '🎓', label: 'Fest im Kopf', sub: 'Erste Vokabel „Gemeistert"', now: Math.min(stageCounts[4].n, 1), goal: 1 },
+    { icon: '⭐', label: 'Sternenhimmel', sub: 'Drei Kapitel mit 5 Sternen', now: Math.min(fiveStar, 3), goal: 3 },
+    { icon: '🗻', label: 'Gipfel erreicht', sub: 'Alle Stationen bis zum Fuji', now: preGoalDone, goal: preGoal.length },
+    { icon: '📖', label: 'Geschichte komplett', sub: 'Alle Kapitel erlebt', now: chaptersDone, goal: CHAPTERS.length },
+    { icon: '🏆', label: 'Level 5', sub: '5000 XP gesammelt', now: Math.min(stats.level, 5), goal: 5 },
+    { icon: '🏯', label: 'Reise vollendet', sub: 'Jede Station der Reise gemeistert', now: nodesDone, goal: contentNodes.length },
+  ].map(b => ({ ...b, earned: b.now >= b.goal }))
+  const earnedCount = badges.filter(b => b.earned).length
 
   const handleReset = () => {
     if (window.confirm('Wirklich den gesamten Fortschritt auf 0 zurücksetzen? Das kann nicht rückgängig gemacht werden.')) reset()
@@ -92,6 +118,34 @@ export default function FortschrittScreen({ onReview }) {
         <div>
           <div style={{ fontSize: 20, fontWeight: 700, color: C.matcha }}>{stats.streak} 🔥</div>
           <div style={{ fontSize: 11, color: C.textMuted }}>Streak</div>
+        </div>
+      </Card>
+
+      {/* Wochen-Rückblick: was diese Woche konkret gelernt wurde */}
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 10, fontWeight: 600, letterSpacing: 1 }}>
+          DIESE WOCHE
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, textAlign: 'center' }}>
+          {[
+            [week.xp, 'XP'],
+            [week.days, week.days === 1 ? 'aktiver Tag' : 'aktive Tage'],
+            [week.words, week.words === 1 ? 'neues Wort' : 'neue Wörter'],
+            [week.kana, 'neue Kana'],
+            [week.chapters, 'Kapitel'],
+            [week.scenes, week.scenes === 1 ? 'Gespräch' : 'Gespräche'],
+          ].map(([n, label]) => (
+            <div key={label}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: n > 0 ? C.indigo : C.textMuted }}>{n}</div>
+              <div style={{ fontSize: 10, color: C.textMuted }}>{label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 10, textAlign: 'center' }}>
+          {week.xp === 0
+            ? 'Noch still diese Woche – die nächste Station wartet. 🌱'
+            : week.days >= 5 ? `${week.days} von 7 Tagen aktiv – starke Woche! 🎉`
+            : `${week.days} von 7 Tagen aktiv – bleib dran!`}
         </div>
       </Card>
 
@@ -182,27 +236,33 @@ export default function FortschrittScreen({ onReview }) {
         ))}
       </Card>
 
-      {/* Errungenschaften */}
+      {/* Meilenstein-Abzeichen: Raster mit messbarem Stand je Abzeichen */}
       <Card style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 12, fontWeight: 600, letterSpacing: 1 }}>
-          ERRUNGENSCHAFTEN · {earnedCount}/{achievements.length}
+          ABZEICHEN · {earnedCount}/{badges.length}
         </div>
-        {achievements.map((a, i) => {
-          // Restdistanz nur anzeigen, wenn sauber berechenbar und positiv – sonst
-          // bleibt es beim neutralen „Noch nicht erreicht" (keine geratenen Zahlen).
-          const hint = a.earned ? a.sub
-            : a.remaining > 0 ? `noch ${a.remaining} ${a.unit}${a.remaining === 1 ? '' : a.unit === 'Tag' ? 'e' : ''}`
-            : 'Noch nicht erreicht'
-          return (
-            <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '9px 0', borderBottom: i < achievements.length - 1 ? `1px solid ${C.washiDark}` : 'none', opacity: a.earned ? 1 : 0.45 }}>
-              <div style={{ fontSize: 22, filter: a.earned ? 'none' : 'grayscale(1)' }}>{a.earned ? a.icon : '🔒'}</div>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{a.label}</div>
-                <div style={{ fontSize: 12, color: C.textMuted }}>{hint}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
+          {badges.map((b, i) => (
+            <button key={i} onClick={() => setSelBadge(selBadge === i ? null : i)}
+              style={{
+                textAlign: 'center', padding: '10px 2px 8px', borderRadius: 10, cursor: 'pointer',
+                background: b.earned ? `${C.matcha}14` : '#fff',
+                border: `1px solid ${selBadge === i ? C.indigo : b.earned ? `${C.matcha}55` : C.washiDark}`,
+                opacity: b.earned ? 1 : 0.55,
+              }}>
+              <div style={{ fontSize: 24, filter: b.earned ? 'none' : 'grayscale(1)', lineHeight: 1.2 }}>{b.icon}</div>
+              <div style={{ fontSize: 9.5, fontWeight: 600, color: C.sumi, marginTop: 3, lineHeight: 1.25 }}>{b.label}</div>
+              <div style={{ fontSize: 9, color: b.earned ? C.matcha : C.textMuted, marginTop: 2, fontWeight: 600 }}>
+                {b.earned ? '✓ geschafft' : `${b.now} / ${b.goal}`}
               </div>
-            </div>
-          )
-        })}
+            </button>
+          ))}
+        </div>
+        {selBadge != null && (
+          <p style={{ fontSize: 12, color: C.sumi, marginTop: 10, marginBottom: 0, textAlign: 'center' }}>
+            {badges[selBadge].icon} <strong>{badges[selBadge].label}</strong> – {badges[selBadge].sub}
+          </p>
+        )}
       </Card>
 
       {/* Reset */}
