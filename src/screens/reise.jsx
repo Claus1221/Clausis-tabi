@@ -8,7 +8,8 @@ import { KANJI_ORIGIN } from '../data/kanjiOrigin.js'
 import { GRAMMAR } from '../data/grammar.js'
 import { STORY_TOKENS, CHAPTER_BY_ID } from '../data/chapters.js'
 import { PATH } from '../data/path.js'
-import { XP_PER_KANA, XP_PER_CARD, XP_PER_WORD, XP_PER_GRAMMAR, XP_PER_CHAPTER } from '../lib/xp.js'
+import { XP_PER_KANA, XP_PER_CARD, XP_PER_WORD, XP_PER_GRAMMAR, XP_PER_CHAPTER, XP_PER_DIALOG } from '../lib/xp.js'
+import { DIALOGS } from '../data/dialogs.js'
 import { completedKanaList } from '../lib/kanaStats.js'
 import { speak, speakItem } from '../lib/speech.js'
 import { srsItemInfo, SRS_RATINGS, shuffled, feedbackColor } from '../lib/srs.js'
@@ -20,7 +21,7 @@ import { Emoji, Card, Btn, Stars } from '../components/ui.jsx'
 import { DrawCanvas } from '../components/kana.jsx'
 import { KanjiOrigin, StoryLine } from '../components/japanese.jsx'
 import { BuildStep } from '../components/BuildStep.jsx'
-import { LessonPlayer, BlockCourse, GrammarLesson } from './players.jsx'
+import { LessonPlayer, BlockCourse, GrammarLesson, DialogPlay } from './players.jsx'
 
 function DailyStrip({ onReview }) {
   const { progress } = useContext(ProgressCtx)
@@ -223,6 +224,12 @@ function ChapterPlayer({ chapter, alreadyDone, onComplete, onClose }) {
         <Emoji name="party" size={72} />
         <h2 style={{ fontSize: 22, fontFamily: JP, color: C.matcha, margin: '10px 0 8px' }}>Kapitel geschafft!</h2>
         <p style={{ lineHeight: 1.6 }}>„{chapter.title}" – du hast das Gelernte angewendet und die Geschichte erlebt.</p>
+        {!alreadyDone && (
+          <p style={{ marginTop: 10, fontWeight: 700, color: C.shu }}>+{XP_PER_CHAPTER} XP</p>
+        )}
+        <p style={{ fontSize: 13, color: C.textMuted, marginTop: 8 }}>
+          Die neuen Wörter wandern in deinen Wiederholungsplan – jede Übung hebt die Sterne dieses Kapitels. ⭐
+        </p>
       </div>
     )
   } else if (cur.kind === 'story') {
@@ -454,7 +461,7 @@ function StoryJournal({ progress, onClose }) {
 }
 
 export default function ReiseScreen({ onReview }) {
-  const { progress, completeLesson, completeWordBlock, completeGrammar, completeChapter, bumpChapterStars } = useContext(ProgressCtx)
+  const { progress, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, bumpChapterStars } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
   const [showStory, setShowStory] = useState(false)
   const [sheet, setSheet] = useState(null)        // angetipptes, bereits erledigtes Kapitel
@@ -521,6 +528,14 @@ export default function ReiseScreen({ onReview }) {
       return (
         <ChapterPlayer chapter={chapter} alreadyDone={already} onClose={close}
           onComplete={() => { if (!already) completeChapter(active.id, XP_PER_CHAPTER); close() }} />
+      )
+    }
+    if (active.type === 'dialog') {
+      const node = DIALOGS.find(d => d.id === active.id)
+      const already = (progress.completedDialogs || []).includes(active.id)
+      return (
+        <DialogPlay node={node} alreadyDone={already} onClose={close}
+          onComplete={() => completeDialog(active.id, XP_PER_DIALOG)} />
       )
     }
   }
@@ -607,7 +622,7 @@ export default function ReiseScreen({ onReview }) {
           Deine Reise 旅
         </h2>
         <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>
-          Ein Weg vom Anfang über den Gipfel hinaus – Schrift, Wörter und Grammatik Schritt für Schritt.
+          EIN Weg durch alles: Schrift, Wörter, Grammatik, Geschichte und echte Gespräche – Station für Station.
         </p>
 
         {/* Tagesstatus — eingebettet aus dem früheren „Heute"-Tab */}

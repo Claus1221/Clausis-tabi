@@ -1,15 +1,17 @@
-import { useState, useMemo, useContext } from 'react'
+import { useState, useMemo, useContext, useEffect } from 'react'
 import { C, JP } from '../theme.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
 import { KANA_DATA } from '../data/kana.js'
 import { ALL_WORDS } from '../data/words.js'
-import { XP_PER_CARD } from '../lib/xp.js'
+import { DIALOGS } from '../data/dialogs.js'
+import { XP_PER_CARD, XP_PER_DIALOG } from '../lib/xp.js'
 import { speak, copyText } from '../lib/speech.js'
 import { shuffled, feedbackColor } from '../lib/srs.js'
 import { HAS_JP } from '../lib/furigana.jsx'
-import { Card, Btn } from '../components/ui.jsx'
+import { Card, Btn, Emoji } from '../components/ui.jsx'
+import { UebenHead } from '../components/ueben.jsx'
 import { StrokeDisplay, DrawCanvas } from '../components/kana.jsx'
-import { WordDetail, TappableSentence } from '../components/japanese.jsx'
+import { WordDetail, TappableSentence, TappableJp } from '../components/japanese.jsx'
 
 // ─── Lesson player ────────────────────────────────────────────────────────────
 
@@ -560,3 +562,103 @@ export function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
   )
 }
 
+
+// ─── Gesprächs-Szene (Rollenspiel) ────────────────────────────────────────────
+// Kontext-Intro → Wechsel mit verblassenden Hilfen. Wird von der REISE (Szenen
+// sind Stationen des Pfads) und vom Üben-Tab (freies Wiederholen) geteilt.
+export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
+  const { awardXp } = useContext(ProgressCtx)
+  const [turns] = useState(() => {
+    if (node.review) {
+      const pool = node.from.flatMap(id => DIALOGS.find(d => d.id === id)?.turns || [])
+      return shuffled(pool).slice(0, 5)
+    }
+    return node.turns
+  })
+  const scaffold = node.review ? 'mittel' : node.scaffold
+  const [phase, setPhase] = useState('intro')
+  const [turn, setTurn] = useState(0)
+  const [ans, setAns] = useState(null)
+  const [score, setScore] = useState(0)
+  // Antwortoptionen pro Zug einmalig mischen (sonst steht die richtige zuerst).
+  const options = useMemo(() => shuffled(turns[turn]?.options || []), [turns, turn])
+
+  useEffect(() => { if (phase === 'done' && !alreadyDone) onComplete() }, [phase])
+  // NPC-Zeile beim Erscheinen vorlesen (Hören-zuerst).
+  useEffect(() => { if (phase === 'play') speak(turns[turn]?.npc) }, [phase, turn])
+
+  if (phase === 'intro') {
+    return (
+      <div style={{ padding: 20 }}>
+        <UebenHead title={node.title} idx={0} total={turns.length} onClose={onClose} />
+        <Card style={{ textAlign: 'center', padding: '24px 18px' }}>
+          <Emoji name={node.emoji} size={64} />
+          <p style={{ fontSize: 13, color: C.textMuted, margin: '14px 0 2px', letterSpacing: 1 }}>SITUATION</p>
+          <p style={{ fontWeight: 600, fontSize: 17, color: C.sumi, margin: 0 }}>{node.goal}</p>
+        </Card>
+        <Btn onClick={() => setPhase('play')} style={{ width: '100%', marginTop: 16 }}>Los geht's →</Btn>
+      </div>
+    )
+  }
+  if (phase === 'done') {
+    return (
+      <div style={{ padding: 20 }}>
+        <UebenHead title={node.title} idx={turns.length} total={turns.length} onClose={onClose} />
+        <Card style={{ textAlign: 'center', padding: '28px 18px' }}>
+          <div style={{ fontSize: 44 }}>🎉</div>
+          <p style={{ fontWeight: 600, fontSize: 18, color: C.sumi, margin: '8px 0 2px' }}>Szene gemeistert!</p>
+          <p style={{ color: C.textMuted, fontSize: 14 }}>
+            {score} / {turns.length} passend{!alreadyDone && ` · +${XP_PER_DIALOG} XP`}
+          </p>
+        </Card>
+        <Btn onClick={onClose} style={{ width: '100%', marginTop: 16 }}>Zurück zum Pfad →</Btn>
+      </div>
+    )
+  }
+
+  const t = turns[turn]
+  const revealed = ans != null
+  const showDe = scaffold === 'voll' || revealed
+  const choose = (o) => { if (revealed) return; setAns(o); speak(o); if (o === t.answer) { awardXp(XP_PER_CARD); setScore(s => s + 1) } }
+  const next = () => { if (turn === turns.length - 1) { setPhase('done'); return } setAns(null); setTurn(x => x + 1) }
+
+  return (
+    <div style={{ padding: 20 }}>
+      <UebenHead title={node.title} idx={turn} total={turns.length} onClose={onClose} />
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 16 }}>
+        <Emoji name={node.emoji} size={48} />
+        <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 12, padding: '10px 14px', flex: 1 }}>
+          <TappableJp text={t.npc} size={19} hint />
+          {showDe && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>„{t.de}"</div>}
+          <button onClick={() => speak(t.npc)} style={{ background: 'none', border: 'none', fontSize: 13, cursor: 'pointer', padding: '2px 0 0', color: C.textMuted }}>🔊 nochmal hören</button>
+        </div>
+      </div>
+      <p style={{ fontWeight: 500, marginBottom: 12 }}>Was antwortest du?</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+        {options.map(o => {
+          const correct = o === t.answer, chosen = o === ans
+          const fb = feedbackColor(!revealed ? 'neutral' : correct ? 'correct' : chosen ? 'wrong' : 'neutral')
+          return (
+            <button key={o} onClick={() => choose(o)} disabled={revealed}
+              style={{ padding: '12px 14px', borderRadius: 10, border: `2px solid ${fb.border}`,
+                background: fb.bg,
+                fontSize: 17, fontFamily: JP, color: C.sumi, cursor: revealed ? 'default' : 'pointer', textAlign: 'left' }}>{o}</button>
+          )
+        })}
+      </div>
+      {revealed && (
+        <>
+          <p style={{ marginTop: 12, fontWeight: 600, color: ans === t.answer ? C.matcha : C.shu }}>
+            {ans === t.answer ? '✓ Gute Antwort!' : '✗ Passt nicht ganz'}
+            <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 2 }}>NPC: „{t.de}"</span>
+          </p>
+          <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 10, padding: '10px 12px', marginTop: 10 }}>
+            <div style={{ fontSize: 11, color: C.textMuted, letterSpacing: 1, marginBottom: 6 }}>RICHTIGE ANTWORT · WÖRTER ANTIPPEN</div>
+            <TappableJp text={t.answer} size={18} />
+          </div>
+          <Btn onClick={next} style={{ width: '100%', marginTop: 12 }}>{turn === turns.length - 1 ? 'Fertig →' : 'Weiter →'}</Btn>
+        </>
+      )}
+    </div>
+  )
+}
