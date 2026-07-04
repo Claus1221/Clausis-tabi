@@ -14,6 +14,12 @@ const EMOJI = {
   up: '2b06', down: '2b07', right: '27a1', left: '2b05', door: '1f6aa', restroom: '1f6bb',
   man: '1f468', woman: '1f469', camera: '1f4f7', gift: '1f381', restaurant: '1f37d',
   elephant: '1f418', ant: '1f41c', sky: '1f324',
+  bag: '1f392', ticket: '1f3ab', town: '1f3d8', road: '1f6e3', flower: '1f338',
+  tree2: '1f333', rock: '1faa8', cloud: '2601', sunrise: '1f305', rice: '1f35a',
+  meat: '1f356', chopsticks: '1f962', onigiri: '1f359', money: '1f4b4', metro: '1f687',
+  hospital: '1f3e5', photo: '1f4f8', plant: '1fab4', bridge: '1f309', coin: '1fa99',
+  gem: '1f48e', pricetag: '1f3f7', shopping: '1f6cd', airport: '1f6eb', luggage: '1f9f3',
+  friends: '1f91d', bug: '1f41b', cow: '1f404', deer: '1f98c',
 }
 export function Emoji({ name, size = 48, style }) {
   const cp = EMOJI[name]
