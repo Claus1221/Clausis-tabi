@@ -13,7 +13,7 @@ import { DIALOGS } from '../data/dialogs.js'
 import { completedKanaList } from '../lib/kanaStats.js'
 import { speak, speakItem } from '../lib/speech.js'
 import { srsItemInfo, SRS_RATINGS, shuffled, feedbackColor } from '../lib/srs.js'
-import { chapterSrsKeys, chapterStarsShown, computeAllChapterStars, shouldTypeSentence, weakChapterList, BRAKE_LIMIT } from '../lib/chapters.js'
+import { chapterSrsKeys, newChapterWords, chapterStarsShown, computeAllChapterStars, shouldTypeSentence, weakChapterList, BRAKE_LIMIT } from '../lib/chapters.js'
 import { renderFuri, furiPlain } from '../lib/furigana.jsx'
 import { sceneTorii, buildBackdrop, roadPath, STATE_PALETTE } from '../lib/scene.jsx'
 import { isNodeDone, pathNodeMeta } from '../lib/path.js'
@@ -306,12 +306,20 @@ function ChapterPractice({ chapter, onClose }) {
   const [flipped, setFlipped] = useState(false)
   const [correct, setCorrect] = useState(0)
 
+  // Wörter, die dieser Spieler noch NIE gesehen hat (kein SRS-Eintrag) – etwa
+  // weil ein Kapitel nachträglich neue Vokabeln bekam, nachdem es schon
+  // abgeschlossen war. Snapshot VOR dem scheduleNew unten (sonst wäre die Menge
+  // sofort leer) – für diese Wörter zeigen wir die echte Einführung, statt sie
+  // ungelernt in die Selbsteinschätzung zu werfen.
+  const newWords = useMemo(() => new Set(newChapterWords(chapter, progress)), []) // eslint-disable-line
+
   // Kapitel-Vokabeln als SRS-Karten anlegen (falls noch nicht geplant).
   useEffect(() => { if (keys.length) scheduleNew(keys) }, []) // eslint-disable-line
 
   const finished = idx >= deck.length
   const item = deck[idx]
   const info = item ? srsItemInfo(item) : null
+  const introStep = item && newWords.has(item) ? chapter.steps.find(s => s.kind === 'intro' && s.jp === item) : null
 
   const rate = (q) => {
     const e = (progress.srs || {})[item]
@@ -321,6 +329,7 @@ function ChapterPractice({ chapter, onClose }) {
     setFlipped(false)
     setIdx(i => i + 1)
   }
+  const next = () => { setFlipped(false); setIdx(i => i + 1) }
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
@@ -344,6 +353,13 @@ function ChapterPractice({ chapter, onClose }) {
             <h2 style={{ fontSize: 22, fontFamily: JP, color: C.matcha, margin: '10px 0 8px' }}>Geschafft!</h2>
             <p style={{ lineHeight: 1.6 }}>{correct} / {deck.length} sicher gewusst. Dein Kenntnisstand zählt für die Sterne dieses Kapitels.</p>
           </div>
+        ) : introStep ? (
+          <>
+            <p style={{ textAlign: 'center', color: C.indigo, fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+              Karte {idx + 1} / {deck.length} · 🆕 Neu für dich – dieses Wort kam später zum Kapitel dazu
+            </p>
+            <IntroStep step={introStep} />
+          </>
         ) : (
           <>
             <p style={{ textAlign: 'center', color: C.textMuted, fontSize: 13, marginBottom: 12 }}>Karte {idx + 1} / {deck.length} · Wie gut kennst du dieses Wort?</p>
@@ -379,18 +395,22 @@ function ChapterPractice({ chapter, onClose }) {
         )}
       </div>
 
-      {(finished || keys.length === 0) && (
+      {(finished || keys.length === 0) ? (
         <div style={{ padding: '16px 20px', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
           <Btn onClick={onClose} style={{ width: '100%' }}>Fertig ✓</Btn>
         </div>
-      )}
+      ) : introStep ? (
+        <div style={{ padding: '16px 20px', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
+          <Btn onClick={next} style={{ width: '100%' }}>Weiter →</Btn>
+        </div>
+      ) : null}
     </div>
   )
 }
 
 // Info-Sheet beim Antippen eines abgeschlossenen Kapitels: zeigt den Sterne-Stand
 // und bietet „Geschichte erneut erleben" sowie „Kenntnisstand üben" an.
-function ChapterSheet({ chapter, stars, onReplay, onPractice, onClose }) {
+function ChapterSheet({ chapter, stars, newWordsCount, onReplay, onPractice, onClose }) {
   const STAR_HINT = [
     '', // 0 kommt hier nicht vor
     'Kapitel abgeschlossen. Übe die Vokabeln, um mehr Sterne zu sammeln.',
@@ -410,7 +430,14 @@ function ChapterSheet({ chapter, stars, onReplay, onPractice, onClose }) {
           <span style={{ fontSize: 13, color: C.textMuted, fontWeight: 600 }}>{stars} / 5</span>
         </div>
         <p style={{ fontSize: 13, color: C.sumi, lineHeight: 1.6, margin: '0 0 18px' }}>{STAR_HINT[stars] || STAR_HINT[1]}</p>
-        <Btn onClick={onPractice} style={{ width: '100%', marginBottom: 10 }}>🎯 Kenntnisstand üben</Btn>
+        {newWordsCount > 0 && (
+          <p style={{ fontSize: 13, color: C.indigo, background: `${C.indigo}12`, border: `1px solid ${C.indigo}30`, borderRadius: 8, padding: '8px 10px', margin: '-8px 0 16px' }}>
+            🆕 {newWordsCount} {newWordsCount === 1 ? 'neues Wort wartet' : 'neue Wörter warten'} – kamen später zu diesem Kapitel dazu.
+          </p>
+        )}
+        <Btn onClick={onPractice} style={{ width: '100%', marginBottom: 10 }}>
+          {newWordsCount > 0 ? `🆕 ${newWordsCount === 1 ? 'Neues Wort' : 'Neue Wörter'} entdecken` : '🎯 Kenntnisstand üben'}
+        </Btn>
         <Btn variant="secondary" onClick={onReplay} style={{ width: '100%' }}>📖 Geschichte erneut erleben</Btn>
       </div>
     </div>
@@ -661,6 +688,7 @@ export default function ReiseScreen({ onReview }) {
         <ChapterSheet
           chapter={CHAPTER_BY_ID[sheet.id]}
           stars={chapterStarsShown(CHAPTER_BY_ID[sheet.id], progress)}
+          newWordsCount={newChapterWords(CHAPTER_BY_ID[sheet.id], progress).length}
           onReplay={() => { setActive(sheet); setSheet(null) }}
           onPractice={() => { setPractice(CHAPTER_BY_ID[sheet.id]); setSheet(null) }}
           onClose={() => setSheet(null)}

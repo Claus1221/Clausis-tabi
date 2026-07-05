@@ -20,6 +20,13 @@ export function shouldTypeSentence(answerStr, progress) {
 export function chapterSrsKeys(chapter) {
   return [...new Set(chapter.steps.filter(s => s.kind === 'intro').map(s => s.jp))]
 }
+// Kapitel-Wörter, die dieser Spieler noch NIE gesehen hat (kein SRS-Eintrag) –
+// z. B. weil dem Kapitel nachträglich Vokabeln hinzugefügt wurden, nachdem es
+// schon abgeschlossen war. Für diese Wörter fehlt die Bild+Audio-Einführung.
+export function newChapterWords(chapter, progress) {
+  const srs = progress.srs || {}
+  return chapterSrsKeys(chapter).filter(k => !srs[k])
+}
 // Aktueller (Live-)Sterne-Stand aus dem SRS, 0 = noch nicht abgeschlossen.
 // Schnitt über ALLE Kapitel-Vokabeln (fehlende Karte zählt als Stufe „Neu").
 export function chapterStarsLive(chapter, progress) {

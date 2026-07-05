@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { weakChapterList, chapterSrsKeys, BRAKE_LIMIT } from './chapters.js'
+import { weakChapterList, chapterSrsKeys, newChapterWords, BRAKE_LIMIT } from './chapters.js'
 import { CHAPTERS } from '../data/chapters.js'
 
 const c1 = CHAPTERS[0], c2 = CHAPTERS[1]
@@ -35,5 +35,23 @@ describe('weakChapterList (Kapitel-Bremse)', () => {
   it('gespeicherter Sterne-Höchststand zählt ebenfalls (Sterne fallen nie)', () => {
     const p = { completedChapters: [c1.id], srs: {}, chapterStars: { [c1.id]: 3 } }
     expect(weakChapterList(p)).toEqual([])
+  })
+})
+
+describe('newChapterWords (nachträglich ergänzte Kapitel-Vokabeln)', () => {
+  it('meldet alle Kapitel-Wörter als neu, wenn noch nichts im SRS steht', () => {
+    expect(newChapterWords(c1, {})).toEqual(chapterSrsKeys(c1))
+  })
+
+  it('meldet nur Wörter ohne SRS-Eintrag – z. B. nachträglich hinzugefügte', () => {
+    const keys = chapterSrsKeys(c1)
+    const srs = { [keys[0]]: { interval: 4, reps: 3, ease: 2.5, due: '2099-01-01' } }
+    expect(newChapterWords(c1, { srs })).toEqual(keys.slice(1))
+  })
+
+  it('ist leer, sobald jedes Kapitel-Wort einen SRS-Eintrag hat', () => {
+    const srs = {}
+    chapterSrsKeys(c1).forEach(k => { srs[k] = { interval: 1, reps: 1, ease: 2.5, due: '2099-01-01' } })
+    expect(newChapterWords(c1, { srs })).toEqual([])
   })
 })
