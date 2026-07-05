@@ -20,6 +20,18 @@ const EMOJI = {
   hospital: '1f3e5', photo: '1f4f8', plant: '1fab4', bridge: '1f309', coin: '1fa99',
   gem: '1f48e', pricetag: '1f3f7', shopping: '1f6cd', airport: '1f6eb', luggage: '1f9f3',
   friends: '1f91d', bug: '1f41b', cow: '1f404', deer: '1f98c',
+  me: '1f64b', nametag: '1f4db', student: '1f393', teacher: '1f469-200d-1f3eb', family: '1f46a',
+  boy: '1f466', girl: '1f467', clock: '1f550', hourglass: '23f3', clockhalf: '1f55c',
+  noon: '1f31e', fountain: '26f2', books: '1f4da', bank: '1f3e6', post: '1f3e3',
+  school: '1f3eb', alarm: '23f0', breakfast: '1f373', egg: '1f95a', milk: '1f95b',
+  sleep: '1f634', grapes: '1f347', carrot: '1f955', apple: '1f34e', banana: '1f34c',
+  partly: '26c5', snow: '2744', wind: '1f343', hot: '1f975', cold: '1f976',
+  palette: '1f3a8', red: '1f534', blue: '1f535', white: '26aa', black: '26ab',
+  book: '1f4d5', flagjp: '1f1ef-1f1f5', flaggb: '1f1ec-1f1e7', read: '1f4d6', speech: '1f4ac',
+  write: '270f', music: '1f3b5', song: '1f3b6', mic: '1f3a4', headphones: '1f3a7',
+  movie: '1f3ac', lantern: '1f3ee', fireworks: '1f386', bento: '1f371', yum: '1f60b',
+  candy: '1f36c', sparkles: '2728', oldhouse: '1f3da', rocket: '1f680', turtle: '1f422',
+  shh: '1f92b', passport: '1f6c2',
 }
 export function Emoji({ name, size = 48, style }) {
   const cp = EMOJI[name]

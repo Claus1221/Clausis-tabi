@@ -138,6 +138,50 @@ export const WORD_BLOCKS = [
       ] } },
     ],
   },
+  {
+    id: 'wb8', theme: '📅', title: 'Tage', words: [
+      { kanji: '今日', kana: 'きょう', romaji: 'kyou', de: 'heute', ex: { jp: '今日は暑いです。', kana: 'きょうはあついです。', de: 'Heute ist es heiß.', tokens: [
+        { t: '今日', r: 'きょう', de: 'heute', b: 'Zeitwort (ohne Partikel möglich)' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '暑い', r: 'あつい', de: 'heiß', b: 'い-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '明日', kana: 'あした', romaji: 'ashita', de: 'morgen', ex: { jp: '明日、行きます。', kana: 'あした、いきます。', de: 'Morgen gehe ich.', tokens: [
+        { t: '明日', r: 'あした', de: 'morgen', b: 'Zeitwort (ohne Partikel)' }, { t: '、' }, { t: '行きます', r: 'いきます', de: 'gehen / fahren', b: 'Verb, höflich (von 行く)' }, { t: '。' },
+      ] } },
+      { kanji: '昨日', kana: 'きのう', romaji: 'kinou', de: 'gestern', ex: { jp: '昨日は雨でした。', kana: 'きのうはあめでした。', de: 'Gestern war Regen.', tokens: [
+        { t: '昨日', r: 'きのう', de: 'gestern', b: 'Zeitwort' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '雨', r: 'あめ', de: 'Regen', b: 'Nomen' }, { t: 'でした', de: 'war', b: 'Vergangenheit von です' }, { t: '。' },
+      ] } },
+      { kanji: '毎日', kana: 'まいにち', romaji: 'mainichi', de: 'jeden Tag', ex: { jp: '毎日、お茶を飲みます。', kana: 'まいにち、おちゃをのみます。', de: 'Jeden Tag trinke ich Tee.', tokens: [
+        { t: '毎日', r: 'まいにち', de: 'jeden Tag', b: 'Zeitwort (ohne Partikel)' }, { t: '、' }, { t: 'お茶', r: 'おちゃ', de: 'Tee', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '飲みます', r: 'のみます', de: 'trinken', b: 'Verb, höflich (von 飲む)' }, { t: '。' },
+      ] } },
+      { kanji: '週末', kana: 'しゅうまつ', romaji: 'shuumatsu', de: 'Wochenende', ex: { jp: '週末に山へ行きます。', kana: 'しゅうまつにやまへいきます。', de: 'Am Wochenende fahre ich in die Berge.', tokens: [
+        { t: '週末', r: 'しゅうまつ', de: 'Wochenende', b: 'Nomen' }, { t: 'に', de: '(Zeitpunkt)', b: 'Partikel: wann' }, { t: '山', r: 'やま', de: 'Berg', b: 'Nomen' }, { t: 'へ', r: 'e', de: '(Richtung)', b: 'Richtungspartikel' }, { t: '行きます', r: 'いきます', de: 'fahren / gehen', b: 'Verb, höflich (von 行く)' }, { t: '。' },
+      ] } },
+    ],
+  },
+  {
+    id: 'wb9', theme: '🗓️', title: 'Wochentage', words: [
+      { kanji: '月曜日', kana: 'げつようび', romaji: 'getsuyoubi', de: 'Montag', ex: { jp: '今日は月曜日です。', kana: 'きょうはげつようびです。', de: 'Heute ist Montag.', tokens: [
+        { t: '今日', r: 'きょう', de: 'heute', b: 'Zeitwort' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '月曜日', r: 'げつようび', de: 'Montag (月 = Mond)', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '火曜日', kana: 'かようび', romaji: 'kayoubi', de: 'Dienstag', ex: { jp: '明日は火曜日です。', kana: 'あしたはかようびです。', de: 'Morgen ist Dienstag.', tokens: [
+        { t: '明日', r: 'あした', de: 'morgen', b: 'Zeitwort' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '火曜日', r: 'かようび', de: 'Dienstag (火 = Feuer)', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '水曜日', kana: 'すいようび', romaji: 'suiyoubi', de: 'Mittwoch', ex: { jp: '昨日は水曜日でした。', kana: 'きのうはすいようびでした。', de: 'Gestern war Mittwoch.', tokens: [
+        { t: '昨日', r: 'きのう', de: 'gestern', b: 'Zeitwort' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '水曜日', r: 'すいようび', de: 'Mittwoch (水 = Wasser)', b: 'Nomen' }, { t: 'でした', de: 'war', b: 'Vergangenheit von です' }, { t: '。' },
+      ] } },
+      { kanji: '木曜日', kana: 'もくようび', romaji: 'mokuyoubi', de: 'Donnerstag', ex: { jp: '木曜日に行きます。', kana: 'もくようびにいきます。', de: 'Am Donnerstag gehe ich.', tokens: [
+        { t: '木曜日', r: 'もくようび', de: 'Donnerstag (木 = Baum)', b: 'Nomen' }, { t: 'に', de: '(Zeitpunkt)', b: 'Partikel: wann' }, { t: '行きます', r: 'いきます', de: 'gehen / fahren', b: 'Verb, höflich (von 行く)' }, { t: '。' },
+      ] } },
+      { kanji: '金曜日', kana: 'きんようび', romaji: 'kinyoubi', de: 'Freitag', ex: { jp: '金曜日が好きです。', kana: 'きんようびがすきです。', de: 'Ich mag Freitage.', tokens: [
+        { t: '金曜日', r: 'きんようび', de: 'Freitag (金 = Gold/Metall)', b: 'Nomen' }, { t: 'が', de: '(das Gemochte)', b: 'Partikel bei 好き' }, { t: '好き', r: 'すき', de: 'mögen', b: 'な-Adjektiv' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '土曜日', kana: 'どようび', romaji: 'doyoubi', de: 'Samstag', ex: { jp: 'お祭りは土曜日です。', kana: 'おまつりはどようびです。', de: 'Das Fest ist am Samstag.', tokens: [
+        { t: 'お祭り', r: 'おまつり', de: 'Fest', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '土曜日', r: 'どようび', de: 'Samstag (土 = Erde)', b: 'Nomen' }, { t: 'です', de: 'ist', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+      { kanji: '日曜日', kana: 'にちようび', romaji: 'nichiyoubi', de: 'Sonntag', ex: { jp: '日曜日は家にいます。', kana: 'にちようびはいえにいます。', de: 'Am Sonntag bin ich zu Hause.', tokens: [
+        { t: '日曜日', r: 'にちようび', de: 'Sonntag (日 = Sonne)', b: 'Nomen' }, { t: 'は', r: 'wa', de: '(Thema)', b: 'Themenpartikel' }, { t: '家', r: 'いえ', de: 'Haus / Zuhause', b: 'Nomen' }, { t: 'に', de: '(Ort)', b: 'Partikel: wo (bei います)' }, { t: 'います', de: 'sein / sich befinden', b: 'Verb, höflich (Lebewesen)' }, { t: '。' },
+      ] } },
+    ],
+  },
 ]
 export const ALL_WORDS = WORD_BLOCKS.flatMap(b => b.words)
 export const WORD_BY_KANJI = Object.fromEntries(ALL_WORDS.map(w => [w.kanji, w]))

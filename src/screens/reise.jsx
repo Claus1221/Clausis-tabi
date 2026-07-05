@@ -631,9 +631,14 @@ export default function ReiseScreen({ onReview }) {
   })
 
   // Parallax-Hintergrund je Welt-Band: Land (Ankunft) → Berge (Natur/Aufstieg) →
-  // Stadt (Tokyo) → Tempelgarten (Schluss). Reihenfolge folgt PATH-Welt-Index;
-  // bei neuen Welten hier ergänzen (Default „mountain").
-  const BAND_THEMES = ['country', 'country', 'mountain', 'mountain', 'mountain', 'mountain', 'city', 'city', 'city', 'garden', 'city', 'country']
+  // Stadt (Tokyo) → Freunde-Arc (Stadt/Land/Garten im Wechsel) → Abschied (Land).
+  // Reihenfolge folgt PATH-Welt-Index; bei neuen Welten hier ergänzen (Default „mountain").
+  const BAND_THEMES = [
+    'country', 'country', 'mountain', 'mountain', 'mountain', 'mountain', // Ankunft → Fuji
+    'city', 'city', 'city', 'garden', 'city',                             // Tokyo 一〜五
+    'garden', 'city', 'country', 'city', 'city', 'garden',                // 友達 一〜六
+    'country',                                                            // さよなら (Abschied)
+  ]
   const backdropH = trackH + 80
   const bandsForBackdrop = bands.map((b, i) => ({
     ...b,
