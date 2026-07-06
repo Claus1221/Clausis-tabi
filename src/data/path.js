@@ -76,6 +76,8 @@ export const PATH = [
   { type: 'word', id: 'wb5' },
   { type: 'word', id: 'wb6' },
   { type: 'word', id: 'wb7' },
+  { type: 'word', id: 'wb10' },
+  { type: 'grammar', id: 'g23' },
   { type: 'chapter', id: 'c15' },
   { type: 'dialog', id: 'd8' },
   { world: '友達・一', sub: 'Ein bekanntes Gesicht' },

@@ -182,6 +182,25 @@ export const WORD_BLOCKS = [
       ] } },
     ],
   },
+  {
+    id: 'wb10', theme: '🔢', title: 'Zähleinheiten', words: [
+      { kanji: '枚', kana: 'まい', romaji: 'mai', de: 'Zählwort: flache Dinge (Tickets, Hemden, Blätter)', ex: { jp: 'きっぷを2枚ください。', kana: 'きっぷをにまいください。', de: 'Zwei Fahrkarten, bitte.', tokens: [
+        { t: 'きっぷ', de: 'Fahrkarte', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '2枚', r: 'にまい', de: 'zwei Stück (flach)', b: 'Zahl + Zählwort 枚 (regelmäßig)' }, { t: 'ください', de: 'bitte geben Sie mir', b: 'höfliche Bitte' }, { t: '。' },
+      ] } },
+      { kanji: '杯', kana: 'はい', romaji: 'hai', de: 'Zählwort: Tassen/Gläser (Getränke)', ex: { jp: 'コーヒーを一杯ください。', kana: 'コーヒーをいっぱいください。', de: 'Eine Tasse Kaffee, bitte.', tokens: [
+        { t: 'コーヒー', de: 'Kaffee', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '一杯', r: 'いっぱい', de: 'eine Tasse/ein Glas', b: 'Zahl + Zählwort 杯 – unregelmäßig: はい→っぱい bei 1' }, { t: 'ください', de: 'bitte geben Sie mir', b: 'höfliche Bitte' }, { t: '。' },
+      ] } },
+      { kanji: '階', kana: 'かい', romaji: 'kai', de: 'Stockwerk / Zählwort: Etagen', ex: { jp: 'エレベーターで3階に行きます。', kana: 'エレベーターでさんがいにいきます。', de: 'Ich fahre mit dem Aufzug in den 3. Stock.', tokens: [
+        { t: 'エレベーター', de: 'Aufzug', b: 'Nomen' }, { t: 'で', de: '(Mittel)', b: 'Partikel: womit' }, { t: '3階', r: 'さんがい', de: '3. Stock', b: 'Zahl + Zählwort 階 – unregelmäßig: かい→がい bei 3' }, { t: 'に', de: '(Ziel)', b: 'Partikel: wohin' }, { t: '行きます', r: 'いきます', de: 'gehen / fahren', b: 'Verb, höflich' }, { t: '。' },
+      ] } },
+      { kanji: '個', kana: 'こ', romaji: 'ko', de: 'Zählwort: kleine, generische Dinge', ex: { jp: 'りんごを3個買いました。', kana: 'りんごをさんこかいました。', de: 'Ich habe drei Äpfel gekauft.', tokens: [
+        { t: 'りんご', de: 'Apfel', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '3個', r: 'さんこ', de: 'drei Stück (klein, generisch)', b: 'Zahl + Zählwort 個 (regelmäßig)' }, { t: '買いました', r: 'かいました', de: 'habe gekauft', b: 'ます-Form, Vergangenheit (買う)' }, { t: '。' },
+      ] } },
+      { kanji: '名', kana: 'めい', romaji: 'mei', de: 'Zählwort: Personen (höflich, z. B. im Restaurant)', ex: { jp: '全部で3名です。', kana: 'ぜんぶでさんめいです。', de: 'Wir sind insgesamt drei Personen.', tokens: [
+        { t: '全部で', r: 'ぜんぶで', de: 'insgesamt', b: 'Nomen + Partikel (Rahmen)' }, { t: '3名', r: 'さんめい', de: 'drei Personen (höflich)', b: 'Zahl + Zählwort 名 (regelmäßig)' }, { t: 'です', de: 'ist/sind', b: 'höfliche Kopula' }, { t: '。' },
+      ] } },
+    ],
+  },
 ]
 export const ALL_WORDS = WORD_BLOCKS.flatMap(b => b.words)
 export const WORD_BY_KANJI = Object.fromEntries(ALL_WORDS.map(w => [w.kanji, w]))

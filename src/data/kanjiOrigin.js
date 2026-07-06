@@ -178,4 +178,8 @@ export const KANJI_ORIGIN = {
   '寒': { type: 'Ideogramm', parts: [{ c: '宀', de: 'Dach' }, { c: '冫', de: 'Eis' }], note: 'Ein Mensch unter dem Dach 宀, eingehüllt in Stroh, mit Eis 冫 darunter – es ist kalt.' },
   '明': { type: 'Ideogramm', parts: [{ c: '日', de: 'Sonne' }, { c: '月', de: 'Mond' }], note: 'Sonne 日 und Mond 月 nebeneinander – beide leuchten: hell, klar (明日 = der „helle", also der nächste Tag).' },
   '昨': { type: 'Zusammengesetzt', parts: [{ c: '日', de: 'Tag – Bedeutung' }, { c: '乍', de: 'saku – „kurz zuvor", Lautgeber' }], note: 'Tages-Radikal 日 – der vorherige Tag (昨日 = gestern).' },
+  '枚': { type: 'Zusammengesetzt', parts: [{ c: '木', de: 'Holz – Bedeutung' }, { c: '攵', de: 'Hand mit Stock' }], note: 'Eine Hand schlägt ein flaches Holzbrett zurecht – ursprünglich ein Zählstäbchen, daher das Zählwort für flache Dinge.' },
+  '杯': { type: 'Zusammengesetzt', parts: [{ c: '木', de: 'Holz – Bedeutung' }, { c: '不', de: 'hai/fu – Lautgeber' }], note: 'Holz-Radikal 木 – ursprünglich ein hölzerner Becher, daher das Zählwort für Tassen/Gläser.' },
+  '階': { type: 'Zusammengesetzt', parts: [{ c: '阝', de: 'Hügel/Stufen – Bedeutung' }, { c: '皆', de: 'kai – „alle zusammen", Lautgeber' }], note: 'Hügel-Radikal 阝 – aufeinanderfolgende Stufen an einem Hang: das Stockwerk.' },
+  '個': { type: 'Zusammengesetzt', parts: [{ c: '亻', de: 'Mensch – Bedeutung' }, { c: '固', de: 'ko – fest, Lautgeber' }], note: 'Menschen-Radikal 亻 – ursprünglich ein einzelnes Individuum, heute das generische Zählwort für einzelne Dinge.' },
 }

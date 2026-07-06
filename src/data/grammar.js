@@ -385,10 +385,31 @@ export const GRAMMAR = [
       { q: '電車はタクシー＿速いです。 (schneller als das Taxi)', a: 'より', options: ['より', 'へ', 'で'], hint: 'B より = „als B".' },
     ],
   },
+  {
+    id: 'g23', glyph: '枚', title: '助数詞 – Zähleinheiten', summary: 'Zahl + Zählwort statt nackter Zahl',
+    body: [
+      { text: 'Auf Japanisch reicht eine nackte Zahl vor einem Nomen nicht – dazwischen steht ein Zählwort (助数詞), das von der FORM des Gezählten abhängt: Personen, flache Dinge, lange Dinge, Tassen … Ohne das passende Zählwort klingt ein Satz unvollständig, egal wie gut sonst der Rest sitzt.' },
+      { h: 'Der Alleskönner: つ', text: 'Kennst du das passende Zählwort nicht, hilft fast immer die つ-Reihe (außer bei Menschen, Tieren und langen dünnen Dingen): ひとつ・ふたつ・みっつ・よっつ・いつつ・むっつ・ななつ・やっつ・ここのつ・とお (1–10). Komplett unregelmäßig – am besten als feste Reihe auswendig lernen.' },
+      { h: 'Die wichtigsten Zählwörter', text: '人/名 für Personen (名 ist die höfliche Variante, z. B. im Restaurant) · 枚 für flache Dinge (Tickets, Hemden, Blätter) · 本 für lange, dünne Dinge (Flaschen, Stifte – kennst du schon als 本 „Buch") · 杯 für Getränke in Tassen/Gläsern · 階 für Stockwerke · 個 für kleine, generische Dinge.' },
+      { h: 'Achtung: unregelmäßige Lesungen', text: 'Zahl und Zählwort verschmelzen oft lautlich, besonders bei 1, 3, 6, 8, 10: aus ほん (本) wird bei 1 いっぽん, bei 3 さんぼん, bei 6 ろっぽん. Dasselbe Muster gilt für 杯 (はい → いっぱい, さんばい, ろっぱい) und für 階 nur bei 3 (かい → さんがい). Am Anfang reicht es, die Zahlen 1–3 pro Zählwort mitzulernen – der Rest kommt mit der Zeit.' },
+    ],
+    examples: [
+      { jp: 'きっぷを2枚ください。', kana: 'きっぷをにまいください。', de: 'Zwei Fahrkarten, bitte.', tokens: [
+        { t: 'きっぷ', de: 'Fahrkarte', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '2枚', r: 'にまい', de: 'zwei Stück (flach)', b: 'Zahl + Zählwort 枚 (regelmäßig)' }, { t: 'ください', de: 'bitte geben Sie mir', b: 'höfliche Bitte' }, { t: '。' } ] },
+      { jp: 'ビールを3本お願いします。', kana: 'ビールをさんぼんおねがいします。', de: 'Drei Bier(-flaschen), bitte.', tokens: [
+        { t: 'ビール', de: 'Bier', b: 'Nomen' }, { t: 'を', de: '(Objekt)', b: 'Objektpartikel' }, { t: '3本', r: 'さんぼん', de: 'drei Stück (lang/dünn)', b: 'Zahl + Zählwort 本 – unregelmäßig: ほん→ぼん bei 3' }, { t: 'お願いします', r: 'おねがいします', de: 'bitte', b: 'höfliche Bitte' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: 'きっぷを2＿ください。 (Zwei Fahrkarten)', a: '枚', options: ['枚', '本', '人'], hint: 'Flache Dinge (Tickets, Karten, Hemden) → 枚.' },
+      { q: 'コーヒーを1＿ください。 (Welches Zählwort für eine Tasse?)', a: '杯', options: ['杯', '個', '枚'], hint: 'Getränke in Tassen/Gläsern → 杯.' },
+      { q: '一本 (eine Flasche) – wie liest man das?', a: 'いっぽん', options: ['いっぽん', 'いちほん', 'いちぼん'], hint: 'ほん wird nach 1 zu っぽん (unregelmäßig).' },
+      { q: '三本 (drei Flaschen) – wie liest man das?', a: 'さんぼん', options: ['さんぼん', 'さんほん', 'さんぽん'], hint: 'ほん wird nach 3 stimmhaft zu ぼん.' },
+    ],
+  },
 ]
 
 // Grammatik-Reihenfolge identisch zur Reise (Satz-Grundgerüst zuerst).
-export const GRAMMAR_ORDER = ['g2', 'g1', 'g6', 'g3', 'g4', 'g5', 'g7', 'g8', 'g9', 'g10', 'g12', 'g13', 'g14', 'g15', 'g16', 'g17', 'g18', 'g19', 'g20', 'g11', 'g21', 'g22']
+export const GRAMMAR_ORDER = ['g2', 'g1', 'g6', 'g3', 'g4', 'g5', 'g7', 'g8', 'g9', 'g10', 'g23', 'g12', 'g13', 'g14', 'g15', 'g16', 'g17', 'g18', 'g19', 'g20', 'g11', 'g21', 'g22']
 export const GRAMMAR_SEQ = GRAMMAR_ORDER.map(id => GRAMMAR.find(g => g.id === id))
 
 export const GRAMMAR_GLYPH = Object.fromEntries(GRAMMAR.map(g => [g.id, g.glyph]))
