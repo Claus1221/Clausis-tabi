@@ -5,7 +5,7 @@ import { computeStats, dueKana } from '../useProgress.js'
 import { LESSONS } from '../data/kana.js'
 import { ALL_WORDS, learnedWordKanji } from '../data/words.js'
 import { GRAMMAR } from '../data/grammar.js'
-import { CHAPTERS } from '../data/chapters.js'
+import { CHAPTERS, CHAPTER_WORD } from '../data/chapters.js'
 import { DIALOGS } from '../data/dialogs.js'
 import { PATH } from '../data/path.js'
 import { totalKanaCount, completedKanaList, completedKanaCount } from '../lib/kanaStats.js'
@@ -25,9 +25,17 @@ export default function FortschrittScreen({ onReview }) {
   const completed = progress.completedLessons || []
   const kanaDone = completedKanaCount(completed)
   const kanaTotal = totalKanaCount()
-  const wordsLearned = learnedWordKanji(progress.completedWordBlocks || []).length
   const grammarDone = (progress.completedGrammar || []).length
   const chaptersDone = (progress.completedChapters || []).length
+
+  // Wortschatz = Wort-Blöcke UND Kapitel-Vokabeln (eindeutig, 11 Wörter kommen
+  // in beiden vor). Nur die Blöcke zu zählen würde den Großteil unterschlagen –
+  // die Kapitel führen weit mehr Wörter ein als die Blöcke.
+  const wordsKnown = new Set([
+    ...learnedWordKanji(progress.completedWordBlocks || []),
+    ...(progress.completedChapters || []).flatMap(id => { const c = CHAPTERS.find(x => x.id === id); return c ? chapterSrsKeys(c) : [] }),
+  ]).size
+  const wordsTotal = new Set([...ALL_WORDS.map(w => w.kanji), ...Object.keys(CHAPTER_WORD)]).size
 
   // XP-zum-nächsten-Level (1000 XP pro Level).
   const xpInLevel = stats.totalXp % 1000
@@ -50,7 +58,7 @@ export default function FortschrittScreen({ onReview }) {
   // Fertigkeiten mit Aufschlüsselung (so kommt der Prozentwert zustande).
   const skills = [
     { label: 'Lesen (Kana)', value: pct(kanaDone, kanaTotal), detail: `${kanaDone} / ${kanaTotal} Zeichen gelernt`, color: C.shu },
-    { label: 'Wortschatz', value: pct(wordsLearned, ALL_WORDS.length), detail: `${wordsLearned} / ${ALL_WORDS.length} Wörter gelernt`, color: '#8B6914' },
+    { label: 'Wortschatz', value: pct(wordsKnown, wordsTotal), detail: `${wordsKnown} / ${wordsTotal} Wörter gelernt`, color: '#8B6914' },
     { label: 'Grammatik', value: pct(grammarDone, GRAMMAR.length), detail: `${grammarDone} / ${GRAMMAR.length} Themen verstanden`, color: '#7B3FA0' },
     { label: 'Geschichte', value: pct(chaptersDone, CHAPTERS.length), detail: `${chaptersDone} / ${CHAPTERS.length} Kapitel erlebt`, color: C.matcha },
   ]
@@ -63,11 +71,6 @@ export default function FortschrittScreen({ onReview }) {
   const kataNow = LESSONS.filter(l => l.script === 'Katakana' && completed.includes(l.id)).reduce((a, l) => a + l.kana.length, 0)
   const dialogsDone = (progress.completedDialogs || []).length
   const dialogsTotal = DIALOGS.filter(d => !d.section).length
-  // Gelernte Wörter gesamt: Wort-Blöcke + Kapitel-Vokabeln (eindeutig).
-  const wordsKnown = new Set([
-    ...learnedWordKanji(progress.completedWordBlocks || []),
-    ...(progress.completedChapters || []).flatMap(id => { const c = CHAPTERS.find(x => x.id === id); return c ? chapterSrsKeys(c) : [] }),
-  ]).size
   const fiveStar = Object.values(progress.chapterStars || {}).filter(v => v >= 5).length
   const goalPos = PATH.findIndex(n => n.type === 'goal')
   const preGoal = PATH.slice(0, goalPos).filter(n => n.type && n.type !== 'goal')
