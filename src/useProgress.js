@@ -27,6 +27,7 @@ export const SETTINGS_DEFAULTS = {
   roundSize: 12,          // Aufgaben pro Übungsrunde
   freeSize: 20,           // Karten je Fleiß-Session
   standardReview: 'mix',  // was „Wiederholen" startet: 'mix' | 'srs'
+  audioOnlyDialogs: false, // Gesprächs-Szenen: NPC-Zeile erst als Text nach der Antwort (echtes Hörverstehen)
 }
 
 // Einstellungen mit Defaults zusammenführen (eine Quelle für alle Screens).

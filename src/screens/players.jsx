@@ -567,7 +567,7 @@ export function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
 // Kontext-Intro → Wechsel mit verblassenden Hilfen. Wird von der REISE (Szenen
 // sind Stationen des Pfads) und vom Üben-Tab (freies Wiederholen) geteilt.
 export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
-  const { awardXp } = useContext(ProgressCtx)
+  const { awardXp, settings } = useContext(ProgressCtx)
   const [turns] = useState(() => {
     if (node.review) {
       const pool = node.from.flatMap(id => DIALOGS.find(d => d.id === id)?.turns || [])
@@ -580,6 +580,9 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
   const [turn, setTurn] = useState(0)
   const [ans, setAns] = useState(null)
   const [score, setScore] = useState(0)
+  // Extra-Einblendung der NPC-Zeile im Audio-only-Modus (sonst bliebe sie stumm,
+  // wenn man partout nicht draufkommt) – pro Zug zurückgesetzt.
+  const [peeked, setPeeked] = useState(false)
   // Antwortoptionen pro Zug einmalig mischen (sonst steht die richtige zuerst).
   const options = useMemo(() => shuffled(turns[turn]?.options || []), [turns, turn])
 
@@ -619,18 +622,39 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
   const t = turns[turn]
   const revealed = ans != null
   const showDe = scaffold === 'voll' || revealed
+  // Audio-only: die NPC-Zeile bleibt Text-los, bis geantwortet oder extra
+  // eingeblendet wurde – erzwingt echtes Hörverstehen statt Mitlesen.
+  const hideJp = settings.audioOnlyDialogs && !revealed && !peeked
   const choose = (o) => { if (revealed) return; setAns(o); speak(o); if (o === t.answer) { awardXp(XP_PER_CARD); setScore(s => s + 1) } }
-  const next = () => { if (turn === turns.length - 1) { setPhase('done'); return } setAns(null); setTurn(x => x + 1) }
+  const next = () => { if (turn === turns.length - 1) { setPhase('done'); return } setAns(null); setPeeked(false); setTurn(x => x + 1) }
 
   return (
     <div style={{ padding: 20 }}>
       <UebenHead title={node.title} idx={turn} total={turns.length} onClose={onClose} />
+      {settings.audioOnlyDialogs && (
+        <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 700, color: C.indigo, background: `${C.indigo}12`, border: `1px solid ${C.indigo}40`, borderRadius: 20, padding: '3px 10px', marginBottom: 10 }}>
+          🎧 Nur Audio – Text kommt nach deiner Antwort
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 16 }}>
         <Emoji name={node.emoji} size={48} />
         <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 12, padding: '10px 14px', flex: 1 }}>
-          <TappableJp text={t.npc} size={19} hint />
-          {showDe && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>„{t.de}"</div>}
-          <button onClick={() => speak(t.npc)} style={{ background: 'none', border: 'none', fontSize: 13, cursor: 'pointer', padding: '2px 0 0', color: C.textMuted }}>🔊 nochmal hören</button>
+          {hideJp ? (
+            <>
+              <button onClick={() => speak(t.npc)} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%',
+                background: `${C.indigo}12`, border: `1px solid ${C.indigo}40`, borderRadius: 10,
+                padding: '11px 14px', fontSize: 15, fontWeight: 600, color: C.indigo, cursor: 'pointer',
+              }}>🔊 Anhören</button>
+              <button onClick={() => setPeeked(true)} style={{ background: 'none', border: 'none', fontSize: 12, cursor: 'pointer', padding: '6px 0 0', color: C.textMuted }}>👀 Text zeigen</button>
+            </>
+          ) : (
+            <>
+              <TappableJp text={t.npc} size={19} hint />
+              {showDe && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>„{t.de}"</div>}
+              <button onClick={() => speak(t.npc)} style={{ background: 'none', border: 'none', fontSize: 13, cursor: 'pointer', padding: '2px 0 0', color: C.textMuted }}>🔊 nochmal hören</button>
+            </>
+          )}
         </div>
       </div>
       <p style={{ fontWeight: 500, marginBottom: 12 }}>Was antwortest du?</p>

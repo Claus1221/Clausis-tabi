@@ -61,6 +61,30 @@ export default function SettingsScreen({ onClose }) {
         </div>
       </Card>
 
+      {/* Gesprächs-Szenen */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, marginBottom: 8 }}>GESPRÄCHS-SZENEN</div>
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 10 }}>
+          Wie die NPC-Zeile in Rollenspiel-Szenen erscheint:
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[[false, '📖 Text sichtbar'], [true, '🎧 Nur Audio']].map(([val, lbl]) => {
+            const on = settings.audioOnlyDialogs === val
+            return (
+              <button key={String(val)} onClick={() => set({ audioOnlyDialogs: val })}
+                style={{
+                  flex: 1, padding: '12px 8px', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600,
+                  border: `2px solid ${on ? C.indigo : C.washiDark}`,
+                  background: on ? `${C.indigo}12` : '#fff', color: on ? C.indigo : C.sumi,
+                }}>{lbl}</button>
+            )
+          })}
+        </div>
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 10 }}>
+          „Nur Audio" zeigt den Text der Ansage erst, nachdem du geantwortet hast (oder wenn du ihn dir extra einblendest) – echtes Hörverstehen wie bei einer echten Durchsage oder einem Gespräch.
+        </div>
+      </Card>
+
       {/* Übungs-Parameter */}
       <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, margin: '18px 0 8px' }}>PARAMETER</div>
       <NumberSetting label="Antwortmöglichkeiten" hint="Optionen bei Erkennen/Hören — mehr = weniger Raten"
