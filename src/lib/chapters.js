@@ -27,6 +27,18 @@ export function newChapterWords(chapter, progress) {
   const srs = progress.srs || {}
   return chapterSrsKeys(chapter).filter(k => !srs[k])
 }
+// Das Gegenstück für die Wiederholungs-Stapel (Üben-Tab, fällig-Zähler,
+// Kenntnisstand): Vokabeln erlebter Kapitel, die WIRKLICH eingeführt wurden
+// (SRS-Eintrag vorhanden). Nachträglich ergänzte Wörter ohne Einführung bleiben
+// draußen, bis Kapitel-Übung oder Replay sie eingeführt und eingeplant hat –
+// sonst stünden nie gezeigte Wörter unvermittelt im Quiz.
+export function learnedChapterWords(progress) {
+  const srs = progress.srs || {}
+  return [...new Set(
+    (progress.completedChapters || [])
+      .flatMap(id => { const c = CHAPTER_BY_ID[id]; return c ? chapterSrsKeys(c) : [] }),
+  )].filter(k => srs[k])
+}
 // Aktueller (Live-)Sterne-Stand aus dem SRS, 0 = noch nicht abgeschlossen.
 // Schnitt über ALLE Kapitel-Vokabeln (fehlende Karte zählt als Stufe „Neu").
 export function chapterStarsLive(chapter, progress) {

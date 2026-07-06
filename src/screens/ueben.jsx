@@ -12,6 +12,7 @@ import { completedKanaList } from '../lib/kanaStats.js'
 import { speak, speakItem } from '../lib/speech.js'
 import { srsItemInfo, SRS_RATINGS, shuffled, buildRounds, feedbackColor } from '../lib/srs.js'
 import { dialogGate } from '../lib/dialog.js'
+import { learnedChapterWords } from '../lib/chapters.js'
 import { MIX_LABEL, buildMixTasks } from '../lib/mix.js'
 import { Emoji, Card, Btn } from '../components/ui.jsx'
 import { CardNote, KanjiOrigin, TappableJp } from '../components/japanese.jsx'
@@ -28,6 +29,7 @@ function SRSQuiz({ onClose, initialMode = 'due' }) {
   const learned = [
     ...completedKanaList(progress.completedLessons || []),
     ...learnedWordKanji(progress.completedWordBlocks || []),
+    ...learnedChapterWords(progress),
   ]
   // Welche Karten sind WIRKLICH heute fällig? Nur diese verschieben den Plan.
   const [dueSet, setDueSet] = useState(() => new Set(dueKana(progress, learned)))
@@ -364,7 +366,7 @@ function SentenceQuiz({ onClose }) {
 function MixQuiz({ onClose }) {
   const { progress, reviewCard, settings } = useContext(ProgressCtx)
   const kana = completedKanaList(progress.completedLessons || [])
-  const learnedAll = [...kana, ...learnedWordKanji(progress.completedWordBlocks || [])]
+  const learnedAll = [...kana, ...learnedWordKanji(progress.completedWordBlocks || []), ...learnedChapterWords(progress)]
   const sentencePool = GRAMMAR.filter(g => (progress.completedGrammar || []).includes(g.id)).flatMap(g => g.examples)
 
   const [tasks] = useState(() => buildMixTasks({ kana, learnedAll, sentencePool, settings }))
@@ -626,7 +628,7 @@ export default function UebenScreen({ initialMode, onConsumeInitial }) {
   if (mode === 'satzbau') return <SentenceQuiz onClose={() => setMode(null)} />
   if (mode === 'konversation') return <DialogHub onClose={() => setMode(null)} />
 
-  const learnedAll = [...completedKanaList(progress.completedLessons || []), ...learnedWordKanji(progress.completedWordBlocks || [])]
+  const learnedAll = [...completedKanaList(progress.completedLessons || []), ...learnedWordKanji(progress.completedWordBlocks || []), ...learnedChapterWords(progress)]
   const dueCount = dueKana(progress, learnedAll).length
   const dialogsDone = (progress.completedDialogs || []).length
 

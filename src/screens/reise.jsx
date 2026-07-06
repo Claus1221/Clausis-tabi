@@ -13,7 +13,7 @@ import { DIALOGS } from '../data/dialogs.js'
 import { completedKanaList } from '../lib/kanaStats.js'
 import { speak, speakItem } from '../lib/speech.js'
 import { srsItemInfo, SRS_RATINGS, shuffled, feedbackColor } from '../lib/srs.js'
-import { chapterSrsKeys, newChapterWords, chapterStarsShown, computeAllChapterStars, shouldTypeSentence, weakChapterList, BRAKE_LIMIT } from '../lib/chapters.js'
+import { chapterSrsKeys, newChapterWords, learnedChapterWords, chapterStarsShown, computeAllChapterStars, shouldTypeSentence, weakChapterList, BRAKE_LIMIT } from '../lib/chapters.js'
 import { renderFuri, furiPlain } from '../lib/furigana.jsx'
 import { sceneTorii, buildBackdrop, roadPath, STATE_PALETTE } from '../lib/scene.jsx'
 import { isNodeDone, pathNodeMeta } from '../lib/path.js'
@@ -26,7 +26,7 @@ import { LessonPlayer, BlockCourse, GrammarLesson, DialogPlay } from './players.
 function DailyStrip({ onReview }) {
   const { progress } = useContext(ProgressCtx)
   const { streak, xpToday: xp, goal } = computeStats(progress)
-  const learnedAll = [...completedKanaList(progress.completedLessons || []), ...learnedWordKanji(progress.completedWordBlocks || [])]
+  const learnedAll = [...completedKanaList(progress.completedLessons || []), ...learnedWordKanji(progress.completedWordBlocks || []), ...learnedChapterWords(progress)]
   const due = dueKana(progress, learnedAll).length
   const pct = Math.min(xp / goal, 1)
 
@@ -519,7 +519,7 @@ function StoryJournal({ progress, onClose }) {
 }
 
 export default function ReiseScreen({ onReview }) {
-  const { progress, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, bumpChapterStars } = useContext(ProgressCtx)
+  const { progress, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, bumpChapterStars, scheduleNew } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
   const [showStory, setShowStory] = useState(false)
   const [sheet, setSheet] = useState(null)        // angetipptes, bereits erledigtes Kapitel
@@ -586,7 +586,14 @@ export default function ReiseScreen({ onReview }) {
       const already = (progress.completedChapters || []).includes(active.id)
       return (
         <ChapterPlayer chapter={chapter} alreadyDone={already} onClose={close}
-          onComplete={() => { if (!already) completeChapter(active.id, XP_PER_CHAPTER, { chapters: 1, words: chapterSrsKeys(chapter).length }); close() }} />
+          onComplete={() => {
+            // Beim Durchspielen wurden ALLE Kapitel-Wörter eingeführt (auch bei
+            // einem Replay) → direkt in den Wiederholungsplan aufnehmen, damit
+            // sie in Üben-Tab und fällig-Zähler auftauchen (idempotent).
+            scheduleNew(chapterSrsKeys(chapter))
+            if (!already) completeChapter(active.id, XP_PER_CHAPTER, { chapters: 1, words: chapterSrsKeys(chapter).length })
+            close()
+          }} />
       )
     }
     if (active.type === 'dialog') {

@@ -11,7 +11,7 @@ import { PATH } from '../data/path.js'
 import { totalKanaCount, completedKanaList, completedKanaCount } from '../lib/kanaStats.js'
 import { SRS_STAGES } from '../lib/srs.js'
 import { periodBuckets, weekSummary } from '../lib/progress.js'
-import { chapterSrsKeys } from '../lib/chapters.js'
+import { chapterSrsKeys, learnedChapterWords } from '../lib/chapters.js'
 import { isNodeDone } from '../lib/path.js'
 import { Card } from '../components/ui.jsx'
 
@@ -46,14 +46,16 @@ export default function FortschrittScreen({ onReview }) {
   const periodTotal = buckets.reduce((a, b) => a + b.xp, 0)
   const maxXP = Math.max(1, ...buckets.map(b => b.xp))
 
-  // Vokabeln nach Kenntnisstand. Nur das Kern-Curriculum (gelernte Kana + Wort-
-  // Kanji) zählt – Kapitel-Vokabel-Karten aus der Kapitel-Übung bleiben außen vor,
-  // damit diese Statistik dieselbe Vokabel-Menge zeigt wie die Wiederholungs-Stapel.
-  const curriculumSet = new Set([...completedKanaList(completed), ...learnedWordKanji(progress.completedWordBlocks || [])])
+  // Vokabeln nach Kenntnisstand: gelernte Kana + Wortblock-Wörter + eingeführte
+  // Kapitel-Vokabeln – exakt dieselbe Menge wie die Wiederholungs-Stapel im
+  // Üben-Tab. Nachträglich ergänzte, noch nie eingeführte Kapitel-Wörter bleiben
+  // draußen (sie warten im Kapitel-Sheet auf ihre 🆕-Einführung).
+  const reviewPool = [...completedKanaList(completed), ...learnedWordKanji(progress.completedWordBlocks || []), ...learnedChapterWords(progress)]
+  const curriculumSet = new Set(reviewPool)
   const srsVals = Object.entries(progress.srs || {}).filter(([k]) => curriculumSet.has(k)).map(([, v]) => v)
   const stageCounts = SRS_STAGES.map(s => ({ ...s, n: srsVals.filter(s.test).length }))
   const vocabTotal = srsVals.length
-  const due = dueKana(progress, [...completedKanaList(completed), ...learnedWordKanji(progress.completedWordBlocks || [])]).length
+  const due = dueKana(progress, reviewPool).length
 
   // Fertigkeiten mit Aufschlüsselung (so kommt der Prozentwert zustande).
   const skills = [
