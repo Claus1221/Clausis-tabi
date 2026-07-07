@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useContext } from 'react'
 import { C, JP } from '../theme.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
-import { computeStats, dueKana, localDate } from '../useProgress.js'
+import { computeStats, dueKana, isDue } from '../useProgress.js'
 import { LESSONS } from '../data/kana.js'
 import { WORD_BLOCKS, learnedWordKanji } from '../data/words.js'
 import { KANJI_ORIGIN } from '../data/kanjiOrigin.js'
@@ -322,9 +322,7 @@ function ChapterPractice({ chapter, onClose }) {
   const introStep = item && newWords.has(item) ? chapter.steps.find(s => s.kind === 'intro' && s.jp === item) : null
 
   const rate = (q) => {
-    const e = (progress.srs || {})[item]
-    const isDue = !e || !e.due || e.due <= localDate()
-    if (isDue) reviewCard(item, q)
+    if (isDue((progress.srs || {})[item])) reviewCard(item, q)
     if (q >= 3) { awardXp(XP_PER_CARD); setCorrect(c => c + 1) }
     setFlipped(false)
     setIdx(i => i + 1)

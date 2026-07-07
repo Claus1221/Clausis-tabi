@@ -106,6 +106,14 @@ function SRSQuiz({ onClose, initialMode = 'due' }) {
   const rate = (quality) => {
     if (quality < 3) {
       // „Nochmal": Karte ans Ende der Warteschlange – kommt in dieser Sitzung wieder.
+      // Fällige Karten schreiben den Lapse sofort in den Plan (eine Stufe zurück,
+      // in ein paar Stunden erneut fällig) – so taucht Vergessenes noch am selben
+      // Tag wieder auf, z. B. in der Abend-Session. Das spätere Bestehen in DIESER
+      // Sitzung verschiebt den Plan nicht mehr (Karte ist dann nicht mehr im dueSet).
+      if (dueSet.has(item)) {
+        reviewCard(item, quality)
+        setDueSet(prev => { const n = new Set(prev); n.delete(item); return n })
+      }
       setRepeats(prev => new Set(prev).add(item))
       setQueue(prev => [...prev.slice(1), prev[0]])
       setLapses(l => l + 1)

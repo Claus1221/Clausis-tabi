@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sm2, addDays, dueKana, computeStats } from './useProgress.js'
+import { sm2, addDays, addHours, localDateTime, LAPSE_RETRY_HOURS, dueKana, computeStats } from './useProgress.js'
 
 // Werte unten sind von Hand anhand der sm2()-Formel nachgerechnet (siehe
 // useProgress.js), nicht aus der Implementierung zurückgewonnen.
@@ -35,8 +35,13 @@ describe('sm2 (SRS-Algorithmus)', () => {
     const r = sm2(established, 1)
     expect(r.interval).toBe(7) // fällt auf die Untergrenze der Stufe „Vertraut" (7 Tage)
     expect(r.reps).toBe(4)     // Multiplikator-Pfad bleibt erhalten (reps-1, min. 2)
-    expect(r.due).toBe(addDays(1)) // morgen wieder fällig zur Auffrischung
     expect(r.ease).toBeCloseTo(1.96, 2)
+    // Untertägiger Wiederholungsschritt: in ein paar Stunden erneut fällig
+    // (Zeitstempel-Format), nicht erst morgen. Obergrenze statt Gleichheit,
+    // damit ein Minutenwechsel zwischen den beiden Aufrufen den Test nicht kippt.
+    expect(r.due).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)
+    expect(r.due > localDateTime()).toBe(true)
+    expect(r.due <= addHours(LAPSE_RETRY_HOURS)).toBe(true)
   })
 
   it('Ease-Faktor fällt nie unter die Grenze 1.3', () => {
@@ -60,6 +65,18 @@ describe('dueKana', () => {
   it('eine Karte mit vergangener Fälligkeit ist fällig', () => {
     const due = dueKana({ srs: { 'あ': { due: addDays(-1) } } }, ['あ'])
     expect(due).toContain('あ')
+  })
+
+  it('Tages-Fälligkeit „heute" gilt ab Tagesbeginn (gemischter Formatvergleich)', () => {
+    const due = dueKana({ srs: { 'あ': { due: addDays(0) } } }, ['あ'])
+    expect(due).toContain('あ')
+  })
+
+  it('Zeitstempel-Fälligkeit: vergangene Uhrzeit fällig, zukünftige nicht', () => {
+    const past = dueKana({ srs: { 'あ': { due: '2020-01-01T08:00' } } }, ['あ'])
+    expect(past).toContain('あ')
+    const future = dueKana({ srs: { 'あ': { due: addHours(2) } } }, ['あ'])
+    expect(future).not.toContain('あ')
   })
 })
 

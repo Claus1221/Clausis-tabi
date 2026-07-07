@@ -51,6 +51,26 @@ export function addDays(n) {
   return localDate(dateWithOffset(n))
 }
 
+// Lokaler Zeitstempel 'YYYY-MM-DDTHH:mm' – für untertägige Fälligkeiten.
+// Sortiert per String-Vergleich korrekt MIT reinen Tages-Strings gemischt:
+// '2026-07-07' <= '2026-07-07T09:00' (Tages-Fälligkeit gilt ab Tagesbeginn).
+export function localDateTime(d = new Date()) {
+  const h = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  return `${localDate(d)}T${h}:${min}`
+}
+export function addHours(n) {
+  const d = new Date()
+  d.setHours(d.getHours() + n)
+  return localDateTime(d)
+}
+
+// Ist eine SRS-Karte jetzt fällig? `due` ist entweder ein Tages-String
+// (fällig ab Tagesbeginn) oder ein Zeitstempel (fällig ab dieser Uhrzeit).
+export function isDue(entry) {
+  return !entry || !entry.due || entry.due <= localDateTime()
+}
+
 // ─── Kenntnisstufen ───────────────────────────────────────────────────────────
 // Intervall-Grenzen (in Tagen) zwischen den 5 Stufen:
 //   Neu <1 · Lernphase <7 · Vertraut <30 · Gefestigt <120 · Gemeistert ≥120
@@ -68,6 +88,10 @@ function relaxedLapseInterval(interval) {
   return Math.max(1, floors[Math.max(0, idx - 1)])
 }
 
+// Nach „Nochmal" kommt die Karte nach so vielen Stunden erneut – lernwirksamer
+// Abruf noch am selben Tag statt erst morgen (untertägiger Wiederholungsschritt).
+export const LAPSE_RETRY_HOURS = 4
+
 // ─── SRS (SM-2-Algorithmus) ───────────────────────────────────────────────────
 // quality: 1 = Nochmal (vergessen), 3 = Schwer, 4 = Gut, 5 = Leicht.
 export function sm2(prev, quality) {
@@ -78,10 +102,11 @@ export function sm2(prev, quality) {
 
   if (quality < 3) {
     // Entspannter Rückfall: Kenntnisstand nur eine Stufe zurück, der Lernfortschritt
-    // bleibt großteils erhalten – die Karte wird aber morgen zur Auffrischung erneut fällig.
+    // bleibt großteils erhalten – die Karte wird aber schon nach ein paar Stunden
+    // wieder fällig (Auffrischung noch am selben Tag, z. B. in der Abend-Session).
     interval = relaxedLapseInterval(interval)
     reps = Math.max(2, reps - 1) // Multiplikator-Pfad halten, nicht wieder von vorn lernen
-    due = addDays(1)
+    due = addHours(LAPSE_RETRY_HOURS)
   } else {
     reps += 1
     if (reps === 1) interval = 1
@@ -95,14 +120,10 @@ export function sm2(prev, quality) {
   return { ease: Math.round(ease * 100) / 100, interval, reps, due }
 }
 
-// Welche der gelernten Kana sind heute fällig (oder neu/noch nie wiederholt)?
+// Welche der gelernten Kana sind jetzt fällig (oder neu/noch nie wiederholt)?
 export function dueKana(progress, learnedKana) {
   const srs = progress.srs || {}
-  const today = localDate()
-  return learnedKana.filter(k => {
-    const e = srs[k]
-    return !e || !e.due || e.due <= today
-  })
+  return learnedKana.filter(k => isDue(srs[k]))
 }
 
 // ─── Abgeleitete Statistiken aus dem gespeicherten Fortschritt ────────────────
