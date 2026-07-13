@@ -44,6 +44,15 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,json}'],
         navigateFallback: `${BASE}index.html`,
+        // Die ~750 Studio-MP3s (public/audio) NICHT vorab in den Cache laden –
+        // das würde die PWA-Installation aufblähen. Stattdessen: einmal gehört →
+        // dauerhaft offline verfügbar (CacheFirst; Audio ändert sich nie, bei
+        // Stimmwechsel ändern sich die Dateinamen-Hashes).
+        runtimeCaching: [{
+          urlPattern: ({ url }) => url.pathname.startsWith(`${BASE}audio/`) && url.pathname.endsWith('.mp3'),
+          handler: 'CacheFirst',
+          options: { cacheName: 'tabi-audio', expiration: { maxEntries: 1000 } },
+        }],
       },
     }),
   ],

@@ -37,8 +37,38 @@ function showVoiceHint() {
   setTimeout(() => el.remove(), 12000)
 }
 
-let pendingSpeak = 0
+// ─── Vorgenerierte Studio-Audios (Google Neural2, scripts/generate-audio.mjs) ─
+// Manifest: Text → MP3-Dateiname unter public/audio/. Gibt es für einen Text
+// eine Datei, wird sie abgespielt; sonst (und wenn das Manifest fehlt, z. B.
+// solange noch nie generiert wurde) bleibt die System-TTS der Fallback.
+const AUDIO_BASE = import.meta.env.BASE_URL + 'audio/'
+let audioMap = null
+fetch(AUDIO_BASE + 'manifest.json')
+  .then(r => (r.ok ? r.json() : null))
+  .then(m => { audioMap = m?.map || null })
+  .catch(() => { /* kein Manifest → nur System-TTS */ })
+
+let audioEl = null
+function playFile(file, text) {
+  if (!audioEl) audioEl = new Audio()
+  audioEl.onerror = () => ttsSpeak(text) // Datei fehlt/kaputt → System-TTS
+  audioEl.src = AUDIO_BASE + file
+  audioEl.play().catch(() => { /* unterbrochen (neuer speak) oder Autoplay-Block */ })
+}
+
 export function speak(text) {
+  if (!text) return
+  // Laufende Ausgaben beider Wege stoppen, bevor die neue beginnt.
+  clearTimeout(pendingSpeak)
+  if ('speechSynthesis' in window) speechSynthesis.cancel()
+  if (audioEl) audioEl.pause()
+  const file = audioMap?.[text]
+  if (file) playFile(file, text)
+  else ttsSpeak(text)
+}
+
+let pendingSpeak = 0
+function ttsSpeak(text) {
   if (!('speechSynthesis' in window) || !text) return
   if (!jaVoice) pickJaVoice() // Stimmenliste lädt evtl. erst nach dem ersten Klick
   // Desktop ohne ja-Stimme: NICHT sprechen (die Standardstimme liest Kauderwelsch).
