@@ -5,6 +5,8 @@
 // für Texte ohne Datei bleibt die System-TTS der Fallback.
 //
 //   node scripts/generate-audio.mjs --dry-run   nur zählen, nichts generieren
+//   node scripts/generate-audio.mjs --check     prüfen, ob alles da ist (offline,
+//                                               kein Key nötig – für den Pre-Commit-Hook)
 //   node scripts/generate-audio.mjs --limit 5   Probelauf mit 5 Dateien
 //   node scripts/generate-audio.mjs             alles Fehlende generieren
 //
@@ -121,6 +123,26 @@ async function main() {
   const texts = collectTexts()
   const chars = texts.reduce((n, t) => n + t.length, 0)
   const missing = texts.filter(t => !existsSync(join(OUT_DIR, fileFor(t))))
+
+  // --check: Sind alle Texte abgedeckt (Datei + Manifest-Eintrag)? Exit 1, wenn
+  // nicht – der Pre-Commit-Hook stößt dann die Generierung an. Solange die
+  // Pipeline nie gelaufen ist (kein Manifest), blockiert der Check nichts.
+  if (process.argv.includes('--check')) {
+    const manifestPath = join(OUT_DIR, 'manifest.json')
+    if (!existsSync(manifestPath)) {
+      console.log('Audio-Check übersprungen: noch kein Manifest (Pipeline nie gelaufen).')
+      return
+    }
+    const map = JSON.parse(readFileSync(manifestPath, 'utf8')).map || {}
+    const stale = texts.filter(t => !map[t] || !existsSync(join(OUT_DIR, map[t])))
+    if (stale.length === 0) {
+      console.log(`Audio-Check ok: alle ${texts.length} Texte abgedeckt.`)
+      return
+    }
+    console.error(`✗ ${stale.length} gesprochene Texte ohne aktuelles Studio-Audio, z. B.:`)
+    stale.slice(0, 8).forEach(t => console.error('   ·', t))
+    process.exit(1)
+  }
   console.log(`Texte gesamt: ${texts.length} (${chars} Zeichen) · Stimme: ${VOICE}`)
   console.log(`Schon vorhanden: ${texts.length - missing.length} · zu generieren: ${missing.length}`)
   if (dryRun) {

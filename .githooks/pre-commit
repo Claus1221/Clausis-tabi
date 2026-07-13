@@ -1,0 +1,19 @@
+#!/bin/sh
+# Hält gesprochene Texte und Studio-MP3s (public/audio) im Gleichschritt:
+# Ändert ein Commit sprechbare Inhalte, werden fehlende Audios automatisch
+# nachgeneriert (Google Neural2, inkrementell – nur das Fehlende) und mit
+# eingecheckt. Braucht dafür GOOGLE_TTS_API_KEY in .env.local und die kurz
+# aktivierte Cloud-TTS-API.
+#
+# Einrichtung nach frischem Clone (einmalig):  git config core.hooksPath .githooks
+
+node scripts/generate-audio.mjs --check && exit 0
+
+echo "→ Generiere fehlende Studio-Audios …"
+if ! npm run audio; then
+  echo "✗ Audio-Generierung fehlgeschlagen – Cloud-TTS-API aktiviert? Key in .env.local?"
+  echo "  Commit abgebrochen. (Notfall-Umgehung: git commit --no-verify)"
+  exit 1
+fi
+git add public/audio
+echo "✓ Audios nachgeneriert und zum Commit hinzugefügt."
