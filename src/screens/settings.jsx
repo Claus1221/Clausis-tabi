@@ -1,6 +1,7 @@
 import { useContext } from 'react'
 import { C, JP } from '../theme.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
+import { SPEECH_INPUT_SUPPORTED } from '../lib/listen.js'
 import { Card } from '../components/ui.jsx'
 
 // ─── Einstellungen ───────────────────────────────────────────────────────────
@@ -82,6 +83,29 @@ export default function SettingsScreen({ onClose }) {
         </div>
         <div style={{ fontSize: 12, color: C.textMuted, marginTop: 10 }}>
           „Nur Audio" zeigt den Text der Ansage erst, nachdem du geantwortet hast (oder wenn du ihn dir extra einblendest) – echtes Hörverstehen wie bei einer echten Durchsage oder einem Gespräch.
+        </div>
+      </Card>
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 10 }}>
+          Wie du in Rollenspiel-Szenen antwortest:
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[[false, '👆 Antippen'], [true, '🎤 Sprechen']].map(([val, lbl]) => {
+            const on = settings.speakDialogs === val
+            return (
+              <button key={String(val)} onClick={() => set({ speakDialogs: val })}
+                style={{
+                  flex: 1, padding: '12px 8px', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600,
+                  border: `2px solid ${on ? C.indigo : C.washiDark}`,
+                  background: on ? `${C.indigo}12` : '#fff', color: on ? C.indigo : C.sumi,
+                }}>{lbl}</button>
+            )
+          })}
+        </div>
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 10 }}>
+          {SPEECH_INPUT_SUPPORTED
+            ? '„Sprechen" prüft deine Antwort per Spracherkennung – du sagst sie laut, statt sie anzutippen. Antippen bleibt zusätzlich immer möglich. Die Erkennung braucht Internet und Mikrofon-Erlaubnis.'
+            : 'Spracherkennung ist auf diesem Gerät/Browser nicht verfügbar (am besten Chrome auf Android nutzen) – es gilt dann automatisch Antippen.'}
         </div>
       </Card>
 

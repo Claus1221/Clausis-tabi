@@ -6,6 +6,7 @@ import { ALL_WORDS } from '../data/words.js'
 import { DIALOGS } from '../data/dialogs.js'
 import { XP_PER_CARD, XP_PER_DIALOG } from '../lib/xp.js'
 import { speak, copyText } from '../lib/speech.js'
+import { SPEECH_INPUT_SUPPORTED, startListening, stopListening, matchSpoken } from '../lib/listen.js'
 import { shuffled, feedbackColor } from '../lib/srs.js'
 import { HAS_JP } from '../lib/furigana.jsx'
 import { Card, Btn, Emoji } from '../components/ui.jsx'
@@ -586,6 +587,13 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
   // Antwortoptionen pro Zug einmalig mischen (sonst steht die richtige zuerst).
   const options = useMemo(() => shuffled(turns[turn]?.options || []), [turns, turn])
 
+  // Sprech-Modus: Antwort per Mikrofon statt Antippen (Antippen bleibt möglich).
+  const speakMode = settings.speakDialogs && SPEECH_INPUT_SUPPORTED
+  const [mic, setMic] = useState(false)     // hört die Erkennung gerade zu?
+  const [interim, setInterim] = useState('')// Live-Zwischenstand während des Sprechens
+  const [heard, setHeard] = useState(null)  // letztes Ergebnis: { text, ok, err? }
+  useEffect(() => () => stopListening(), []) // Szene verlassen → Mikro schließen
+
   useEffect(() => { if (phase === 'done' && !alreadyDone) onComplete() }, [phase])
   // NPC-Zeile beim Erscheinen vorlesen (Hören-zuerst).
   useEffect(() => { if (phase === 'play') speak(turns[turn]?.npc) }, [phase, turn])
@@ -626,7 +634,35 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
   // eingeblendet wurde – erzwingt echtes Hörverstehen statt Mitlesen.
   const hideJp = settings.audioOnlyDialogs && !revealed && !peeked
   const choose = (o) => { if (revealed) return; setAns(o); speak(o); if (o === t.answer) { awardXp(XP_PER_CARD); setScore(s => s + 1) } }
-  const next = () => { if (turn === turns.length - 1) { setPhase('done'); return } setAns(null); setPeeked(false); setTurn(x => x + 1) }
+  const next = () => {
+    stopListening(); setHeard(null); setInterim('')
+    if (turn === turns.length - 1) { setPhase('done'); return }
+    setAns(null); setPeeked(false); setTurn(x => x + 1)
+  }
+
+  // Zuhören starten; das Ergebnis wählt die passende Option wie ein Fingertipp.
+  // Keine sichere Zuordnung → Hinweis zeigen und nichts werten (kein Raten).
+  const startMic = () => {
+    setHeard(null); setInterim(''); setMic(true)
+    startListening({
+      onInterim: setInterim,
+      onFinal: (alts) => {
+        const m = matchSpoken(alts, options)
+        if (m.option) { setHeard({ text: m.heard, ok: true }); choose(m.option) }
+        else setHeard({ text: m.heard, ok: false })
+      },
+      onError: (err) => setHeard({ text: '', ok: false, err }),
+      onEnd: () => { setMic(false); setInterim('') },
+    })
+  }
+  const micHint = heard && !heard.ok && (
+    heard.err === 'not-allowed' ? 'Mikrofon-Zugriff verweigert – bitte in den Browser-Einstellungen für diese Seite erlauben.'
+    : heard.err === 'network' ? 'Die Spracherkennung braucht eine Internetverbindung.'
+    : heard.err === 'no-speech' ? 'Nichts gehört – sprich nach dem Antippen des Mikros einfach los.'
+    : heard.err ? `Spracherkennung gerade nicht möglich (${heard.err}). Du kannst weiter antippen.`
+    : heard.text ? `Verstanden: „${heard.text}" – das passt zu keiner der Antworten. Nochmal sprechen oder antippen.`
+    : 'Nichts verstanden – nochmal versuchen oder antippen.'
+  )
 
   return (
     <div style={{ padding: 20 }}>
@@ -657,7 +693,29 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
           )}
         </div>
       </div>
-      <p style={{ fontWeight: 500, marginBottom: 12 }}>Was antwortest du?</p>
+      <p style={{ fontWeight: 500, marginBottom: 12 }}>
+        {speakMode && !revealed ? 'Was antwortest du? Sprich deine Antwort.' : 'Was antwortest du?'}
+      </p>
+      {speakMode && !revealed && (
+        <div style={{ marginBottom: 12 }}>
+          <button onClick={mic ? stopListening : startMic} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%',
+            padding: '14px', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer',
+            border: `2px solid ${mic ? C.shu : C.indigo}`,
+            background: mic ? `${C.shu}14` : `${C.indigo}12`, color: mic ? C.shu : C.indigo,
+          }}>
+            {mic ? '🎙 Ich höre zu … (zum Stoppen tippen)' : '🎤 Antwort sprechen'}
+          </button>
+          {mic && interim && (
+            <div style={{ fontSize: 16, fontFamily: JP, color: C.textMuted, marginTop: 8, textAlign: 'center' }}>
+              {interim} …
+            </div>
+          )}
+          {micHint && (
+            <div style={{ fontSize: 12, color: C.shu, marginTop: 8, lineHeight: 1.5 }}>{micHint}</div>
+          )}
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
         {options.map(o => {
           const correct = o === t.answer, chosen = o === ans
@@ -674,6 +732,7 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
         <>
           <p style={{ marginTop: 12, fontWeight: 600, color: ans === t.answer ? C.matcha : C.shu }}>
             {ans === t.answer ? '✓ Gute Antwort!' : '✗ Passt nicht ganz'}
+            {heard?.ok && <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 2 }}>🎤 Du hast gesagt: „{heard.text}"</span>}
             <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 2 }}>NPC: „{t.de}"</span>
           </p>
           <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 10, padding: '10px 12px', marginTop: 10 }}>

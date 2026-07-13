@@ -28,6 +28,7 @@ export const SETTINGS_DEFAULTS = {
   freeSize: 20,           // Karten je Fleiß-Session
   standardReview: 'mix',  // was „Wiederholen" startet: 'mix' | 'srs'
   audioOnlyDialogs: false, // Gesprächs-Szenen: NPC-Zeile erst als Text nach der Antwort (echtes Hörverstehen)
+  speakDialogs: false,     // Gesprächs-Szenen: Antwort sprechen statt antippen (Spracherkennung, Chrome/Android)
 }
 
 // Einstellungen mit Defaults zusammenführen (eine Quelle für alle Screens).
