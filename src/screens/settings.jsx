@@ -1,8 +1,10 @@
-import { useContext } from 'react'
+import { useContext, useState } from 'react'
 import { C, JP } from '../theme.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
 import { SPEECH_INPUT_SUPPORTED } from '../lib/listen.js'
-import { Card } from '../components/ui.jsx'
+import { getApiKey, setApiKey } from '../lib/apiKey.js'
+import { pingApiKey } from '../lib/claude.js'
+import { Card, Btn } from '../components/ui.jsx'
 
 // ─── Einstellungen ───────────────────────────────────────────────────────────
 
@@ -27,6 +29,46 @@ function NumberSetting({ label, hint, value, min, max, step, suffix, onChange })
         <span style={{ minWidth: 48, textAlign: 'center', fontWeight: 700, fontSize: 16, color: C.indigo }}>{value}{suffix || ''}</span>
         <StepBtn dir={1} disabled={value >= max} />
       </div>
+    </Card>
+  )
+}
+
+// Eigener Anthropic-API-Key (BYOK): schaltet freies Bewerten gesprochener
+// Antworten in den Gesprächs-Szenen frei (statt nur feste Musterantworten).
+// Bleibt bewusst außerhalb von saveSettings/progress – rein gerätelokal,
+// siehe lib/apiKey.js. Ohne Key läuft alles wie bisher weiter.
+function ApiKeySetting() {
+  const [value, setValue] = useState(() => getApiKey())
+  const [status, setStatus] = useState(getApiKey() ? 'saved' : 'empty')
+
+  const save = () => { setApiKey(value.trim()); setStatus(value.trim() ? 'saved' : 'empty') }
+  const clear = () => { setApiKey(''); setValue(''); setStatus('empty') }
+  const test = async () => {
+    if (!value.trim() || status === 'testing') return
+    setStatus('testing')
+    setStatus((await pingApiKey(value.trim())) ? 'ok' : 'invalid')
+  }
+
+  return (
+    <Card style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 10, lineHeight: 1.5 }}>
+        Optional: Mit einem eigenen Anthropic-API-Key kann die App gesprochene Antworten in den
+        Gesprächs-Szenen auch werten, wenn sie sinngemäß statt wortgleich zur Musterantwort passen.
+        Der Key bleibt ausschließlich auf diesem Gerät gespeichert und wird nirgends synchronisiert.
+        Ohne Key funktioniert alles wie bisher.
+      </div>
+      <input
+        type="password" value={value} onChange={e => { setValue(e.target.value); setStatus('empty') }}
+        placeholder="sk-ant-…" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+        style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', fontSize: 14, borderRadius: 8, border: `1.5px solid ${C.washiDark}`, marginBottom: 8 }} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Btn onClick={save} style={{ flex: 1 }}>Speichern</Btn>
+        <Btn onClick={test} variant="ghost" style={{ flex: 1 }}>{status === 'testing' ? 'Prüfe …' : 'Testen'}</Btn>
+        {getApiKey() && <Btn onClick={clear} variant="ghost" style={{ flex: 1 }}>Entfernen</Btn>}
+      </div>
+      {status === 'ok' && <div style={{ fontSize: 12, color: C.matcha, marginTop: 8 }}>✓ Key funktioniert.</div>}
+      {status === 'invalid' && <div style={{ fontSize: 12, color: C.shu, marginTop: 8 }}>✗ Key ungültig oder keine Verbindung.</div>}
+      {status === 'saved' && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 8 }}>Gespeichert (nur auf diesem Gerät).</div>}
     </Card>
   )
 }
@@ -108,6 +150,10 @@ export default function SettingsScreen({ onClose }) {
             : 'Spracherkennung ist auf diesem Gerät/Browser nicht verfügbar (am besten Chrome auf Android nutzen) – es gilt dann automatisch Antippen.'}
         </div>
       </Card>
+
+      {/* KI-Bewertung freier Antworten */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, margin: '18px 0 8px' }}>KI-BEWERTUNG (EIGENER API-KEY)</div>
+      <ApiKeySetting />
 
       {/* Übungs-Parameter */}
       <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, margin: '18px 0 8px' }}>PARAMETER</div>

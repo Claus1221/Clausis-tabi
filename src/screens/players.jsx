@@ -7,6 +7,7 @@ import { DIALOGS } from '../data/dialogs.js'
 import { XP_PER_CARD, XP_PER_DIALOG } from '../lib/xp.js'
 import { speak, copyText } from '../lib/speech.js'
 import { SPEECH_INPUT_SUPPORTED, startListening, stopListening, matchSpoken } from '../lib/listen.js'
+import { hasApiKey, judgeAnswer } from '../lib/claude.js'
 import { shuffled, feedbackColor } from '../lib/srs.js'
 import { HAS_JP } from '../lib/furigana.jsx'
 import { Card, Btn, Emoji } from '../components/ui.jsx'
@@ -591,7 +592,8 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
   const speakMode = settings.speakDialogs && SPEECH_INPUT_SUPPORTED
   const [mic, setMic] = useState(false)     // hört die Erkennung gerade zu?
   const [interim, setInterim] = useState('')// Live-Zwischenstand während des Sprechens
-  const [heard, setHeard] = useState(null)  // letztes Ergebnis: { text, ok, err? }
+  const [heard, setHeard] = useState(null)  // letztes Ergebnis: { text, ok, free?, err? }
+  const [judging, setJudging] = useState(false) // wartet auf KI-Bewertung einer freien Antwort
   useEffect(() => () => stopListening(), []) // Szene verlassen → Mikro schließen
 
   useEffect(() => { if (phase === 'done' && !alreadyDone) onComplete() }, [phase])
@@ -646,10 +648,27 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
     setHeard(null); setInterim(''); setMic(true)
     startListening({
       onInterim: setInterim,
-      onFinal: (alts) => {
+      onFinal: async (alts) => {
         const m = matchSpoken(alts, options)
-        if (m.option) { setHeard({ text: m.heard, ok: true }); choose(m.option) }
-        else setHeard({ text: m.heard, ok: false })
+        if (m.option) { setHeard({ text: m.heard, ok: true }); choose(m.option); return }
+        // Keine feste Option passt: bei hinterlegtem eigenem API-Key sinngemäß
+        // per KI prüfen lassen (siehe judgeAnswer in lib/claude.js). Ohne Key,
+        // bei Netzfehler oder unklarem Ergebnis bleibt es beim bisherigen
+        // „nicht erkannt" – es wird nie geraten.
+        if (hasApiKey() && m.heard) {
+          setJudging(true)
+          const accepted = await judgeAnswer({ npcJp: t.npc, npcDe: t.de, sampleJp: t.answer, heard: m.heard })
+          setJudging(false)
+          if (accepted) {
+            setHeard({ text: m.heard, ok: true, free: true })
+            setAns(m.heard)
+            awardXp(XP_PER_CARD); setScore(s => s + 1)
+            return
+          }
+          setHeard({ text: m.heard, ok: false, free: accepted === false })
+          return
+        }
+        setHeard({ text: m.heard, ok: false })
       },
       onError: (err) => setHeard({ text: '', ok: false, err }),
       onEnd: () => { setMic(false); setInterim('') },
@@ -660,6 +679,7 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
     : heard.err === 'network' ? 'Die Spracherkennung braucht eine Internetverbindung.'
     : heard.err === 'no-speech' ? 'Nichts gehört – sprich nach dem Antippen des Mikros einfach los.'
     : heard.err ? `Spracherkennung gerade nicht möglich (${heard.err}). Du kannst weiter antippen.`
+    : heard.free === false ? `Verstanden: „${heard.text}" – passt auch inhaltlich nicht ganz. Nochmal sprechen oder antippen.`
     : heard.text ? `Verstanden: „${heard.text}" – das passt zu keiner der Antworten. Nochmal sprechen oder antippen.`
     : 'Nichts verstanden – nochmal versuchen oder antippen.'
   )
@@ -698,13 +718,14 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
       </p>
       {speakMode && !revealed && (
         <div style={{ marginBottom: 12 }}>
-          <button onClick={mic ? stopListening : startMic} style={{
+          <button onClick={mic ? stopListening : startMic} disabled={judging} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%',
-            padding: '14px', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer',
+            padding: '14px', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: judging ? 'default' : 'pointer',
             border: `2px solid ${mic ? C.shu : C.indigo}`,
             background: mic ? `${C.shu}14` : `${C.indigo}12`, color: mic ? C.shu : C.indigo,
+            opacity: judging ? 0.7 : 1,
           }}>
-            {mic ? '🎙 Ich höre zu … (zum Stoppen tippen)' : '🎤 Antwort sprechen'}
+            {judging ? '🤔 Wird geprüft …' : mic ? '🎙 Ich höre zu … (zum Stoppen tippen)' : '🎤 Antwort sprechen'}
           </button>
           {mic && interim && (
             <div style={{ fontSize: 16, fontFamily: JP, color: C.textMuted, marginTop: 8, textAlign: 'center' }}>
@@ -730,9 +751,13 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
       </div>
       {revealed && (
         <>
-          <p style={{ marginTop: 12, fontWeight: 600, color: ans === t.answer ? C.matcha : C.shu }}>
-            {ans === t.answer ? '✓ Gute Antwort!' : '✗ Passt nicht ganz'}
-            {heard?.ok && <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 2 }}>🎤 Du hast gesagt: „{heard.text}"</span>}
+          <p style={{ marginTop: 12, fontWeight: 600, color: (ans === t.answer || heard?.free) ? C.matcha : C.shu }}>
+            {ans === t.answer || heard?.free ? '✓ Gute Antwort!' : '✗ Passt nicht ganz'}
+            {heard?.ok && (
+              <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 2 }}>
+                {heard.free ? `🎤🤖 Frei erkannt: „${heard.text}" passt inhaltlich.` : `🎤 Du hast gesagt: „${heard.text}"`}
+              </span>
+            )}
             <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 2 }}>NPC: „{t.de}"</span>
           </p>
           <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 10, padding: '10px 12px', marginTop: 10 }}>
