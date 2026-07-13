@@ -1,0 +1,2 @@
+# sh-Hooks brauchen LF – mit CRLF scheitert Git Bash (": command not found")
+.githooks/* text eol=lf
