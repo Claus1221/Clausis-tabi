@@ -27,7 +27,17 @@ import { GRAMMAR } from '../src/data/grammar.js'
 import { CHAPTERS, STORY_TOKENS, CHAPTER_WORD } from '../src/data/chapters.js'
 
 const VOICE = 'ja-JP-Neural2-B'
-const RATE = 1.0
+// Zwei Sprechraten: Sätze natürlich (1), Zitierformen (einzelne Wörter, Kana,
+// Satzbau-Kacheln) leicht verlangsamt (0.8). Grund: Bei Normaltempo entstimm-
+// licht Neural2 – korrektes Tokyo-Japanisch – das i/u zwischen stimmlosen
+// Konsonanten (ひと → [çi̥to], klingt wie „Sto"). Bei 0.8 wird der Vokal wieder
+// hörbar gesprochen (empirisch geprüft: Stimmhaftigkeit 1. Mora 0.39 → 0.85);
+// für Lernende ist die klare Einzelwort-Aussprache wichtiger als das flüssige
+// Alltagstempo. In Sätzen bleibt die natürliche Entstimmlichung erhalten.
+// Hinweis: Manche Wörter (z. B. ひとつ) entstimmlichen selbst bei 0.7 – das ist
+// dann tatsächlich die korrekte Aussprache und bleibt so.
+const RATE_SENTENCE = 1
+const RATE_WORD = 0.8
 const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'audio')
 
 // ─── Texte sammeln – exakt die Transformationen der Sprechstellen in der App ─
@@ -41,17 +51,25 @@ const tileReading = (t) => t === 'は' ? 'わ' : t === 'へ' ? 'え' : itemReadi
 const furiPlain = (s) => s.replace(/\([^)]*\)/g, '')
 
 function collectTexts() {
-  const texts = new Set()
-  const add = (t) => { if (t && HAS_JP.test(t)) texts.add(t) }
+  const texts = new Map() // Text → Sprechrate
+  // Taucht ein Text als Satz UND als Zitierform auf, gewinnt die Zitierform
+  // (kleinere Rate): es ist dann ohnehin ein Einzelwort.
+  const addAt = (t, rate) => {
+    if (!t || !HAS_JP.test(t)) return
+    const prev = texts.get(t)
+    texts.set(t, prev === undefined ? rate : Math.min(prev, rate))
+  }
+  const add = (t) => addAt(t, RATE_SENTENCE)       // Sätze / Dialogzeilen
+  const addWord = (t) => addAt(t, RATE_WORD)       // Zitierformen
   // Kacheln eines Satzbau-Schritts: jede Kachel einzeln + die zusammengesetzte Antwort.
   const addBuild = (tiles, answer) => {
-    (tiles || []).forEach(t => add(tileReading(t)))
+    (tiles || []).forEach(t => addWord(tileReading(t)))
     if (answer?.length) add(answer.map(itemReading).join(''))
   }
 
-  Object.keys(KANA_DATA).forEach(add)                            // einzelne Kana
+  Object.keys(KANA_DATA).forEach(addWord)                        // einzelne Kana
   for (const b of WORD_BLOCKS) for (const w of b.words) {        // Wörter + Beispielsätze
-    add(w.kana)
+    addWord(w.kana)
     if (w.ex?.tokens) add(tokensJoin(w.ex.tokens))
   }
   PHRASES.forEach(p => add(p.jp))                                // Überlebensphrasen
@@ -71,17 +89,19 @@ function collectTexts() {
   }
   for (const c of CHAPTERS) for (const s of c.steps) {           // Kapitel-Schritte
     if (s.kind === 'audio') add(s.say)
-    else if (s.kind === 'intro') add(s.reading || s.jp)
+    else if (s.kind === 'intro') addWord(s.reading || s.jp)
     else if (s.kind === 'story' && s.jp) { add(furiPlain(s.jp)); if (s.tokens) add(tokensJoin(s.tokens)) }
     else if (s.kind === 'dialog') { add(s.line); (s.options || []).forEach(add) }
     else if (s.kind === 'build') addBuild(s.tiles, s.answer)
   }
-  Object.values(CHAPTER_WORD).forEach(w => add(w.reading))       // Kapitel-Vokabeln (SRS)
-  return [...texts]
+  Object.values(CHAPTER_WORD).forEach(w => addWord(w.reading))   // Kapitel-Vokabeln (SRS)
+  return [...texts.entries()]
 }
 
 // ─── Generierung ──────────────────────────────────────────────────────────────
-const fileFor = (text) => createHash('sha1').update(`${VOICE}|${RATE}|${text}`).digest('hex').slice(0, 16) + '.mp3'
+// Rate ist Teil des Hashs: Satz-Dateien (Rate 1) behalten ihren alten Namen,
+// Zitierformen (Rate 0.8) bekommen neue Namen und werden neu generiert.
+const fileFor = (text, rate) => createHash('sha1').update(`${VOICE}|${rate}|${text}`).digest('hex').slice(0, 16) + '.mp3'
 
 function readApiKey() {
   if (process.env.GOOGLE_TTS_API_KEY) return process.env.GOOGLE_TTS_API_KEY
@@ -93,7 +113,7 @@ function readApiKey() {
   return null
 }
 
-async function synth(text, key) {
+async function synth(text, rate, key) {
   for (let attempt = 1; ; attempt++) {
     const res = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${key}`, {
       method: 'POST',
@@ -101,7 +121,7 @@ async function synth(text, key) {
       body: JSON.stringify({
         input: { text },
         voice: { languageCode: 'ja-JP', name: VOICE },
-        audioConfig: { audioEncoding: 'MP3', speakingRate: RATE },
+        audioConfig: { audioEncoding: 'MP3', speakingRate: rate },
       }),
     })
     if (res.ok) return Buffer.from((await res.json()).audioContent, 'base64')
@@ -120,13 +140,15 @@ async function main() {
   const limitArg = process.argv.indexOf('--limit')
   const limit = limitArg >= 0 ? Number(process.argv[limitArg + 1]) : Infinity
 
-  const texts = collectTexts()
-  const chars = texts.reduce((n, t) => n + t.length, 0)
-  const missing = texts.filter(t => !existsSync(join(OUT_DIR, fileFor(t))))
+  const texts = collectTexts() // Paare [Text, Rate]
+  const chars = texts.reduce((n, [t]) => n + t.length, 0)
+  const missing = texts.filter(([t, r]) => !existsSync(join(OUT_DIR, fileFor(t, r))))
 
   // --check: Sind alle Texte abgedeckt (Datei + Manifest-Eintrag)? Exit 1, wenn
   // nicht – der Pre-Commit-Hook stößt dann die Generierung an. Solange die
   // Pipeline nie gelaufen ist (kein Manifest), blockiert der Check nichts.
+  // Der Manifest-Eintrag muss auf den Hash aus Text+RATE zeigen – so gilt der
+  // Bestand nach einer Raten-/Stimmen-Änderung als veraltet.
   if (process.argv.includes('--check')) {
     const manifestPath = join(OUT_DIR, 'manifest.json')
     if (!existsSync(manifestPath)) {
@@ -134,20 +156,20 @@ async function main() {
       return
     }
     const map = JSON.parse(readFileSync(manifestPath, 'utf8')).map || {}
-    const stale = texts.filter(t => !map[t] || !existsSync(join(OUT_DIR, map[t])))
+    const stale = texts.filter(([t, r]) => map[t] !== fileFor(t, r) || !existsSync(join(OUT_DIR, map[t])))
     if (stale.length === 0) {
       console.log(`Audio-Check ok: alle ${texts.length} Texte abgedeckt.`)
       return
     }
     console.error(`✗ ${stale.length} gesprochene Texte ohne aktuelles Studio-Audio, z. B.:`)
-    stale.slice(0, 8).forEach(t => console.error('   ·', t))
+    stale.slice(0, 8).forEach(([t]) => console.error('   ·', t))
     process.exit(1)
   }
   console.log(`Texte gesamt: ${texts.length} (${chars} Zeichen) · Stimme: ${VOICE}`)
   console.log(`Schon vorhanden: ${texts.length - missing.length} · zu generieren: ${missing.length}`)
   if (dryRun) {
     console.log('\n--dry-run: nichts generiert. Beispiele:')
-    texts.slice(0, 15).forEach(t => console.log('  ·', t))
+    texts.slice(0, 15).forEach(([t, r]) => console.log('  ·', `[${r}]`, t))
     return
   }
 
@@ -165,9 +187,10 @@ async function main() {
   // Kleiner Worker-Pool statt alles auf einmal (Quota-freundlich).
   const queue = [...work]
   await Promise.all(Array.from({ length: 6 }, async () => {
-    for (let text; (text = queue.shift()) !== undefined;) {
+    for (let pair; (pair = queue.shift()) !== undefined;) {
+      const [text, rate] = pair
       try {
-        writeFileSync(join(OUT_DIR, fileFor(text)), await synth(text, key))
+        writeFileSync(join(OUT_DIR, fileFor(text, rate)), await synth(text, rate, key))
         if (++done % 50 === 0) console.log(`  ${done}/${work.length} …`)
       } catch (e) {
         failed++
@@ -177,10 +200,10 @@ async function main() {
   }))
 
   // Manifest: nur Einträge, deren Datei wirklich existiert. Verwaiste Dateien
-  // (Texte/Stimme geändert) aufräumen, damit public/audio nicht zuwuchert.
+  // (Texte/Stimme/Rate geändert) aufräumen, damit public/audio nicht zuwuchert.
   const map = {}
-  for (const t of texts) {
-    const f = fileFor(t)
+  for (const [t, r] of texts) {
+    const f = fileFor(t, r)
     if (existsSync(join(OUT_DIR, f))) map[t] = f
   }
   writeFileSync(join(OUT_DIR, 'manifest.json'), JSON.stringify({ voice: VOICE, map }))

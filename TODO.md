@@ -4,6 +4,11 @@ Backlog der noch zu programmierenden bzw. zu überarbeitenden Features.
 
 ## Erledigt (zuletzt)
 
+- [x] **„hito" klang wie „Sto"** – Ursache: Google Neural2 entstimmlicht bei
+      Normaltempo (korrektes Tokyo-Japanisch) i/u zwischen stimmlosen
+      Konsonanten (ひと → [çi̥to]). Fix: Zitierformen (Einzelwörter, Kana,
+      Kacheln) werden mit Rate 0.8 generiert → Vokal wieder hörbar; Sätze
+      bleiben natürlich bei Rate 1. Details `ARCHITECTURE.md` §4.
 - [x] **Mehr Satzabfragen + Tipp-Modus** – Pro Kapitel c3–c12 je 2 neue Satzbau-
       Aufgaben (alle audit-geprüft, nur bereits eingeführter Stoff). `BuildStep` hat
       einen `typed`-Modus (Tastatur-Eingabe); der Kapitel-Player schaltet ihn pro
@@ -50,3 +55,26 @@ Backlog der noch zu programmierenden bzw. zu überarbeitenden Features.
       was die Reise lehrt. Strikt, aber selbst-nachziehend – Wörter, die die Reise
       noch nicht lehrt, sperren nicht, greifen aber automatisch, sobald sie in der
       Reise eingeführt werden. Pfad-Reihenfolge bleibt zusätzlich erhalten.)*
+
+## Beobachtungen aus der Architektur-Durchsicht (2026-07-19)
+
+Kleinere Inkonsistenzen, gefunden beim vollständigen Code-Review — kein akuter
+Handlungsbedarf, aber beim nächsten Anfassen der jeweiligen Stelle mit beheben:
+
+- [ ] **g23 doppelt einsortiert** – `GRAMMAR_ORDER` (grammar.js) platziert g23
+      (Zähleinheiten) direkt nach g10, im realen `PATH` kommt es aber erst in
+      Welt 東京・五. Bibliothek-Sortierung und Freischalt-Reihenfolge divergieren.
+- [ ] **`tokenGrammarId` deckt へ nicht ab** (lib/dialog.js) – die Richtungs-
+      partikel wird nicht auf ihr Grammatik-Thema gemappt, das Dialog-Gating
+      prüft sie daher nicht. Das Regex-Mapping auf dem `b`-Feld ist generell
+      fragil.
+- [ ] **`speak(o)` spricht rohe Antwortoptionen** (players.jsx, Dialog) – ohne
+      Lesungs-Auflösung wie bei `speakItem`/`speakTokens`. Solange Studio-MP3s
+      existieren unkritisch (der Generator kennt dieselben Texte), aber der
+      System-TTS-Fallback könnte Kanji fehllesen.
+- [ ] **`dueKana` heißt irreführend** (useProgress.js) – filtert alle gelernten
+      Items (Kana + Wort-Kanji + Kapitel-Vokabeln), nicht nur Kana. Bei
+      Gelegenheit in z. B. `dueItems` umbenennen.
+- [ ] **Kommentar-Leichen in players.jsx** – Kommentar über `BlockCourse` passt
+      nicht zur Funktion; ein Kommentar dokumentiert entfernte
+      `BlockPath`/`GrammarPath`.

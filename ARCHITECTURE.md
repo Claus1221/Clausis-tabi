@@ -73,7 +73,10 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 |---|---|---|
 | `xp.js` | `XP_PER_KANA/CARD/WORD/GRAMMAR/CHAPTER/DIALOG` | – |
 | `kanaStats.js` | `totalKanaCount`, `completedKanaList`, `completedKanaCount` | data/kana |
-| `speech.js` | `speak`, `speakItem`, `itemReading`, `copyText` | data/words, data/chapters |
+| `speech.js` | `speak`, `speakItem`, `speakTokens`, `itemReading`, `copyText` | data/words, data/chapters |
+| `listen.js` | `SPEECH_INPUT_SUPPORTED`, `startListening`, `stopListening`, `normalizeJa`, `matchSpoken` | – (Web Speech API, ja-JP) |
+| `apiKey.js` | `getApiKey`, `setApiKey`, `hasApiKey` | – (Anthropic-Key nur in localStorage) |
+| `claude.js` | `judgeAnswer`, `pingApiKey`, `hasApiKey` (re-export) | **lib/apiKey** |
 | `srs.js` | `srsItemInfo`, `SRS_RATINGS`, `shuffled`, `feedbackColor`, `buildRounds`, `OPTIONS_PER_ROUND`, `SRS_STAGES`, `srsStageIndex` | theme, data/kana, data/words, data/chapters, useProgress |
 | `dialog.js` | `lexTokens`, `dialogGate`, `reiseVocab`, `curriculumVocab`, `tokenGrammarId`, `ROLE_GRAMMATICAL`, … | data/dialogs, data/words, data/chapters |
 | `chapters.js` | `chapterSrsKeys`, `chapterStarsLive`, `chapterStarsShown`, `computeAllChapterStars` | data/chapters, **lib/srs** |
@@ -84,7 +87,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `progress.js` | `periodBuckets` (XP-Aggregation für Diagramme) | – |
 
 > Erlaubte `lib`-interne Kanten (einzige Querverweise innerhalb der Schicht):
-> `chapters.js → srs.js`, `mix.js → srs.js`. Sonst keine.
+> `chapters.js → srs.js`, `mix.js → srs.js`, `claude.js → apiKey.js`. Sonst keine.
 
 ### `components/` — geteilte UI
 | Datei | Exporte | Notiz |
@@ -100,10 +103,10 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 |---|---|---|
 | `reise.jsx` | `ReiseScreen` | `DailyStrip`, `ChoiceStep`, `IntroStep`, `TraceStep`, `ChapterPlayer`, `ChapterPractice`, `ChapterSheet`, `StoryJournal` |
 | `lernen.jsx` | `LernenScreen` | `PhraseList`, `KanaLibrary`, `WordLibrary`, `GrammarLibrary` (reine Nachschlage-Bibliothek) |
-| `ueben.jsx` | `UebenScreen` | `SRSQuiz`, `PracticeQuiz`, `TypeQuiz`, `SentenceQuiz`, `MixQuiz`, `MixStep`, `DialogHub`, `DialogPlay` |
+| `ueben.jsx` | `UebenScreen` | `SRSQuiz`, `PracticeQuiz`, `TypeQuiz`, `SentenceQuiz`, `MixQuiz`, `MixStep`, `DialogHub` |
 | `fortschritt.jsx` | `FortschrittScreen` | – |
 | `settings.jsx` | `SettingsScreen` | `NumberSetting` |
-| `players.jsx` | *(keine)* — exportiert `LessonPlayer`, `BlockCourse`, `GrammarLesson` | lokal: `QuizStep`, `BlockQuiz`, `GrammarExercise`. Werden **nur von `reise.jsx`** als Lektions-Overlays der Pfad-Stationen genutzt. |
+| `players.jsx` | *(keine)* — exportiert `LessonPlayer`, `BlockCourse`, `GrammarLesson`, `DialogPlay` | lokal: `QuizStep`, `BlockQuiz`, `GrammarExercise`. Lektions-Overlays der Pfad-Stationen (`reise.jsx`); `DialogPlay` nutzt zusätzlich der `DialogHub` in `ueben.jsx`. |
 
 ---
 
@@ -130,7 +133,54 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 
 ---
 
-## 4. Inhalte ergänzen (Schemata)
+## 4. Audio & Sprache
+
+### Sprachausgabe: Studio-MP3s zuerst, System-TTS als Fallback
+`speak(text)` in `lib/speech.js` schaut zuerst in `public/audio/manifest.json`
+(Text → MP3-Dateiname) und spielt das vorgenerierte Studio-Audio (Google Cloud
+TTS, Stimme `ja-JP-Neural2-B`). Nur wenn kein Eintrag/keine Datei existiert,
+springt die System-TTS ein (ja-JP-Stimme; Desktop ohne ja-Stimme spricht bewusst
+nicht und zeigt einen Installations-Hinweis). Der Service-Worker cached die MP3s
+zur Laufzeit (`CacheFirst`, s. §6) – einmal gehört = offline verfügbar.
+
+Transformations-Helfer, damit TTS nie raten muss:
+- `itemReading(item)` löst Wort-/Kapitel-Kanji zur geprüften Kana-Lesung auf
+  (verhindert Fehllesungen mehrdeutiger Kanji wie 上/月).
+- `speakTokens(tokens)` baut Sätze aus Token-Lesungen (nur reine Kana-Lesungen;
+  Romaji-Anzeigelesungen wie は→„wa" bleiben außen vor).
+- `BuildStep.sayTile` spricht Partikel-Sonderlesungen (は→わ, へ→え).
+
+### Generierung: `npm run audio` (`scripts/generate-audio.mjs`)
+Sammelt in `collectTexts()` **jeden** Text, den die App über `speak()` ausgeben
+kann – mit exakt denselben Transformationen wie die Sprechstellen. Neue
+Sprechstellen mit neuen Text-Transformationen ⇒ im Collector nachziehen!
+Dateiname = SHA1-Hash aus `Stimme|Rate|Text` ⇒ inkrementell (vorhandene Dateien
+werden übersprungen), Stimm-/Raten-Wechsel invalidiert automatisch.
+`--check` (offline, im Pre-Commit-Hook `.githooks/pre-commit`) erzwingt, dass
+Texte und Audio nie auseinanderlaufen. Key: `GOOGLE_TTS_API_KEY` in `.env.local`.
+
+**Zwei Sprechraten (wichtig):** Zitierformen (einzelne Wörter, Kana,
+Satzbau-Kacheln, Kapitel-Vokabeln) werden mit Rate **0.8** generiert, Sätze mit
+**1**. Grund: Bei Normaltempo entstimmlicht die (korrekte, natürliche)
+Tokyo-Aussprache i/u zwischen stimmlosen Konsonanten – ひと klang wie „Sto",
+した wie „schta". Bei 0.8 spricht Neural2 den Vokal wieder hörbar; in Sätzen
+bleibt die natürliche Entstimmlichung absichtlich erhalten. (Empirisch geprüft
+per Autokorrelations-Messung der ersten Mora; Details im Kopfkommentar des
+Skripts. Einzelfälle wie ひとつ entstimmlichen selbst bei 0.7 – das ist dann
+schlicht die richtige Aussprache.)
+
+### Spracheingabe & KI-Bewertung (Rollenspiel)
+- `lib/listen.js`: Web Speech API (`ja-JP`). `matchSpoken` normalisiert
+  (Kanji→Kana-Map, Katakana→Hiragana) und vergleicht per Bigramm-Ähnlichkeit;
+  Treffer nur bei klarem Abstand zur zweitbesten Option – sonst `null`.
+- `lib/claude.js` + `lib/apiKey.js`: optionale zweite Stufe (BYOK, Anthropic
+  `claude-haiku-4-5`, Key nur in `localStorage`, nie in Firestore). `judgeAnswer`
+  bewertet frei gesprochene Antworten sinngemäß; ohne Key/Netz → Fallback auf
+  `matchSpoken`-Verhalten. Verdrahtet in `DialogPlay` (`screens/players.jsx`).
+
+---
+
+## 5. Inhalte ergänzen (Schemata)
 
 Jeder Datentyp lebt in genau einer `data/`-Datei. Neue Inhalte = dort eintragen.
 `scripts/audit-examples.mjs` prüft Beispielsätze auf Vorwärts-Referenzen.
@@ -145,10 +195,12 @@ Jeder Datentyp lebt in genau einer `data/`-Datei. Neue Inhalte = dort eintragen.
 
 Beim Einführen neuer Wörter/Kanji ggf. `KANJI_ORIGIN` und – falls in Story-Sätzen
 verwendet – `STORY_TOKENS`/`DIALOG_LEX` ergänzen, damit Wörter antippbar bleiben.
+**Nach jeder Inhalts-Änderung mit Sprechstellen: `npm run audio`** (s. §4) und
+`public/audio` mit committen – der Pre-Commit-Hook prüft das.
 
 ---
 
-## 5. Performance & Build
+## 6. Performance & Build
 
 - **Code-Splitting:** Die fünf Screens werden in `TabiApp.jsx` per `React.lazy`
   geladen → jeder Tab ist ein eigener Chunk (kleiner Erst-Download). `players.jsx`
@@ -169,7 +221,7 @@ verwendet – `STORY_TOKENS`/`DIALOG_LEX` ergänzen, damit Wörter antippbar ble
 
 ---
 
-## 6. Konventionen
+## 7. Konventionen
 
 - **JSX nur in `.jsx`.** Dateien mit JSX (auch in `lib/`: `furigana.jsx`, `scene.jsx`)
   enden auf `.jsx`; reine Logik/Daten auf `.js`. (`<` als Vergleich ist in `.js` ok.)
@@ -177,14 +229,14 @@ verwendet – `STORY_TOKENS`/`DIALOG_LEX` ergänzen, damit Wörter antippbar ble
 - **Farben/Font** immer über `theme.js` (`C`, `JP`), nicht inline wiederholen.
 - **Kommentare deutsch**, dicht und erklärend (warum, nicht nur was) – wie im Bestand.
 
-### Lokales Verifizieren ohne Node
-In dieser Umgebung gibt es **kein Node/npm** → kein lokaler Build. Stattdessen prüfen
-(Python ist vorhanden):
+### Lokales Verifizieren
+Auf dem Windows-Rechner (`C:\clausis-tabi`) sind Node/npm vorhanden: vor dem Push
+`npm test`, `npm run audit`, ggf. `npm run build` und bei Inhalts-Änderungen
+`npm run audio` laufen lassen. **Nur in Umgebungen ohne Node/npm** (z. B. reine
+Browser-Sessions) stattdessen statisch prüfen:
 1. Import/Export-Konsistenz: jedes relative `import {X}` zeigt auf eine Datei, die `X`
    exportiert (default-/lazy-Importe → default-Export vorhanden).
 2. Kein Symbol „benutzt aber nicht importiert"; keine doppelten Top-Level-Deklarationen.
 3. Jeder React-Hook importiert; kein JSX-Tag in `.js`; jeder `<Komponente>`-Tag
    importiert oder lokal definiert.
-Endgültige Bestätigung liefert CI beim Push (`npm test` + `npm run build`) – lokal
-geschriebene Tests/Code werden also nie selbst ausgeführt, nur dort.
-```
+Endgültige Bestätigung liefert dann CI beim Push (`npm test` + `npm run build`).
