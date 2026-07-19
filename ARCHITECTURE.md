@@ -140,8 +140,14 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 (Text → MP3-Dateiname) und spielt das vorgenerierte Studio-Audio (Google Cloud
 TTS, Stimme `ja-JP-Neural2-B`). Nur wenn kein Eintrag/keine Datei existiert,
 springt die System-TTS ein (ja-JP-Stimme; Desktop ohne ja-Stimme spricht bewusst
-nicht und zeigt einen Installations-Hinweis). Der Service-Worker cached die MP3s
-zur Laufzeit (`CacheFirst`, s. §6) – einmal gehört = offline verfügbar.
+nicht und zeigt einen Installations-Hinweis).
+
+**Service-Worker-Strategie (Juli 2026 gehärtet):** `audio/manifest.json` ist
+bewusst **NICHT im Precache** (`globIgnores`), sondern `NetworkFirst` – ein
+precachtes Manifest wäre an den SW-Stand des Geräts gepinnt und zeigte nach
+einer Audio-Regenerierung auf gelöschte Dateinamen → 404 → System-TTS für jedes
+Wort (so passiert bei der Raten-Umstellung). Die MP3s selbst sind `CacheFirst`
+(einmal gehört = offline verfügbar). Details/Fallstricke: `vite.config.js`.
 
 Transformations-Helfer, damit TTS nie raten muss:
 - `itemReading(item)` löst Wort-/Kapitel-Kanji zur geprüften Kana-Lesung auf
@@ -228,6 +234,11 @@ verwendet – `STORY_TOKENS`/`DIALOG_LEX` ergänzen, damit Wörter antippbar ble
 - **Kein `import React`** nötig (automatische JSX-Runtime). Hooks einzeln importieren.
 - **Farben/Font** immer über `theme.js` (`C`, `JP`), nicht inline wiederholen.
 - **Kommentare deutsch**, dicht und erklärend (warum, nicht nur was) – wie im Bestand.
+- **Workbox-`urlPattern`-Funktionen sind self-contained.** Sie werden als String
+  in die generierte `sw.js` serialisiert – Variablen aus `vite.config.js` (z. B.
+  `BASE`) existieren im Worker nicht und führen zu einem stillen `ReferenceError`
+  (Route greift nie). Nur `url`/`request`-Parameter und `self.*` verwenden; nach
+  Änderungen im `dist/sw.js` gegenprüfen.
 
 ### Lokales Verifizieren
 Auf dem Windows-Rechner (`C:\clausis-tabi`) sind Node/npm vorhanden: vor dem Push

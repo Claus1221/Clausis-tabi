@@ -43,16 +43,35 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,json}'],
+        // audio/manifest.json darf NICHT in den Precache: dort wäre es an den
+        // Service-Worker-Stand des Geräts gepinnt. Ein veraltetes Manifest zeigt
+        // nach einer Audio-Regenerierung auf gelöschte Dateinamen-Hashes → 404 →
+        // die App fällt für jedes Wort auf die System-TTS zurück (so geschehen
+        // Juli 2026, Raten-Umstellung). Stattdessen unten NetworkFirst.
+        globIgnores: ['audio/manifest.json'],
         navigateFallback: `${BASE}index.html`,
-        // Die ~750 Studio-MP3s (public/audio) NICHT vorab in den Cache laden –
-        // das würde die PWA-Installation aufblähen. Stattdessen: einmal gehört →
-        // dauerhaft offline verfügbar (CacheFirst; Audio ändert sich nie, bei
-        // Stimmwechsel ändern sich die Dateinamen-Hashes).
-        runtimeCaching: [{
-          urlPattern: ({ url }) => url.pathname.startsWith(`${BASE}audio/`) && url.pathname.endsWith('.mp3'),
-          handler: 'CacheFirst',
-          options: { cacheName: 'tabi-audio', expiration: { maxEntries: 1000 } },
-        }],
+        // ACHTUNG: urlPattern-Funktionen werden als STRING in die sw.js
+        // serialisiert – sie dürfen KEINE Variablen aus dieser Config-Datei
+        // einfangen (BASE o. ä. gibt es im Worker nicht → ReferenceError, die
+        // Route greift nie). Deshalb self-contained über self.location.origin.
+        runtimeCaching: [
+          // Audio-Manifest: immer frisch vom Netz (unabhängig vom Alter der
+          // App-Hülle); nur offline kommt die zuletzt gesehene Kopie.
+          {
+            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.endsWith('/audio/manifest.json'),
+            handler: 'NetworkFirst',
+            options: { cacheName: 'tabi-audio-manifest', networkTimeoutSeconds: 4 },
+          },
+          // Die ~750 Studio-MP3s (public/audio) NICHT vorab in den Cache laden –
+          // das würde die PWA-Installation aufblähen. Stattdessen: einmal gehört →
+          // dauerhaft offline verfügbar (CacheFirst; Audio ändert sich nie, bei
+          // Stimm-/Raten-Wechsel ändern sich die Dateinamen-Hashes).
+          {
+            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.includes('/audio/') && url.pathname.endsWith('.mp3'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'tabi-audio', expiration: { maxEntries: 1000 } },
+          },
+        ],
       },
     }),
   ],

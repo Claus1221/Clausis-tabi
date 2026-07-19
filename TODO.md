@@ -4,6 +4,16 @@ Backlog der noch zu programmierenden bzw. zu überarbeitenden Features.
 
 ## Erledigt (zuletzt)
 
+- [x] **Handy sprach nur mit Geräte-Stimme statt Studio-MP3s** – Zwei Ursachen:
+      (a) `audio/manifest.json` war im SW-Precache und damit an den (veralteten)
+      Service-Worker-Stand des Geräts gepinnt; nach der Raten-Umstellung zeigte
+      das alte Manifest auf gelöschte Dateien → 404 → System-TTS für alle
+      Wörter. Fix: Manifest aus dem Precache (`globIgnores`) + `NetworkFirst`.
+      (b) Die `urlPattern`-Funktionen der runtimeCaching-Regeln referenzierten
+      `BASE` aus der vite.config – im Worker undefiniert → `ReferenceError` →
+      auch der MP3-Offline-Cache (`tabi-audio`) hat nie funktioniert. Fix:
+      Matcher self-contained (`self.location.origin`). Beides im Preview-Build
+      laufzeit-verifiziert (beide Caches werden jetzt angelegt und befüllt).
 - [x] **„hito" klang wie „Sto"** – Ursache: Google Neural2 entstimmlicht bei
       Normaltempo (korrektes Tokyo-Japanisch) i/u zwischen stimmlosen
       Konsonanten (ひと → [çi̥to]). Fix: Zitierformen (Einzelwörter, Kana,
