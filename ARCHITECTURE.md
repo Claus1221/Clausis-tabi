@@ -80,7 +80,8 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `claude.js` | `chatTurn`, `judgeAnswer`, `parseJson`, `pingApiKey`, `hasApiKey` | **lib/apiKey** |
 | `ttsCloud.js` | `cloudAudioUrl`, `pingTtsKey` | **lib/apiKey** (Google Cloud TTS zur Laufzeit) |
 | `talk.js` | `talkGate`, `talkForScene`, `learnedVocabList`, `buildTalkSystem`, `buildHintSystem`, `buildDebriefSystem`, `buildDebriefPrompt`, `transcriptText`, `OPENER_CUE`, `FALLBACK_CLOSING` | data/talks, data/dialogs, **lib/dialog** |
-| `learned.js` | `learnedItems` (alle SRS-Karten zu einem Fortschritt) | data/words, **lib/kanaStats**, **lib/chapters** |
+| `learned.js` | `learnedItems` (alle SRS-Karten zu einem Fortschritt) | data/words, **lib/kanaStats**, **lib/chapters**, **lib/grammarSrs** |
+| `grammarSrs.js` | `grammarKey`, `isGrammarKey`, `topicForKey`, `grammarKeys`, `pickDrill` | data/grammar (Grammatik als SRS-Karte) |
 | `srs.js` | `srsItemInfo`, `SRS_RATINGS`, `shuffled`, `feedbackColor`, `buildRounds`, `OPTIONS_PER_ROUND`, `SRS_STAGES`, `srsStageIndex` | theme, data/kana, data/words, data/chapters, useProgress |
 | `dialog.js` | `lexTokens`, `dialogGate`, `reiseVocab`, `curriculumVocab`, `tokenGrammarId`, `ROLE_GRAMMATICAL`, `phrasesFromTurns`, `dialogPhrases`, `dialogShakyWords`, … | data/dialogs, data/words, data/chapters, useProgress |
 | `chapters.js` | `chapterSrsKeys`, `chapterStarsLive`, `chapterStarsShown`, `computeAllChapterStars` | data/chapters, **lib/srs** |
@@ -93,7 +94,8 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 > Erlaubte `lib`-interne Kanten (einzige Querverweise innerhalb der Schicht):
 > `chapters.js → srs.js`, `mix.js → srs.js`, `claude.js → apiKey.js`,
 > `ttsCloud.js → apiKey.js`, `speech.js → {apiKey.js, ttsCloud.js}`,
-> `talk.js → dialog.js`, `learned.js → {kanaStats.js, chapters.js}`. Sonst keine.
+> `talk.js → dialog.js`, `learned.js → {kanaStats.js, chapters.js, grammarSrs.js}`,
+> `srs.js → grammarSrs.js`. Sonst keine.
 
 ### `components/` — geteilte UI
 | Datei | Exporte | Notiz |
@@ -104,6 +106,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `japanese.jsx` | `CardNote`, `KanjiOrigin`, `WordDetail`, `TappableSentence`, `TappableJp`, `StoryLine` | Antippbare JP-Texte + Wort-Detail. |
 | `ueben.jsx` | `UebenHead`, `UebenEmpty`, `UebenDone` | Übungs-Rahmen (Kopf/Leer/Fertig). |
 | `BuildStep.jsx` | `BuildStep` | Satz-aus-Kacheln-Aufgabe. **Von Üben UND Reise geteilt.** |
+| `grammarDrill.jsx` | `GrammarDrill` | Lückensatz mit Auswahl – die Form, in der Grammatik im Wiederholungsplan auftaucht (bewusst keine Karteikarte: bei Grammatik zählt das Anwenden). |
 
 ### `screens/` — ein Vollbild je Tab (default-Export, lazy geladen)
 | Datei | default | Lokale (nicht exportierte) Unterkomponenten |

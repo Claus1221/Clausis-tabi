@@ -14,6 +14,7 @@ import { SRS_STAGES } from '../lib/srs.js'
 import { periodBuckets, weekSummary } from '../lib/progress.js'
 import { chapterSrsKeys } from '../lib/chapters.js'
 import { learnedItems } from '../lib/learned.js'
+import { isGrammarKey } from '../lib/grammarSrs.js'
 import { isNodeDone } from '../lib/path.js'
 import { Card } from '../components/ui.jsx'
 
@@ -52,8 +53,10 @@ export default function FortschrittScreen({ onReview }) {
   // Kapitel-Vokabeln – exakt dieselbe Menge wie die Wiederholungs-Stapel im
   // Üben-Tab. Nachträglich ergänzte, noch nie eingeführte Kapitel-Wörter bleiben
   // draußen (sie warten im Kapitel-Sheet auf ihre 🆕-Einführung).
+  // Grammatik-Karten laufen im selben Stapel, zählen hier aber NICHT als Vokabel –
+  // sonst stünde unter „Wortschatz" eine Zahl, die keine Wörter meint.
   const reviewPool = learnedItems(progress)
-  const curriculumSet = new Set(reviewPool)
+  const curriculumSet = new Set(reviewPool.filter(k => !isGrammarKey(k)))
   const srsVals = Object.entries(progress.srs || {}).filter(([k]) => curriculumSet.has(k)).map(([, v]) => v)
   const stageCounts = SRS_STAGES.map(s => ({ ...s, n: srsVals.filter(s.test).length }))
   const vocabTotal = srsVals.length

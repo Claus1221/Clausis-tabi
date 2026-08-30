@@ -16,10 +16,12 @@ import { dialogGate } from '../lib/dialog.js'
 import { talkForScene, talkGate } from '../lib/talk.js'
 import { MIX_LABEL, buildMixTasks } from '../lib/mix.js'
 import { learnedItems } from '../lib/learned.js'
+import { pickDrill } from '../lib/grammarSrs.js'
 import { Emoji, Card, Btn } from '../components/ui.jsx'
 import { CardNote, KanjiOrigin, TappableJp } from '../components/japanese.jsx'
 import { UebenHead, UebenEmpty, UebenDone } from '../components/ueben.jsx'
 import { BuildStep } from '../components/BuildStep.jsx'
+import { GrammarDrill } from '../components/grammarDrill.jsx'
 import { DialogPlay } from './players.jsx'
 import TalkPlay from './talk.jsx'
 
@@ -141,6 +143,12 @@ function SRSQuiz({ onClose, initialMode = 'due' }) {
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: 16 }}>✕</button>
       </div>
 
+      {info.isGrammar ? (
+        // Grammatik-Karte: Aufgabe statt Karteikarte, Bewertung aus der Antwort.
+        <GrammarSrsCard key={item + '/' + queue.length + '/' + passed} topic={info.topic}
+          onDone={ok => rate(ok ? 4 : 1)} />
+      ) : (
+      <>
       <Card style={{ textAlign: 'center', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 16, position: 'relative' }}>
         {isRepeat && (
           <div style={{ position: 'absolute', top: 10, left: 12, fontSize: 11, color: C.shu, fontWeight: 600 }}>🔁 nochmal</div>
@@ -181,8 +189,30 @@ function SRSQuiz({ onClose, initialMode = 'due' }) {
           ))}
         </div>
       )}
+      </>
+      )}
     </div>
   )
+}
+
+// Zieht bei jedem Auftauchen eine ANDERE Übung aus dem Thema – geübt werden soll
+// die Regel, nicht das Auswendiglernen einer bestimmten Frage. Themen ohne
+// Übungen blockieren nicht: sie werden durchgewinkt statt die Runde anzuhalten.
+function GrammarSrsCard({ topic, onDone }) {
+  const [ex] = useState(() => pickDrill(topic))
+  if (!ex) {
+    return (
+      <>
+        <Card style={{ textAlign: 'center', padding: '22px 16px', marginBottom: 14 }}>
+          <div style={{ fontSize: 42, fontFamily: JP, color: C.shu }}>{topic.glyph}</div>
+          <div style={{ fontWeight: 600, marginTop: 6 }}>{topic.title}</div>
+          <div style={{ fontSize: 13, color: C.textMuted, marginTop: 6 }}>{topic.summary}</div>
+        </Card>
+        <Btn onClick={() => onDone(true)} style={{ width: '100%' }}>Weiter →</Btn>
+      </>
+    )
+  }
+  return <GrammarDrill topic={topic} ex={ex} onDone={onDone} />
 }
 
 function PracticeQuiz({ mode, onClose }) {
@@ -511,6 +541,16 @@ function MixStep({ task, cardReview, onNext }) {
   if (task.type === 'karte') {
     const info = srsItemInfo(task.item, progress.extraPhrases)
     const rate = (q) => { cardReview(task.item, q); if (q >= 3) awardXp(XP_PER_CARD); onNext(q >= 3) }
+    // Grammatik-Karten sind Aufgaben, keine Karteikarten – sonst stünde hier
+    // der rohe Karten-Schlüssel („g:g11") auf der Vorderseite.
+    if (info.isGrammar) {
+      return (
+        <>
+          {chip}
+          <GrammarSrsCard topic={info.topic} onDone={ok => rate(ok ? 4 : 1)} />
+        </>
+      )
+    }
     return (
       <>
         {chip}

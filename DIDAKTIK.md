@@ -42,9 +42,13 @@ danach Vokabeln/Grammatik/Kapitel/Dialoge eng verzahnt. Die alten Tabs
   Intervallgrenzen [1, 7, 30, 120] Tagen.
 - **Anti-Hochpump-Prinzip:** Nur *wirklich fällige* Karten verändern den Plan;
   freies Üben (Fleiß-Übung) gibt XP, verschiebt aber keine Intervalle.
-- SRS-Items: Kana (Zeichen), Wörter (Schlüssel = Kanji), Kapitel-Vokabeln und
-  Wendungen, die aus einem freien Gespräch übernommen wurden (`extraPhrases`).
-  Grammatik und die festen Reise-Floskeln sind bewusst NICHT im SRS.
+- SRS-Items: Kana (Zeichen), Wörter (Schlüssel = Kanji), Kapitel-Vokabeln,
+  Wendungen aus freien Gesprächen (`extraPhrases`) sowie **je eine Karte pro
+  gelerntem Grammatik-Thema** (`lib/grammarSrs.js`). Grammatik war bis dahin ein
+  EINMALIGES Ereignis – Thema lesen, zwei Übungen, abgehakt, nie wieder gesehen;
+  kein Wunder, dass sie im Gespräch nicht abrufbar war. Die Karte zieht bei jeder
+  Wiederholung eine ANDERE Übung aus dem Thema, damit die Regel geübt wird und
+  nicht eine bestimmte Frage. Nur die festen Reise-Floskeln bleiben außen vor.
   Eine Quelle für alle Stapel und Zähler: `lib/learned.js: learnedItems`.
 
 ### Abruf statt Wiedererkennen, L1 verblasst

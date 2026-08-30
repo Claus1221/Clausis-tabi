@@ -14,6 +14,7 @@ import { speak, speakItem } from '../lib/speech.js'
 import { srsItemInfo, SRS_RATINGS, shuffled, feedbackColor } from '../lib/srs.js'
 import { chapterSrsKeys, newChapterWords, chapterStarsShown, computeAllChapterStars, shouldTypeSentence, weakChapterList, BRAKE_LIMIT } from '../lib/chapters.js'
 import { learnedItems } from '../lib/learned.js'
+import { grammarKey, grammarKeys } from '../lib/grammarSrs.js'
 import { renderFuri, furiPlain } from '../lib/furigana.jsx'
 import { sceneTorii, buildBackdrop, roadPath, STATE_PALETTE } from '../lib/scene.jsx'
 import { isNodeDone, pathNodeMeta } from '../lib/path.js'
@@ -526,6 +527,15 @@ export default function ReiseScreen({ onReview }) {
   const currentRef = useRef(null)
   const wrapRef = useRef(null)
 
+  // Nachzügler-Planung für Grammatik: Themen, die vor der Einführung der
+  // Grammatik-Karten gelernt wurden, haben noch keinen Wiederholungs-Eintrag.
+  // Ohne das hier wären sie alle auf einen Schlag „fällig" – scheduleNew ist
+  // idempotent und verteilt sie gestaffelt über die nächsten Tage.
+  useEffect(() => {
+    const keys = grammarKeys(progress)
+    if (keys.length) scheduleNew(keys)
+  }, [progress.completedGrammar?.length]) // eslint-disable-line
+
   // Sterne-Höchststand mit dem aktuellen Kenntnisstand abgleichen. Läuft beim
   // Öffnen der Reise und nach jeder Übung (auch im Üben-Tab, da progress.srs sich
   // ändert) – so heben Übungen die Sterne, ohne dass sie je wieder sinken.
@@ -576,7 +586,7 @@ export default function ReiseScreen({ onReview }) {
       const already = (progress.completedGrammar || []).includes(active.id)
       return (
         <GrammarLesson topic={topic} alreadyDone={already} onClose={close}
-          onDone={() => { if (!already) completeGrammar(active.id, XP_PER_GRAMMAR); close() }} />
+          onDone={() => { if (!already) { completeGrammar(active.id, XP_PER_GRAMMAR); scheduleNew([grammarKey(active.id)]) } close() }} />
       )
     }
     if (active.type === 'chapter') {

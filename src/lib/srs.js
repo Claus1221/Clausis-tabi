@@ -3,11 +3,18 @@ import { KANA_DATA } from '../data/kana.js'
 import { WORD_BY_KANJI } from '../data/words.js'
 import { CHAPTER_WORD } from '../data/chapters.js'
 import { SRS_STAGE_BOUNDS } from '../useProgress.js'
+import { isGrammarKey, topicForKey } from './grammarSrs.js'
 
-// Anzeige-Infos für eine SRS-Karte (Kana, Wort-Kanji oder eine aus einem freien
-// Gespräch übernommene Wendung). `extra` ist progress.extraPhrases – ohne das
-// Argument verhält sich die Funktion exakt wie bisher.
+// Anzeige-Infos für eine SRS-Karte (Kana, Wort-Kanji, eine aus einem freien
+// Gespräch übernommene Wendung oder ein Grammatik-Thema). `extra` ist
+// progress.extraPhrases – ohne das Argument verhält sich die Funktion wie bisher.
 export function srsItemInfo(key, extra) {
+  // Grammatik-Karten sehen anders aus als Vokabelkarten: vorne steht kein Wort,
+  // sondern eine Aufgabe (siehe components/grammarDrill.jsx).
+  if (isGrammarKey(key)) {
+    const topic = topicForKey(key)
+    return { reading: topic?.glyph, sub: topic?.title, isWord: false, isGrammar: true, topic }
+  }
   const w = WORD_BY_KANJI[key]
   if (w) return { reading: w.kana, sub: `${w.romaji} · ${w.de}`, isWord: true }
   const cw = CHAPTER_WORD[key]   // Kapitel-Vokabel (nicht im Wort-Lexikon)

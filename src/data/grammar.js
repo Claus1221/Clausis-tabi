@@ -20,6 +20,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '山＿高いです。', a: 'は', options: ['は', 'を', 'に'], hint: 'は markiert das Thema: „Was den Berg betrifft – hoch."' },
       { q: 'これ＿お茶です。', a: 'は', options: ['は', 'が', 'で'], hint: 'A は B です = „A ist B".' },
+          { q: 'これ＿山です。', a: 'は', options: ['は', 'が', 'を'], hint: '„Was das hier angeht: ein Berg." – は stellt das Thema voran.' },
+      { q: 'Wie wird die Themen-Partikel は gelesen?', a: 'wa', options: ['wa', 'ha', 'wo'], hint: 'Als Partikel „wa", als normale Silbe „ha".' },
     ],
   },
   {
@@ -38,6 +40,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '山＿。 (Es ist ein Berg.)', a: 'です', options: ['です', 'ます', 'を'], hint: 'Nomen + です = „ist".' },
       { q: 'お茶＿。 (Es ist kein Tee.)', a: 'ではありません', options: ['ではありません', 'です', 'でした'], hint: 'Verneinung von です = ではありません.' },
+          { q: 'これはお茶＿。 (Das ist Tee.)', a: 'です', options: ['です', 'ます', 'でした'], hint: 'ます gehört an Verben, です an Nomen und Adjektive.' },
+      { q: '山＿。 (Es war ein Berg.)', a: 'でした', options: ['でした', 'です', 'ではありません'], hint: 'Nomen in der Vergangenheit: です → でした.' },
     ],
   },
   {
@@ -74,6 +78,8 @@ export const GRAMMAR = [
     exercises: [
       { q: 'お茶＿飲みます。', a: 'を', options: ['を', 'が', 'は'], hint: 'Das Objekt vor dem Verb → を.' },
       { q: '山＿見ます。', a: 'を', options: ['を', 'に', 'で'], hint: 'Was angeschaut wird, ist das Objekt → を.' },
+          { q: 'これ＿見ます。', a: 'を', options: ['を', 'が', 'に'], hint: 'Was angeschaut wird, ist das direkte Objekt → を.' },
+      { q: 'Wie wird die Objekt-Partikel を gesprochen?', a: 'o', options: ['o', 'wo', 'e'], hint: 'Geschrieben „wo", gesprochen „o".' },
     ],
   },
   {
@@ -91,6 +97,9 @@ export const GRAMMAR = [
     exercises: [
       { q: '駅＿行きます。', a: 'に', options: ['に', 'で', 'を'], hint: 'Ziel/Richtung („wohin") → に.' },
       { q: '電車＿行きます。', a: 'で', options: ['で', 'に', 'を'], hint: 'Mittel („womit") → で.' },
+          { q: '山＿行きます。', a: 'に', options: ['に', 'で', 'を'], hint: 'Wohin es geht → に (oder へ).' },
+      { q: '駅＿お茶を飲みます。', a: 'で', options: ['で', 'に', 'へ'], hint: 'Ort, an dem etwas PASSIERT → で.' },
+      { q: 'Welche Partikel steht beim Ort, an dem etwas passiert?', a: 'で', options: ['で', 'に', 'へ'], hint: '駅で = am Bahnhof (dort geschieht es). 駅に = zum Bahnhof (dorthin).' },
     ],
   },
   {
@@ -109,6 +118,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '飲み＿。 (Ich trinke nicht.)', a: 'ません', options: ['ません', 'ます', 'ました'], hint: 'Verneinung: 〜ません.' },
       { q: '飲み＿。 (Ich trank.)', a: 'ました', options: ['ました', 'ます', 'ません'], hint: 'Vergangenheit: 〜ました.' },
+          { q: '飲み＿。 (Ich trinke.)', a: 'ます', options: ['ます', 'ません', 'ました'], hint: 'Höfliche Gegenwart: die ます-Form selbst.' },
+      { q: '行き＿。 (Ich ging nicht.)', a: 'ませんでした', options: ['ませんでした', 'ません', 'ました'], hint: 'Verneinte Vergangenheit = ません + でした.' },
     ],
   },
   {
@@ -126,6 +137,9 @@ export const GRAMMAR = [
     exercises: [
       { q: '山は＿です。 (hoch)', a: '高い', options: ['高い', '高', '高く'], hint: 'い-Adjektiv bleibt vor です unverändert: 高い.' },
       { q: '星は＿です。 (schön)', a: 'きれい', options: ['きれい', 'きれいな', 'きれく'], hint: 'な-Adjektiv am Satzende ohne な: きれい です.' },
+          { q: '＿山です。 (ein hoher Berg)', a: '高い', options: ['高い', '高いな', '高く'], hint: 'い-Adjektive stehen unverändert vor dem Nomen.' },
+      { q: '＿星です。 (ein schöner Stern)', a: 'きれいな', options: ['きれいな', 'きれい', 'きれいの'], hint: 'な-Adjektive brauchen な vor dem Nomen – daher der Name.' },
+      { q: 'Welcher Adjektiv-Typ braucht な vor dem Nomen?', a: 'な-Adjektiv', options: ['な-Adjektiv', 'い-Adjektiv', 'beide'], hint: 'きれいな星, aber 高い山 – daher die Namen der beiden Typen.' },
     ],
   },
   {
@@ -143,6 +157,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '猫です＿。 (Ist es eine Katze?)', a: 'か', options: ['か', 'は', 'を'], hint: 'か am Satzende macht die Frage.' },
       { q: '水を飲みます＿。 (Trinkst du Wasser?)', a: 'か', options: ['か', 'は', 'です'], hint: 'Auch nach ます: 〜ますか = Frage.' },
+          { q: '水です＿。 (Ist das Wasser?)', a: 'か', options: ['か', 'ね', 'よ'], hint: 'か macht aus jeder Aussage eine Frage.' },
+      { q: 'Was ändert sich, wenn aus einer Aussage eine Frage wird?', a: 'か kommt ans Ende', options: ['か kommt ans Ende', 'Die Wortstellung dreht sich', 'Das Verb wandert nach vorn'], hint: 'Die Wortstellung bleibt gleich – nur か kommt dazu.' },
     ],
   },
   {
@@ -159,6 +175,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '私＿犬。 (mein Hund)', a: 'の', options: ['の', 'は', 'が'], hint: 'A の B = „Bs A": 私 の 犬.' },
       { q: '猫＿目。 (das Auge der Katze)', a: 'の', options: ['の', 'に', 'で'], hint: 'の verbindet die zwei Nomen.' },
+          { q: '猫＿犬。 (der Hund der Katze)', a: 'の', options: ['の', 'は', 'を'], hint: 'A の B – das Erste bestimmt das Zweite.' },
+      { q: 'In A の B – was gehört wem?', a: 'B gehört zu A', options: ['B gehört zu A', 'A gehört zu B', 'beides gleich'], hint: 'Wie im Deutschen „As B": 私の犬 = mein Hund.' },
     ],
   },
   {
@@ -174,6 +192,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '„Die Katze frisst den Fisch." – Welcher Satz ist korrekt?', a: '猫が魚を食べます。', options: ['猫が魚を食べます。', '魚が猫を食べます。', '食べます猫が魚を。'], hint: 'Subjekt(が) – Objekt(を) – Verb am Ende.' },
       { q: 'Wo steht im japanischen Satz das Verb?', a: 'am Ende', options: ['am Ende', 'am Anfang', 'in der Mitte'], hint: 'SOV: Das Verb steht (fast) immer am Satzende.' },
+          { q: '„Ich trinke Tee." – Welcher Satz ist korrekt?', a: '私はお茶を飲みます。', options: ['私はお茶を飲みます。', '私は飲みますお茶を。', 'お茶は私を飲みます。'], hint: 'Subjekt – Objekt – Verb. Das Verb steht immer am Ende.' },
+      { q: 'Was steht in 猫が魚を見ます ganz am Ende?', a: 'das Verb', options: ['das Verb', 'das Objekt', 'das Subjekt'], hint: 'Japanisch ist SOV – deshalb hört man das Verb zuletzt.' },
     ],
   },
   {
@@ -192,6 +212,9 @@ export const GRAMMAR = [
     exercises: [
       { q: 'Wie lautet die て-Form von 飲みます (trinken)?', a: '飲んで', options: ['飲んで', '飲みて', '飲んだ'], hint: 'み-Verben (のむ) → んで, nicht みて.' },
       { q: 'Wie lautet die て-Form von 行きます (gehen)? (Achtung: Ausnahme!)', a: '行って', options: ['行って', '行いて', '行きて'], hint: '行く ist eine Ausnahme: 行って, nicht 行いて.' },
+          { q: 'Wie lautet die て-Form von 食べます (essen)?', a: '食べて', options: ['食べて', '食べって', '食べんで'], hint: 'Bei 食べます wird ます einfach durch て ersetzt.' },
+      { q: 'Wie lautet die て-Form von 見ます (sehen)?', a: '見て', options: ['見て', '見って', '見んで'], hint: 'Auch hier: ます → て.' },
+      { q: '„Bitte trinken Sie Wasser." 水を飲んで＿。', a: 'ください', options: ['ください', 'です', 'ましょう'], hint: 'て-Form + ください = höfliche Bitte.' },
     ],
   },
   {
@@ -209,6 +232,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '友達＿学生です。 (Auch mein Freund ist Student.)', a: 'も', options: ['も', 'は', 'を'], hint: 'も ersetzt は: „auch mein Freund".' },
       { q: 'お茶＿飲みます。 (Ich trinke auch Tee.)', a: 'も', options: ['も', 'が', 'に'], hint: 'も ersetzt hier を.' },
+          { q: '友達＿行きます。 (Auch mein Freund geht.)', a: 'も', options: ['も', 'は', 'が'], hint: 'も tritt an die Stelle von は/が.' },
+      { q: 'Was passiert mit は, wenn も dazukommt?', a: 'は fällt weg', options: ['は fällt weg', 'は bleibt stehen', 'は wird zu が'], hint: 'Nie 私はも – nur 私も.' },
     ],
   },
   {
@@ -227,6 +252,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '父＿母がいます。 (genau die beiden)', a: 'と', options: ['と', 'や', 'を'], hint: 'Vollständige Aufzählung → と.' },
       { q: 'りんご＿バナナを買います。 (…und noch mehr)', a: 'や', options: ['や', 'と', 'に'], hint: 'Offene Aufzählung mit Beispielen → や.' },
+          { q: '猫＿犬がいます。 (genau diese beiden)', a: 'と', options: ['と', 'や', 'も'], hint: 'と zählt vollständig auf.' },
+      { q: 'Welche Partikel heißt „…und so weiter"?', a: 'や', options: ['や', 'と', 'も'], hint: 'や nennt Beispiele, と nennt alle.' },
     ],
   },
   {
@@ -244,6 +271,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '公園＿行きます。 (Richtung, gesprochen „e")', a: 'へ', options: ['へ', 'を', 'が'], hint: 'Richtung → へ (に wäre auch möglich).' },
       { q: '„Lass uns nach Tokyo fahren!" 東京＿行きましょう。', a: 'へ', options: ['へ', 'を', 'の'], hint: 'Richtung → へ.' },
+          { q: 'Wie wird die Richtungs-Partikel へ gelesen?', a: 'e', options: ['e', 'he', 'we'], hint: 'Als Partikel „e" – wie は als „wa".' },
+      { q: '駅＿行きます。 (Richtung Bahnhof)', a: 'へ', options: ['へ', 'を', 'が'], hint: 'へ betont die Richtung, に das Ziel.' },
     ],
   },
   {
@@ -263,6 +292,7 @@ export const GRAMMAR = [
       { q: '今、何＿ですか。 (Wie viel Uhr ist es?)', a: '時', options: ['時', '円', '番'], hint: '何時(なんじ) = „wie viel Uhr".' },
       { q: '九時＿行きます。 (Ich gehe um 9.)', a: 'に', options: ['に', 'を', 'は'], hint: 'Zeitpunkt + に.' },
       { q: '9:30 = 九時＿', a: '半', options: ['半', '分', '中'], hint: '〜時半 = halb nach ~.' },
+          { q: '七時 – wie liest man das?', a: 'しちじ', options: ['しちじ', 'ななじ', 'しちとき'], hint: 'Bei Uhrzeiten heißt 7 immer しち, nicht なな.' },
     ],
   },
   {
@@ -281,6 +311,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '昨日は暑＿です。 (Gestern war es heiß.)', a: 'かった', options: ['かった', 'い', 'でした'], hint: 'い-Adjektiv: い weg → 〜かったです.' },
       { q: '花火はきれい＿。 (Das Feuerwerk war schön.)', a: 'でした', options: ['でした', 'かったです', 'です'], hint: 'きれい ist ein な-Adjektiv → でした.' },
+          { q: '山は高＿です。 (Der Berg war hoch.)', a: 'かった', options: ['かった', 'い', 'でした'], hint: 'い-Adjektiv in der Vergangenheit: 〜い → 〜かったです.' },
+      { q: 'お茶＿。 (Es war Tee.)', a: 'でした', options: ['でした', 'かったです', 'です'], hint: 'Nomen: です → でした. Nie 学生かったです.' },
     ],
   },
   {
@@ -298,6 +330,8 @@ export const GRAMMAR = [
     exercises: [
       { q: 'Ihr schaut beide in den blauen Himmel: いい天気です＿。', a: 'ね', options: ['ね', 'よ', 'か'], hint: 'Gemeinsamer Eindruck → ね.' },
       { q: 'Du empfiehlst deinem Freund den Tee: おいしいです＿。', a: 'よ', options: ['よ', 'ね', 'か'], hint: 'Neue Info für den anderen → よ.' },
+          { q: 'Dein Freund weiß es noch nicht, du sagst es ihm: 電車が来ます＿。', a: 'よ', options: ['よ', 'ね', 'か'], hint: 'よ bringt neue Information.' },
+      { q: 'Ihr esst beide dasselbe und es schmeckt: おいしいです＿。', a: 'ね', options: ['ね', 'よ', 'か'], hint: 'ね sucht Zustimmung zu etwas, das beide erleben.' },
     ],
   },
   {
@@ -315,6 +349,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '猫＿好きです。', a: 'が', options: ['が', 'を', 'は'], hint: 'Das Gemochte steht mit が.' },
       { q: '日本語＿分かります。', a: 'が', options: ['が', 'を', 'に'], hint: 'Wie bei 好き: mit が.' },
+          { q: '魚＿好きですか。', a: 'が', options: ['が', 'を', 'は'], hint: 'Bei 好きです steht das Gemochte mit が – nicht mit を.' },
+      { q: 'Welche Partikel steht vor 好きです?', a: 'が', options: ['が', 'を', 'に'], hint: 'Wörtlich: „X ist mir angenehm" – deshalb が.' },
     ],
   },
   {
@@ -332,6 +368,9 @@ export const GRAMMAR = [
     exercises: [
       { q: 'これは＿ですか。 (Was ist das?)', a: '何', options: ['何', 'だれ', 'いつ'], hint: '何 = was.' },
       { q: '＿行きますか。 (Wann gehst du?)', a: 'いつ', options: ['いつ', 'どこ', 'だれ'], hint: 'いつ = wann.' },
+          { q: '＿行きますか。 (Wohin gehst du?)', a: 'どこ', options: ['どこ', 'いつ', '何'], hint: 'どこ fragt nach dem Ort.' },
+      { q: 'これは＿の犬ですか。 (Wessen Hund ist das?)', a: 'だれ', options: ['だれ', '何', 'いつ'], hint: 'だれの = wessen.' },
+      { q: 'Was steht bei einer Frage mit Fragewort am Satzende?', a: 'か', options: ['か', 'ね', 'よ'], hint: 'Auch mit Fragewort braucht es das か.' },
     ],
   },
   {
@@ -349,6 +388,8 @@ export const GRAMMAR = [
     exercises: [
       { q: 'いっしょに行き＿か。 (Wollen wir nicht zusammen gehen?)', a: 'ません', options: ['ません', 'ます', 'ました'], hint: 'Einladung: 〜ませんか.' },
       { q: 'Die Zusage: はい、行き＿！', a: 'ましょう', options: ['ましょう', 'ません', 'ますか'], hint: 'Zusagen mit 〜ましょう.' },
+          { q: 'お茶を飲み＿か。 (Wollen wir nicht Tee trinken?)', a: 'ません', options: ['ません', 'ます', 'ましょう'], hint: 'Die verneinte Frage ist im Japanischen die höfliche Einladung.' },
+      { q: '„Ja, lass uns essen!" 食べ＿！', a: 'ましょう', options: ['ましょう', 'ません', 'ました'], hint: 'ましょう = „lass uns ~".' },
     ],
   },
   {
@@ -366,6 +407,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '花火を見＿います。 (Ich schaue gerade.)', a: 'て', options: ['て', 'に', 'を'], hint: 'て-Form + います.' },
       { q: '„Ich trinke gerade." 飲ん＿います。', a: 'で', options: ['で', 'て', 'に'], hint: '飲みます → 飲んで (んで-Muster).' },
+          { q: '食べ＿います。 (Ich esse gerade.)', a: 'て', options: ['て', 'で', 'に'], hint: '食べます → 食べて + います.' },
+      { q: '水を飲ん＿います。 (Ich trinke gerade Wasser.)', a: 'で', options: ['で', 'て', 'に'], hint: '飲みます wird zu 飲んで – daher で, nicht て.' },
     ],
   },
   {
@@ -383,6 +426,8 @@ export const GRAMMAR = [
     exercises: [
       { q: '電車はバス＿速いです。 (schneller als der Bus)', a: 'より', options: ['より', 'まで', 'から'], hint: 'より nach dem Vergleichspunkt.' },
       { q: '電車はタクシー＿速いです。 (schneller als das Taxi)', a: 'より', options: ['より', 'へ', 'で'], hint: 'B より = „als B".' },
+          { q: 'タクシーはバス＿高いです。 (teurer als der Bus)', a: 'より', options: ['より', 'から', 'まで'], hint: 'より steht hinter dem Verglichenen.' },
+      { q: 'In „AはBより〜" – wer ist „mehr"?', a: 'A', options: ['A', 'B', 'beide gleich'], hint: 'Das Thema (A) gewinnt den Vergleich.' },
     ],
   },
   {
