@@ -20,6 +20,13 @@ describe('learnedItems', () => {
     const items = learnedItems({ completedLessons: ['h1'] })
     expect(items.length).toBeGreaterThan(0)
   })
+
+  it('liefert jede Karte nur einmal', () => {
+    // Eine Wendung, die zufällig einem gelernten Zeichen entspricht, darf den
+    // Stapel nicht doppelt belegen.
+    const items = learnedItems({ completedLessons: ['h1'], extraPhrases: { 'あ': { de: 'Ah' } } })
+    expect(items.length).toBe(new Set(items).size)
+  })
 })
 
 describe('srsItemInfo mit Gesprächs-Wendungen', () => {

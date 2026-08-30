@@ -10,12 +10,14 @@ import { learnedChapterWords } from './chapters.js'
 // Eine Quelle für alle Stapel und Zähler: Üben, Reise-Banner und Fortschritts-
 // Statistik müssen dieselbe Menge sehen, sonst zeigt die App unterschiedliche
 // „fällig"-Zahlen an derselben Stelle.
+// Ohne Doppelte: Fällt eine übernommene Wendung zufällig mit einem gelernten
+// Wort zusammen, stünde dieselbe Karte sonst zweimal im Stapel.
 export function learnedItems(progress) {
   const p = progress || {}
-  return [
+  return [...new Set([
     ...completedKanaList(p.completedLessons || []),
     ...learnedWordKanji(p.completedWordBlocks || []),
     ...learnedChapterWords(p),
     ...Object.keys(p.extraPhrases || {}),
-  ]
+  ])]
 }

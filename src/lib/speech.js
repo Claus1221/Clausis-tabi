@@ -63,7 +63,6 @@ export function onSpeechState(cb) {
 }
 
 let speaking = false
-export function isSpeaking() { return speaking }
 
 // Laufende Nummer je speak()-Aufruf: Ereignisse einer abgelösten Ausgabe
 // (jedes speak() bricht die vorige ab) dürfen nicht mehr durchkommen.

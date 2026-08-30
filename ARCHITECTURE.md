@@ -74,7 +74,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 |---|---|---|
 | `xp.js` | `XP_PER_KANA/CARD/WORD/GRAMMAR/CHAPTER/DIALOG` | – |
 | `kanaStats.js` | `totalKanaCount`, `completedKanaList`, `completedKanaCount` | data/kana |
-| `speech.js` | `speak` (gibt ein Versprechen zurück: löst auf, wenn zu Ende gesprochen), `stopSpeaking`, `onSpeechState`, `isSpeaking`, `speakItem`, `speakTokens`, `itemReading`, `copyText` | data/words, data/chapters, **lib/apiKey**, **lib/ttsCloud** |
+| `speech.js` | `speak` (gibt ein Versprechen zurück: löst auf, wenn zu Ende gesprochen), `stopSpeaking`, `onSpeechState`, `speakItem`, `speakTokens`, `itemReading`, `copyText` | data/words, data/chapters, **lib/apiKey**, **lib/ttsCloud** |
 | `listen.js` | `SPEECH_INPUT_SUPPORTED`, `startListening`, `stopListening`, `normalizeJa`, `matchSpoken` | – (Web Speech API, ja-JP) |
 | `apiKey.js` | `getApiKey`/`setApiKey` (Anthropic), `getTtsKey`/`setTtsKey`/`hasTtsKey` (Google TTS) | – (beide Keys nur in localStorage) |
 | `claude.js` | `chatTurn`, `judgeAnswer`, `parseJson`, `pingApiKey`, `hasApiKey` | **lib/apiKey** |

@@ -5,7 +5,7 @@ import { Card, Btn, Emoji } from '../components/ui.jsx'
 import { Avatar } from '../components/avatar.jsx'
 import { TappableJp } from '../components/japanese.jsx'
 import { UebenHead } from '../components/ueben.jsx'
-import { speak, stopSpeaking } from '../lib/speech.js'
+import { speak, stopSpeaking, onSpeechState } from '../lib/speech.js'
 import { SPEECH_INPUT_SUPPORTED, startListening, stopListening } from '../lib/listen.js'
 import { chatTurn } from '../lib/claude.js'
 import {
@@ -38,8 +38,12 @@ import { XP_PER_TALK, XP_PER_TALK_TURN } from '../lib/xp.js'
 // „das dauert" umschaltet (nur Anzeige – der Aufruf läuft weiter).
 const SLOW_MS = 4500
 
-function moodFor(phase, micOn) {
-  if (phase === 'speaking') return 'speaking'
+// `audible` heißt: es läuft gerade wirklich Ton. Nur dann darf sich der Mund
+// bewegen – zwischen „der NPC ist dran" und dem ersten Ton liegen je nach
+// Stimme einige hundert Millisekunden, in denen stummes Mundklappen
+// unecht aussähe (besonders mit der Cloud-Stimme, die erst geholt wird).
+function moodFor(phase, micOn, audible) {
+  if (phase === 'speaking') return audible ? 'speaking' : 'idle'
   if (phase === 'thinking') return 'thinking'
   if (phase === 'listening') return micOn ? 'listening' : 'idle'
   if (phase === 'ending') return 'happy'
@@ -61,6 +65,7 @@ export default function TalkPlay({ talk, alreadyDone, onComplete, onClose }) {
   const [turns, setTurns] = useState([])        // [{ npc, de, user?, helped? }]
   const [slow, setSlow] = useState(false)
   const [micOn, setMicOn] = useState(false)     // hört die Erkennung gerade zu?
+  const [audible, setAudible] = useState(false) // läuft gerade wirklich Ton?
   const [micText, setMicText] = useState('')    // Live-Zwischenstand der Erkennung
   const [micHint, setMicHint] = useState(null)  // Hinweis, wenn nichts verstanden wurde
   const [typed, setTyped] = useState('')
@@ -92,9 +97,13 @@ export default function TalkPlay({ talk, alreadyDone, onComplete, onClose }) {
   // „Beenden" drückt, darf danach NICHT weiterspielen – sonst wirft seine
   // Antwort die lernende Person zurück in ein Gespräch, das sie beendet hat.
   const endedRef = useRef(false)
+  const replayingRef = useRef(false)   // „nochmal hören" läuft gerade
 
   const scaffold = settings.talkScaffold || 'hoerend'
   const speechOk = SPEECH_INPUT_SUPPORTED && !showKeyboard
+
+  // Mundbewegung an den echten Ton koppeln (lib/speech.js meldet start/end).
+  useEffect(() => onSpeechState(state => setAudible(state === 'start')), [])
 
   // Szene verlassen → Mikro und Sprachausgabe sicher schließen.
   useEffect(() => () => { aliveRef.current = false; stopListening(); stopSpeaking() }, [])
@@ -123,6 +132,20 @@ export default function TalkPlay({ talk, alreadyDone, onComplete, onClose }) {
   // kann ein fehlgeschlagener Zug einfach wiederholt werden, ohne dass das
   // Gespräch auseinanderfällt.
   const sendTurn = async (userText) => {
+    // Jeder unerwartete Fehler landet im Fehler-Zustand statt in einer stillen
+    // Endlos-Anzeige: `sendTurn` läuft ohne Aufrufer-`await`, eine geworfene
+    // Ausnahme bliebe sonst unbemerkt und das Gespräch für immer in „denkt nach".
+    try {
+      await runTurn(userText)
+    } catch {
+      if (!aliveRef.current || endedRef.current) return
+      sendingRef.current = false
+      setNetFails(n => n + 1)
+      setPhase('error')
+    }
+  }
+
+  const runTurn = async (userText) => {
     setMicHint(null); setHints(null); setRevealJp(false); setRevealDe(false)
     closeMic()
     setPhase('thinking')
@@ -142,10 +165,23 @@ export default function TalkPlay({ talk, alreadyDone, onComplete, onClose }) {
     }
     setNetFails(0)
 
-    // Kam kein sauberes JSON, ist der Rohtext immer noch eine brauchbare
-    // japanische Zeile – lieber die sprechen als das Gespräch abbrechen.
-    const npc = (res.json?.npc || '').trim() || res.raw.replace(/^[`\s{"]+|[`\s}"]+$/g, '').slice(0, 120)
-    const de = (res.json?.de || '').trim()
+    // Auf den TYP prüfen, nicht nur auf Wahrheit: liefert das Modell eine Zahl
+    // oder ein Objekt statt eines Strings, würde .trim() werfen – und der Zug
+    // bliebe für immer in „denkt nach" stecken.
+    const str = (v) => (typeof v === 'string' ? v.trim() : '')
+    // Hat das Modell das JSON ganz vergessen und stattdessen einfach gesprochen,
+    // ist der Rohtext eine brauchbare Zeile – die lieber nehmen als abbrechen.
+    // Kam dagegen JSON mit unbrauchbarem `npc`, wäre der Rohtext nur eine
+    // JSON-Zeile: dann lieber ehrlich als Fehler behandeln (wiederholbar), statt
+    // dem Lernenden geschweifte Klammern vorzulesen.
+    const npc = str(res.json?.npc) || (res.json ? '' : res.raw.replace(/^[`\s{"]+|[`\s}"]+$/g, '').slice(0, 120))
+    if (!npc) {
+      sendingRef.current = false
+      setNetFails(n => n + 1)
+      setPhase('error')
+      return
+    }
+    const de = str(res.json?.de)
     const done = res.json?.done === true
     historyRef.current = [...nextHistory, { role: 'assistant', content: res.raw }]
 
@@ -218,11 +254,16 @@ export default function TalkPlay({ talk, alreadyDone, onComplete, onClose }) {
 
   // Die aktuelle Zeile noch einmal hören. Das Mikro schließt solange (sonst
   // hörte die Erkennung den Gesprächspartner mit) und öffnet danach wieder.
+  // Die Sperre ist nötig, weil ein zweites speak() das erste abbricht UND
+  // dessen Versprechen sofort auflöst – ohne sie öffnete ein doppelter Tipp
+  // das Mikrofon, während die Wiederholung noch läuft.
   const replay = async () => {
-    if (!current) return
+    if (!current || replayingRef.current) return
+    replayingRef.current = true
     closeMic()
     setPhase('speaking')
     await speak(current.npc)
+    replayingRef.current = false
     if (aliveRef.current && !endedRef.current) openMic()
   }
 
@@ -413,7 +454,7 @@ export default function TalkPlay({ talk, alreadyDone, onComplete, onClose }) {
 
       {/* Bühne */}
       <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${C.washiDark}`, marginBottom: 12, background: '#fff' }}>
-        <Avatar role={talk.role} place={talk.place} mood={moodFor(phase, micOn)} width={520} />
+        <Avatar role={talk.role} place={talk.place} mood={moodFor(phase, micOn, audible)} width={520} />
       </div>
 
       {/* Was der Gesprächspartner gerade sagt */}
@@ -438,7 +479,8 @@ export default function TalkPlay({ talk, alreadyDone, onComplete, onClose }) {
             )}
             {showDe && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>„{current.de}"</div>}
             <div style={{ display: 'flex', gap: 14, marginTop: 8, flexWrap: 'wrap' }}>
-              <button onClick={replay} style={linkBtn}>🔊 nochmal hören</button>
+              <button onClick={replay} disabled={phase === 'speaking' || phase === 'thinking'}
+                style={{ ...linkBtn, opacity: phase === 'speaking' || phase === 'thinking' ? 0.45 : 1 }}>🔊 nochmal hören</button>
               {!showJp && <button onClick={() => setRevealJp(true)} style={linkBtn}>👀 Text zeigen</button>}
               {!showDe && scaffold !== 'immersiv' && current.de && (
                 <button onClick={() => setRevealDe(true)} style={linkBtn}>🇩🇪 Übersetzung</button>
