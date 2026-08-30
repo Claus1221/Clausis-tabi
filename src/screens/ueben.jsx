@@ -13,7 +13,7 @@ import { SPEECH_INPUT_SUPPORTED } from '../lib/listen.js'
 import { hasApiKey } from '../lib/claude.js'
 import { srsItemInfo, SRS_RATINGS, shuffled, buildRounds, feedbackColor } from '../lib/srs.js'
 import { dialogGate } from '../lib/dialog.js'
-import { talkForScene, talkGate } from '../lib/talk.js'
+import { talkForScene, talkGate, grammarTalk } from '../lib/talk.js'
 import { MIX_LABEL, buildMixTasks } from '../lib/mix.js'
 import { learnedItems } from '../lib/learned.js'
 import { pickDrill } from '../lib/grammarSrs.js'
@@ -708,6 +708,56 @@ function DialogHub({ onClose }) {
   )
 }
 
+// Grammatik im Gespräch üben: Ein lockeres Small-Talk-Gespräch, das genau EINE
+// Struktur immer wieder provoziert. Regeln kann man lesen und ankreuzen – sie im
+// Sprechen zu treffen ist etwas anderes, und genau das fehlte zwischen
+// Grammatik-Lektion und freiem Gespräch.
+function GrammarTalkHub({ onClose }) {
+  const { progress, awardXp } = useContext(ProgressCtx)
+  const [active, setActive] = useState(null)
+  const aiReady = hasApiKey()
+  const learned = GRAMMAR.filter(g => (progress.completedGrammar || []).includes(g.id))
+
+  if (active) {
+    return <TalkPlay talk={active} alreadyDone={false}
+      onComplete={() => awardXp(XP_PER_TALK)}
+      onClose={() => setActive(null)} />
+  }
+
+  return (
+    <div style={{ padding: '16px 16px 24px' }}>
+      <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 10 }}>← Üben</button>
+      <h2 style={{ fontSize: 20, fontFamily: JP, color: C.indigo, margin: '0 0 4px' }}>文法を話す · Grammatik sprechen</h2>
+      <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 16, lineHeight: 1.6 }}>
+        Ein lockeres Gespräch, das dich immer wieder in dieselbe Struktur zwingt. Kein Reiseziel,
+        keine Wendung – nur diese eine Regel, bis sie im Mund sitzt.
+      </p>
+      {!aiReady && (
+        <div style={{ background: `${C.shu}0E`, border: `1px solid ${C.shu}33`, borderRadius: 12, padding: '12px 14px', marginBottom: 14, fontSize: 13, color: C.sumi, lineHeight: 1.6 }}>
+          🔑 Dafür braucht es einen eigenen API-Key (Einstellungen → KI-Gesprächspartner).
+        </div>
+      )}
+      {!learned.length && (
+        <p style={{ fontSize: 14, color: C.textMuted }}>Lerne zuerst ein Grammatik-Thema auf der Reise.</p>
+      )}
+      {learned.map(topic => (
+        <button key={topic.id} onClick={() => aiReady && setActive(grammarTalk(topic))} disabled={!aiReady}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+            background: '#fff', border: `2px solid ${C.washiDark}`, borderRadius: 12,
+            padding: '12px 14px', marginBottom: 8, opacity: aiReady ? 1 : 0.5,
+            cursor: aiReady ? 'pointer' : 'default', boxShadow: '0 1px 3px rgba(33,31,27,0.06)' }}>
+          <span style={{ fontSize: 26, fontFamily: JP, color: C.shu, width: 34, textAlign: 'center' }}>{topic.glyph}</span>
+          <span style={{ flex: 1 }}>
+            <span style={{ display: 'block', fontWeight: 600, fontSize: 15, color: C.sumi }}>{topic.title}</span>
+            <span style={{ display: 'block', fontSize: 12, color: C.textMuted }}>{topic.summary}</span>
+          </span>
+          <span style={{ fontSize: 18, color: C.textMuted }}>{aiReady ? '›' : '🔑'}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export default function UebenScreen({ initialMode, onConsumeInitial }) {
   const { progress } = useContext(ProgressCtx)
   const [mode, setMode] = useState(initialMode || null)
@@ -721,10 +771,12 @@ export default function UebenScreen({ initialMode, onConsumeInitial }) {
   if (mode === 'tippen') return <TypeQuiz onClose={() => setMode(null)} />
   if (mode === 'satzbau') return <SentenceQuiz onClose={() => setMode(null)} />
   if (mode === 'konversation') return <DialogHub onClose={() => setMode(null)} />
+  if (mode === 'grammatiksprechen') return <GrammarTalkHub onClose={() => setMode(null)} />
 
   const learnedAll = learnedItems(progress)
   const dueCount = dueKana(progress, learnedAll).length
   const dialogsDone = (progress.completedDialogs || []).length
+  const grammarDone = (progress.completedGrammar || []).length
 
   // Fällig-Banner: direkter Sprung in den SRS-Quiz im "due"-Modus (Standard von
   // SRSQuiz). Zahl kommt aus demselben dueKana-Mechanismus wie DailyStrip auf der
@@ -761,6 +813,7 @@ export default function UebenScreen({ initialMode, onConsumeInitial }) {
     { id: 'tippen', icon: '⌨️', title: 'Tippen', sub: 'Kana per Tastatur', color: '#8B6914' },
     { id: 'satzbau', icon: '🧩', title: 'Satzbau', sub: 'Wörter sortieren', color: '#7B3FA0' },
     { id: 'konversation', icon: '💬', title: 'Rollenspiel', sub: `Gesprächspfad · ${dialogsDone}/${DIALOGS.filter(n => !n.section).length}`, color: '#1A7A6E' },
+    { id: 'grammatiksprechen', icon: '🗣', title: 'Grammatik sprechen', sub: `Eine Struktur im Gespräch · ${grammarDone} Themen`, color: '#7B3FA0' },
   ]
 
   return (

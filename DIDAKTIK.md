@@ -121,6 +121,15 @@ davon. Hilfe, die sich nach Scheitern anfühlt, wird vermieden, und dann
 schweigt man lieber. Die eingeblendeten Vorschläge der Stufe 4a zählen NICHT
 als Hilfe: sie standen ja ungefragt da.
 
+**Grammatik und Sprechen greifen ineinander:** Eine Regel zu lesen und
+anzukreuzen ist etwas anderes, als sie im Sprechen zu treffen. Darum gibt es zu
+jedem gelernten Thema ein Übungsgespräch, das genau diese Struktur immer wieder
+provoziert (Üben → „Grammatik sprechen") – ohne Reiseziel und ohne Wendung,
+damit die Struktur die Hauptrolle spielt. Und andersherum nennt die
+Nachbesprechung eines freien Gesprächs zu jeder Korrektur das Grammatik-Thema
+dahinter: nicht nur „was war falsch", sondern „welche Regel muss ich mir
+nochmal ansehen".
+
 **Verblassende Hilfen auch hier** (`settings.talkScaffold`): `gestuetzt`
 (Zeile sofort lesbar) → `hoerend` (Standard: erst zuhören, Text auf Wunsch) →
 `immersiv` (zusätzlich ohne Übersetzung). Nachhören geht immer.

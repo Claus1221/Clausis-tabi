@@ -79,7 +79,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `apiKey.js` | `getApiKey`/`setApiKey` (Anthropic), `getTtsKey`/`setTtsKey`/`hasTtsKey` (Google TTS) | – (beide Keys nur in localStorage) |
 | `claude.js` | `chatTurn`, `judgeAnswer`, `parseJson`, `pingApiKey`, `hasApiKey` | **lib/apiKey** |
 | `ttsCloud.js` | `cloudAudioUrl`, `pingTtsKey` | **lib/apiKey** (Google Cloud TTS zur Laufzeit) |
-| `talk.js` | `talkGate`, `talkForScene`, `learnedVocabList`, `buildTalkSystem`, `buildHintSystem`, `buildDebriefSystem`, `buildDebriefPrompt`, `transcriptText`, `OPENER_CUE`, `FALLBACK_CLOSING` | data/talks, data/dialogs, **lib/dialog** |
+| `talk.js` | `talkGate`, `talkForScene`, `grammarTalk`, `learnedVocabList`, `buildTalkSystem`, `buildHintSystem`, `buildDebriefSystem`, `buildDebriefPrompt`, `transcriptText`, `OPENER_CUE`, `FALLBACK_CLOSING` | data/talks, data/dialogs, data/grammar, **lib/dialog** |
 | `learned.js` | `learnedItems` (alle SRS-Karten zu einem Fortschritt) | data/words, **lib/kanaStats**, **lib/chapters**, **lib/grammarSrs** |
 | `grammarSrs.js` | `grammarKey`, `isGrammarKey`, `topicForKey`, `grammarKeys`, `pickDrill` | data/grammar (Grammatik als SRS-Karte) |
 | `srs.js` | `srsItemInfo`, `SRS_RATINGS`, `shuffled`, `feedbackColor`, `buildRounds`, `OPTIONS_PER_ROUND`, `SRS_STAGES`, `srsStageIndex` | theme, data/kana, data/words, data/chapters, useProgress |
@@ -165,6 +165,12 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
   bei (`guided`, steuerbar über `settings.talkGuide`). Die Vorschläge stecken in
   DERSELBEN Antwort statt in einem zweiten Aufruf – sonst würde jeder Zug doppelt
   kosten und länger dauern.
+- **Grammatik im Gespräch** (zwei Richtungen): `grammarTalk(topic)` baut aus einem
+  Grammatik-Thema ein Small-Talk-Gespräch, dessen System-Prompt die Struktur
+  immer wieder provoziert (Üben-Tab → „Grammatik sprechen"). Umgekehrt bekommt
+  die Nachbesprechung die gelernten Themen mit und darf jede Korrektur einem
+  davon zuordnen (`grammatik`-Feld) – die App zeigt dann die Regel dahinter.
+  Erfundene IDs werden verworfen, statt eine falsche Regel anzuzeigen.
 - **Gesprächs-Wendungen im SRS:** Die Nachbesprechung bietet 1–2 Wendungen zum
   Übernehmen an (`useProgress: addPhrase` → `progress.extraPhrases` + sofort
   eingeplante SRS-Karte). Alle Stapel/Zähler ziehen ihre Item-Liste aus

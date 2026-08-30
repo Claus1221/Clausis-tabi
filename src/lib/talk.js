@@ -106,6 +106,7 @@ export function buildTalkSystem(talk, vocabList, opts = {}) {
   return [
     promptHead(talk, vocabList),
     '',
+    ...(talk.grammarFocus ? focusBlock(talk.grammarFocus) : []),
     ...(withComplication ? [
       'DEINE GEHEIME WENDUNG: ' + talk.complication,
       'Spiele sie im Mittelteil des Gesprächs aus – nicht im ersten Zug. Verrate nie,',
@@ -162,7 +163,15 @@ export function buildHintSystem(talk, vocabList) {
 // Korrekturen kommen bewusst ERST hier: Im Gespräch bleibt der Partner höflich
 // und korrigiert nur beiläufig (Flüssigkeit vor Genauigkeit). Die Nachbesprechung
 // ist der Ort für explizite Korrekturen – und für Wendungen, die gefehlt haben.
-export function buildDebriefSystem() {
+//
+// `topics` sind die Grammatik-Themen, die die lernende Person schon kennt. Jede
+// Korrektur darf eines davon benennen; die App zeigt dann die Regel dahinter.
+// So beantwortet die Nachbesprechung nicht nur „was war falsch", sondern
+// „welche Regel muss ich mir nochmal ansehen".
+export function buildDebriefSystem(topics = []) {
+  const list = topics
+    .map(t => `${t.id} = ${t.title} (${t.summary})`)
+    .join('\n')
   return [
     'Du bist ein freundlicher Japanisch-Lehrer und besprichst mit einem erwachsenen',
     'deutschen Anfänger ein gerade geführtes Übungsgespräch nach.',
@@ -174,10 +183,17 @@ export function buildDebriefSystem() {
     '· Höchstens 2 Wendungen, die im Gespräch gefehlt haben und beim nächsten Mal',
     '  nützlich wären. Kurz, in Kana, alltagstauglich.',
     '· Ist nichts zu korrigieren, gib eine leere Liste zurück – erfinde nichts.',
+    ...(list ? [
+      '',
+      'GRAMMATIK-THEMEN, die die lernende Person kennt:',
+      list,
+      'Passt eine Korrektur zu genau einem dieser Themen, trag dessen ID in',
+      '"grammatik" ein (z. B. "g4"). Sonst lass das Feld leer. Rate nicht.',
+    ] : []),
     '',
     'ANTWORTFORMAT – ausschließlich dieses JSON, nichts davor und nichts danach:',
     '{"lobDe": "ein bis zwei Sätze, was gut lief",',
-    ' "korrekturen": [{"gesagt": "…", "besser": "…", "warumDe": "kurz, max. 12 Wörter"}],',
+    ' "korrekturen": [{"gesagt": "…", "besser": "…", "warumDe": "kurz, max. 12 Wörter", "grammatik": ""}],',
     ' "wendungen": [{"jp": "…", "de": "…"}]}',
   ].join('\n')
 }
@@ -203,4 +219,43 @@ export function buildDebriefPrompt(talk, turns) {
     'können also leicht verrauscht oder in Kanji statt Kana geschrieben sein):',
     transcriptText(turns),
   ].join('\n')
+}
+
+// ─── Grammatik im Gespräch ───────────────────────────────────────────────────
+// Zwei Verbindungen zwischen Grammatik und freiem Sprechen:
+//  1. `grammarTalk` baut aus einem Grammatik-Thema ein Übungsgespräch, das die
+//     Struktur immer wieder provoziert. Small Talk statt Reise-Situation: Der
+//     Rahmen ist bewusst schlicht, damit die Struktur die Hauptrolle spielt.
+//  2. `buildDebriefSystem` bekommt die gelernten Themen mit und darf jede
+//     Korrektur einem davon zuordnen – so weiß man nach dem Gespräch nicht nur,
+//     WAS falsch war, sondern welche Regel dahintersteckt.
+export function grammarTalk(topic) {
+  if (!topic) return null
+  return {
+    id: 'gt-' + topic.id,
+    grammarFocus: topic,
+    title: topic.title,
+    emoji: 'speech',
+    place: 'zimmer',
+    role: 'oma',
+    goalDe: `Bring „${topic.title}" im Gespräch unter – mindestens dreimal.`,
+    persona: 'Eine herzliche japanische Bekannte, die dich im Aufenthaltsraum in ein '
+      + 'lockeres Gespräch verwickelt. Neugierig, geduldig, stellt gern Rückfragen.',
+    complication: '',
+    goalCheck: 'Ziel erreicht, wenn die lernende Person die Struktur mindestens dreimal '
+      + 'sinnvoll verwendet hat.',
+    maxTurns: 10,
+  }
+}
+
+// Prompt-Zusatz für ein Grammatik-Übungsgespräch.
+function focusBlock(topic) {
+  return [
+    '',
+    'ÜBUNGSZIEL DIESES GESPRÄCHS: ' + topic.title + ' (' + topic.summary + ')',
+    'Stelle deine Fragen so, dass die lernende Person diese Struktur benutzen MUSS –',
+    'immer wieder, aus verschiedenen Richtungen. Benutze sie auch selbst, damit sie',
+    'sie hört. Sprich nie über die Regel; das Gespräch bleibt ein Gespräch.',
+    'Hat sie die Struktur dreimal sinnvoll verwendet, verabschiede dich und setze "done": true.',
+  ]
 }

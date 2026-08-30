@@ -1,6 +1,7 @@
 import { useContext, useEffect, useRef, useState } from 'react'
 import { C, JP } from '../theme.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
+import { GRAMMAR } from '../data/grammar.js'
 import { Card, Btn, Emoji } from '../components/ui.jsx'
 import { Avatar } from '../components/avatar.jsx'
 import { TappableJp } from '../components/japanese.jsx'
@@ -321,7 +322,7 @@ export default function TalkPlay({ talk, alreadyDone, onComplete, onClose }) {
     if (!spoken.some(t => t.user)) return   // nichts gesagt → keine Nachbesprechung
     setDebriefBusy(true)
     const res = await chatTurn({
-      system: buildDebriefSystem(),
+      system: buildDebriefSystem(GRAMMAR.filter(g => (progress.completedGrammar || []).includes(g.id))),
       history: [{ role: 'user', content: buildDebriefPrompt(talk, spoken) }],
       maxTokens: 600,
     })
@@ -417,16 +418,29 @@ export default function TalkPlay({ talk, alreadyDone, onComplete, onClose }) {
             {!!debrief.korrekturen?.length && (
               <Card style={{ marginTop: 12, padding: '14px 16px' }}>
                 <div style={{ fontSize: 11, color: C.textMuted, letterSpacing: 1, marginBottom: 10 }}>SO KLINGT ES NATÜRLICHER</div>
-                {debrief.korrekturen.slice(0, 3).map((k, i) => (
-                  <div key={i} style={{ marginBottom: i < debrief.korrekturen.length - 1 ? 12 : 0 }}>
+                {debrief.korrekturen.slice(0, 3).map((k, i) => {
+                  // Welche Regel steckt dahinter? Nur zeigen, wenn das Modell ein
+                  // Thema benennt, das es wirklich gibt – erfundene IDs kommen vor.
+                  const topic = GRAMMAR.find(g => g.id === k.grammatik)
+                  return (
+                  <div key={i} style={{ marginBottom: i < debrief.korrekturen.length - 1 ? 14 : 0 }}>
                     <div style={{ fontSize: 15, fontFamily: JP, color: C.textMuted, textDecoration: 'line-through' }}>{k.gesagt}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 17, fontFamily: JP, color: C.matcha, fontWeight: 600 }}>{k.besser}</span>
                       <button onClick={() => speak(k.besser)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, padding: 0 }} aria-label="Anhören">🔊</button>
                     </div>
                     {k.warumDe && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{k.warumDe}</div>}
+                    {topic && (
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, background: `${C.indigo}0C`, border: `1px solid ${C.indigo}2A`, borderRadius: 8, padding: '7px 10px', marginTop: 6 }}>
+                        <span style={{ fontFamily: JP, fontSize: 16, color: C.shu }}>{topic.glyph}</span>
+                        <span style={{ flex: 1, fontSize: 12, color: C.sumi, lineHeight: 1.5 }}>
+                          <b>{topic.title}</b> · {topic.summary}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                ))}
+                  )
+                })}
               </Card>
             )}
             {!!debrief.wendungen?.length && (

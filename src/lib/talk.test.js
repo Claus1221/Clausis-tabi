@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { TALKS, TALK_BY_SCENE } from '../data/talks.js'
+import { GRAMMAR } from '../data/grammar.js'
 import { DIALOGS } from '../data/dialogs.js'
 import {
   talkGate, talkForScene, learnedVocabList,
-  buildTalkSystem, buildHintSystem, buildDebriefSystem, buildDebriefPrompt, transcriptText,
+  buildTalkSystem, buildHintSystem, buildDebriefSystem, buildDebriefPrompt, transcriptText, grammarTalk,
 } from './talk.js'
 
 const talk = TALK_BY_SCENE['d1']
@@ -175,5 +176,51 @@ describe('buildTalkSystem: sanfter erster Durchgang', () => {
     const a = buildTalkSystem(talk, vocab, { guided: true, withComplication: false })
     const b = buildTalkSystem(talk, vocab, { guided: true, withComplication: false })
     expect(a).toBe(b)
+  })
+})
+
+describe('Grammatik im Gespräch', () => {
+  const topic = GRAMMAR.find(g => g.id === 'g4')
+
+  it('baut aus einem Thema ein Übungsgespräch ohne Wendung', () => {
+    const t = grammarTalk(topic)
+    expect(t.grammarFocus.id).toBe('g4')
+    expect(t.complication).toBe('')
+    expect(t.maxTurns).toBeGreaterThan(0)
+    for (const f of ['goalDe', 'persona', 'place', 'role', 'goalCheck']) {
+      expect(typeof t[f], f).toBe('string')
+    }
+  })
+
+  it('verträgt ein fehlendes Thema', () => {
+    expect(grammarTalk(undefined)).toBeNull()
+  })
+
+  it('schreibt das Übungsziel in den System-Prompt', () => {
+    const sys = buildTalkSystem(grammarTalk(topic), ['こんにちは'], { withComplication: false })
+    expect(sys).toContain('ÜBUNGSZIEL')
+    expect(sys).toContain(topic.title)
+    // Über die Regel wird nicht geredet – es bleibt ein Gespräch.
+    expect(sys).toMatch(/Sprich nie über die Regel/)
+  })
+
+  it('lässt normale Gespräche unberührt', () => {
+    expect(buildTalkSystem(talk, ['こんにちは'])).not.toContain('ÜBUNGSZIEL')
+  })
+})
+
+describe('Nachbesprechung mit Grammatik-Bezug', () => {
+  it('bietet die gelernten Themen zur Zuordnung an', () => {
+    const sys = buildDebriefSystem(GRAMMAR.filter(g => ['g4', 'g5'].includes(g.id)))
+    expect(sys).toContain('g4 = ')
+    expect(sys).toContain('"grammatik"')
+    // Raten wäre schlimmer als nichts – die App zeigt sonst die falsche Regel.
+    expect(sys).toMatch(/Rate nicht/)
+  })
+
+  it('lässt den Block weg, wenn noch keine Grammatik gelernt ist', () => {
+    const sys = buildDebriefSystem([])
+    expect(sys).not.toContain('GRAMMATIK-THEMEN')
+    expect(sys).toContain('"korrekturen"')
   })
 })
