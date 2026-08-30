@@ -3,22 +3,25 @@ import { C, JP } from '../theme.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
 import { dueKana } from '../useProgress.js'
 import { KANA_DATA } from '../data/kana.js'
-import { learnedWordKanji } from '../data/words.js'
 import { KANJI_ORIGIN } from '../data/kanjiOrigin.js'
 import { GRAMMAR, GRAMMAR_GLYPH } from '../data/grammar.js'
 import { DIALOGS } from '../data/dialogs.js'
-import { XP_PER_CARD, XP_PER_DIALOG } from '../lib/xp.js'
+import { XP_PER_CARD, XP_PER_DIALOG, XP_PER_TALK } from '../lib/xp.js'
 import { completedKanaList } from '../lib/kanaStats.js'
 import { speak, speakItem } from '../lib/speech.js'
+import { SPEECH_INPUT_SUPPORTED } from '../lib/listen.js'
+import { hasApiKey } from '../lib/claude.js'
 import { srsItemInfo, SRS_RATINGS, shuffled, buildRounds, feedbackColor } from '../lib/srs.js'
 import { dialogGate } from '../lib/dialog.js'
-import { learnedChapterWords } from '../lib/chapters.js'
+import { talkForScene, talkGate } from '../lib/talk.js'
 import { MIX_LABEL, buildMixTasks } from '../lib/mix.js'
+import { learnedItems } from '../lib/learned.js'
 import { Emoji, Card, Btn } from '../components/ui.jsx'
 import { CardNote, KanjiOrigin, TappableJp } from '../components/japanese.jsx'
 import { UebenHead, UebenEmpty, UebenDone } from '../components/ueben.jsx'
 import { BuildStep } from '../components/BuildStep.jsx'
 import { DialogPlay } from './players.jsx'
+import TalkPlay from './talk.jsx'
 
 // Spaced-Repetition-Quiz. Modus 'due' = heute fällige Karten; 'free' = Fleiß-
 // Übung über ALLE gelernten Karten (begrenzte Session), auch wenn nichts fällig
@@ -26,11 +29,7 @@ import { DialogPlay } from './players.jsx'
 function SRSQuiz({ onClose, initialMode = 'due' }) {
   const { progress, awardXp, reviewCard, settings } = useContext(ProgressCtx)
 
-  const learned = [
-    ...completedKanaList(progress.completedLessons || []),
-    ...learnedWordKanji(progress.completedWordBlocks || []),
-    ...learnedChapterWords(progress),
-  ]
+  const learned = learnedItems(progress)
   // Welche Karten sind WIRKLICH heute fällig? Nur diese verschieben den Plan.
   const [dueSet, setDueSet] = useState(() => new Set(dueKana(progress, learned)))
 
@@ -100,7 +99,7 @@ function SRSQuiz({ onClose, initialMode = 'due' }) {
   }
 
   const item = queue[0]
-  const info = srsItemInfo(item)
+  const info = srsItemInfo(item, progress.extraPhrases)
   const isRepeat = repeats.has(item)
 
   const rate = (quality) => {
@@ -148,7 +147,7 @@ function SRSQuiz({ onClose, initialMode = 'due' }) {
         )}
         <button onClick={() => speakItem(item)} title="Anhören"
           style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}>🔊</button>
-        <div style={{ fontSize: item.length > 1 ? 52 : 80, fontFamily: JP, marginBottom: 12 }}>{item}</div>
+        <div style={{ fontSize: item.length > 6 ? 30 : item.length > 1 ? 52 : 80, fontFamily: JP, marginBottom: 12, lineHeight: 1.3 }}>{item}</div>
         {flipped ? (
           <>
             <div style={{ fontSize: 22, fontWeight: 700, color: C.indigo, marginBottom: 4 }}>{info.reading}</div>
@@ -374,7 +373,7 @@ function SentenceQuiz({ onClose }) {
 function MixQuiz({ onClose }) {
   const { progress, reviewCard, settings } = useContext(ProgressCtx)
   const kana = completedKanaList(progress.completedLessons || [])
-  const learnedAll = [...kana, ...learnedWordKanji(progress.completedWordBlocks || []), ...learnedChapterWords(progress)]
+  const learnedAll = learnedItems(progress)
   const sentencePool = GRAMMAR.filter(g => (progress.completedGrammar || []).includes(g.id)).flatMap(g => g.examples)
 
   const [tasks] = useState(() => buildMixTasks({ kana, learnedAll, sentencePool, settings }))
@@ -510,7 +509,7 @@ function MixStep({ task, cardReview, onNext }) {
 
   // ── Karteikarte (Selbstbewertung wie im SRS) ──
   if (task.type === 'karte') {
-    const info = srsItemInfo(task.item)
+    const info = srsItemInfo(task.item, progress.extraPhrases)
     const rate = (q) => { cardReview(task.item, q); if (q >= 3) awardXp(XP_PER_CARD); onNext(q >= 3) }
     return (
       <>
@@ -561,16 +560,31 @@ function MixStep({ task, cardReview, onNext }) {
 }
 
 function DialogHub({ onClose }) {
-  const { progress, completeDialog } = useContext(ProgressCtx)
+  const { progress, completeDialog, completeTalk } = useContext(ProgressCtx)
   const done = progress.completedDialogs || []
+  const talksDone = progress.completedTalks || []
   const [active, setActive] = useState(null)
+  const [activeTalk, setActiveTalk] = useState(null)
 
   const steps = DIALOGS.filter(n => !n.section)
+  // Freie Gespräche brauchen einen eigenen Anthropic-Key (der Gesprächspartner
+  // wird ja live erzeugt). Ohne Key wird die Stufe erklärt statt versteckt.
+  const aiReady = hasApiKey()
+
+  if (activeTalk) {
+    return <TalkPlay talk={activeTalk} alreadyDone={talksDone.includes(activeTalk.id)}
+      onComplete={() => completeTalk(activeTalk.id, XP_PER_TALK)}
+      onClose={() => setActiveTalk(null)} />
+  }
 
   if (active) {
     const node = DIALOGS.find(n => n.id === active)
+    // Ist das freie Gespräch zu dieser Szene spielbar, bietet der Abschluss es
+    // als nächste Stufe an – der beste Moment dafür ist direkt danach.
+    const follow = talkForScene(active)
     return <DialogPlay node={node} alreadyDone={done.includes(active)}
       onComplete={() => completeDialog(active, XP_PER_DIALOG)}
+      onFreeTalk={follow && aiReady ? () => { setActive(null); setActiveTalk(follow) } : undefined}
       onClose={() => setActive(null)} />
   }
 
@@ -598,24 +612,56 @@ function DialogHub({ onClose }) {
         const need = [...gate.missGrammar.map(g => GRAMMAR_GLYPH[g] || g), ...gate.missVocab]
         const lockHint = !gate.open ? `Erst in der Reise lernen: ${need.slice(0, 5).join(' · ')}`
           : !prevDone ? 'Vorige Szene zuerst abschließen' : null
+        // Oberste Stufe der Gesprächs-Treppe: dieselbe Situation, aber frei und
+        // mit einer unbekannten Wendung (siehe DIDAKTIK.md). Öffnet erst, wenn
+        // die geskriptete Szene sitzt.
+        const talk = talkForScene(n.id)
+        const talkOpen = talk && talkGate(talk, progress).open
+        const talkDone = talk && talksDone.includes(talk.id)
         return (
-          <button key={n.id} onClick={() => open && setActive(n.id)} disabled={!open}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
-              background: '#fff', border: `2px solid ${isDone ? `${C.matcha}55` : open ? C.washiDark : C.washiDark}`,
-              borderRadius: 12, padding: '12px 14px', marginBottom: 8, opacity: open ? 1 : 0.5,
-              cursor: open ? 'pointer' : 'default', boxShadow: '0 1px 3px rgba(33,31,27,0.06)' }}>
-            <div style={{ position: 'relative' }}>
-              <Emoji name={n.emoji} size={36} style={{ filter: open ? 'none' : 'grayscale(1)' }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: 15, color: C.sumi }}>{n.title}{n.review && <span style={{ fontWeight: 400, fontSize: 11, color: C.textMuted }}> · Mix</span>}</div>
-              <div style={{ fontSize: 12, color: C.textMuted }}>{n.goal}</div>
-              {!open && lockHint && (
-                <div style={{ fontSize: 11, color: C.shu, marginTop: 3, fontFamily: JP }}>🔒 {lockHint}</div>
-              )}
-            </div>
-            <div style={{ fontSize: 18 }}>{isDone ? '✓' : open ? '›' : '🔒'}</div>
-          </button>
+          <div key={n.id}>
+            <button onClick={() => open && setActive(n.id)} disabled={!open}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+                background: '#fff', border: `2px solid ${isDone ? `${C.matcha}55` : open ? C.washiDark : C.washiDark}`,
+                borderRadius: 12, padding: '12px 14px', marginBottom: talkOpen ? 0 : 8, opacity: open ? 1 : 0.5,
+                cursor: open ? 'pointer' : 'default', boxShadow: '0 1px 3px rgba(33,31,27,0.06)' }}>
+              <div style={{ position: 'relative' }}>
+                <Emoji name={n.emoji} size={36} style={{ filter: open ? 'none' : 'grayscale(1)' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: 15, color: C.sumi }}>{n.title}{n.review && <span style={{ fontWeight: 400, fontSize: 11, color: C.textMuted }}> · Mix</span>}</div>
+                <div style={{ fontSize: 12, color: C.textMuted }}>{n.goal}</div>
+                {!open && lockHint && (
+                  <div style={{ fontSize: 11, color: C.shu, marginTop: 3, fontFamily: JP }}>🔒 {lockHint}</div>
+                )}
+              </div>
+              <div style={{ fontSize: 18 }}>{isDone ? '✓' : open ? '›' : '🔒'}</div>
+            </button>
+            {talkOpen && (
+              <button onClick={() => aiReady && setActiveTalk(talk)} disabled={!aiReady}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left',
+                  background: aiReady ? `${C.indigo}0B` : '#fff',
+                  border: `2px dashed ${talkDone ? `${C.matcha}66` : aiReady ? `${C.indigo}55` : C.washiDark}`,
+                  borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '9px 14px 11px', marginBottom: 8,
+                  marginTop: -2, opacity: aiReady ? 1 : 0.6, cursor: aiReady ? 'pointer' : 'default' }}>
+                <span style={{ fontSize: 18 }}>🗣</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: aiReady ? C.indigo : C.textMuted }}>
+                    Frei sprechen · {talk.title}
+                  </div>
+                  <div style={{ fontSize: 11, color: C.textMuted }}>
+                    {aiReady
+                      ? 'Echtes Gespräch ohne Skript – es kommt anders als geübt.'
+                      : 'Braucht einen eigenen API-Key (Einstellungen → KI-Bewertung).'}
+                  </div>
+                  {aiReady && !SPEECH_INPUT_SUPPORTED && (
+                    <div style={{ fontSize: 11, color: C.textMuted }}>Ohne Spracheingabe: Antworten werden getippt.</div>
+                  )}
+                </div>
+                <span style={{ fontSize: 15, color: C.textMuted }}>{talkDone ? '✓' : aiReady ? '›' : '🔑'}</span>
+              </button>
+            )}
+          </div>
         )
       })}
     </div>
@@ -636,7 +682,7 @@ export default function UebenScreen({ initialMode, onConsumeInitial }) {
   if (mode === 'satzbau') return <SentenceQuiz onClose={() => setMode(null)} />
   if (mode === 'konversation') return <DialogHub onClose={() => setMode(null)} />
 
-  const learnedAll = [...completedKanaList(progress.completedLessons || []), ...learnedWordKanji(progress.completedWordBlocks || []), ...learnedChapterWords(progress)]
+  const learnedAll = learnedItems(progress)
   const dueCount = dueKana(progress, learnedAll).length
   const dialogsDone = (progress.completedDialogs || []).length
 

@@ -3,17 +3,17 @@ import { C, JP } from '../theme.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
 import { computeStats, dueKana, isDue } from '../useProgress.js'
 import { LESSONS } from '../data/kana.js'
-import { WORD_BLOCKS, learnedWordKanji } from '../data/words.js'
+import { WORD_BLOCKS } from '../data/words.js'
 import { KANJI_ORIGIN } from '../data/kanjiOrigin.js'
 import { GRAMMAR } from '../data/grammar.js'
 import { STORY_TOKENS, CHAPTER_BY_ID } from '../data/chapters.js'
 import { PATH } from '../data/path.js'
 import { XP_PER_KANA, XP_PER_CARD, XP_PER_WORD, XP_PER_GRAMMAR, XP_PER_CHAPTER, XP_PER_DIALOG } from '../lib/xp.js'
 import { DIALOGS } from '../data/dialogs.js'
-import { completedKanaList } from '../lib/kanaStats.js'
 import { speak, speakItem } from '../lib/speech.js'
 import { srsItemInfo, SRS_RATINGS, shuffled, feedbackColor } from '../lib/srs.js'
-import { chapterSrsKeys, newChapterWords, learnedChapterWords, chapterStarsShown, computeAllChapterStars, shouldTypeSentence, weakChapterList, BRAKE_LIMIT } from '../lib/chapters.js'
+import { chapterSrsKeys, newChapterWords, chapterStarsShown, computeAllChapterStars, shouldTypeSentence, weakChapterList, BRAKE_LIMIT } from '../lib/chapters.js'
+import { learnedItems } from '../lib/learned.js'
 import { renderFuri, furiPlain } from '../lib/furigana.jsx'
 import { sceneTorii, buildBackdrop, roadPath, STATE_PALETTE } from '../lib/scene.jsx'
 import { isNodeDone, pathNodeMeta } from '../lib/path.js'
@@ -26,7 +26,7 @@ import { LessonPlayer, BlockCourse, GrammarLesson, DialogPlay } from './players.
 function DailyStrip({ onReview }) {
   const { progress } = useContext(ProgressCtx)
   const { streak, xpToday: xp, goal } = computeStats(progress)
-  const learnedAll = [...completedKanaList(progress.completedLessons || []), ...learnedWordKanji(progress.completedWordBlocks || []), ...learnedChapterWords(progress)]
+  const learnedAll = learnedItems(progress)
   const due = dueKana(progress, learnedAll).length
   const pct = Math.min(xp / goal, 1)
 

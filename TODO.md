@@ -4,6 +4,22 @@ Backlog der noch zu programmierenden bzw. zu überarbeitenden Features.
 
 ## Erledigt (zuletzt)
 
+- [x] **Natürliche Gesprächsführung: freies KI-Gespräch mit Avatar** – Oberste
+      Stufe der neuen „Gesprächs-Treppe" (`DIDAKTIK.md`): Zu jeder geskripteten
+      Szene gibt es ein freies Gegenstück (`data/talks.js`), in dem eine KI den
+      Gesprächspartner spielt – begrenzt auf den gelernten Wortschatz und mit
+      einer geheimen Wendung, die das auswendig gelernte Skript unbrauchbar
+      macht. Mikrofon öffnet von selbst, gezeichneter Avatar mit Stimmungen
+      (spricht/hört zu/denkt/freut sich), Hilfe-Knopf, Zug-Deckel, danach eine
+      Nachbesprechung, deren Wendungen per Knopf zu SRS-Karten werden.
+      Geskriptete Szenen wurden mitgezogen: strukturiertes Feedback mit
+      „Natürlicher: …", verdeckte Optionen auf der freien Stufe, und beim
+      Wiederholen automatisch eine Hilfe-Stufe schwerer.
+      Voraussetzung: eigener Anthropic-Key (Einstellungen); optional ein
+      Google-TTS-Key, damit auch die frei erzeugten Sätze mit der Studio-Stimme
+      klingen. Ohne Keys verhält sich die App wie vorher.
+      Plan & Begründungen: `PLAN-FREIES-GESPRAECH.md`.
+
 - [x] **Handy sprach nur mit Geräte-Stimme statt Studio-MP3s** – Zwei Ursachen:
       (a) `audio/manifest.json` war im SW-Precache und damit an den (veralteten)
       Service-Worker-Stand des Geräts gepinnt; nach der Raten-Umstellung zeigte

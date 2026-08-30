@@ -44,7 +44,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `main.jsx` | Mount-Punkt: `<AuthGate><TabiApp/></AuthGate>`. |
 | `AuthGate.jsx` | Google-Login, erlaubte Konten, `useAuth()`-Context. |
 | `firebase.js` | Firebase-Init; exportiert `auth`, `db`, `ALLOWED_EMAILS`, `isConfigured`. `db` läuft mit persistentem Offline-Cache (IndexedDB, mehrere Tabs geteilt) – lesen/schreiben funktioniert auch offline, Sync folgt automatisch. |
-| `useProgress.js` | **Firestore-Hook + Fortschritts-Domäne**: `useProgress(uid)` (live-Daten + Schreib-Funktionen + `saveError`), `computeStats`, `dueKana`, `sm2`, `getSettings`, `localDate`, `addDays`, `SETTINGS_DEFAULTS`, `SRS_STAGE_BOUNDS`. Schreibvorgänge laufen über das interne `safeWrite` (try/catch → `saveError`), damit ein echter Schreibfehler (Firestore-Regel, Quota) sichtbar wird statt den Fortschritt still zu verlieren. Unit-Tests: `useProgress.test.js`. |
+| `useProgress.js` | **Firestore-Hook + Fortschritts-Domäne**: `useProgress(uid)` (live-Daten + Schreib-Funktionen + `saveError`), `computeStats`, `dueKana`, `sm2`, `getSettings`, `localDate`, `addDays`, `SETTINGS_DEFAULTS`, `SRS_STAGE_BOUNDS`. Fortschritts-Felder u. a. `completedTalks` (gemeisterte freie Gespräche) und `extraPhrases` (aus Gesprächen übernommene Wendungen; `addPhrase` legt sie an UND plant sie als SRS-Karte ein). Schreibvorgänge laufen über das interne `safeWrite` (try/catch → `saveError`), damit ein echter Schreibfehler (Firestore-Regel, Quota) sichtbar wird statt den Fortschritt still zu verlieren. Unit-Tests: `useProgress.test.js`. |
 | `kanaStrokes.js` | Generierte KanjiVG-Strichpfade: `HIRAGANA`, `KATAKANA`, `KANA_STROKES`, `STROKE_VIEWBOX`. (Generator: `scripts/gen-kana-strokes.mjs`.) |
 | `theme.js` | `C` (Farb-Token) · `JP` (japanische Font-Stack). |
 | `TabiApp.jsx` | Root-Orchestrator (≈120 Z.). Hält Tab-State, lädt Screens via `React.lazy`, stellt `ProgressCtx` bereit. |
@@ -65,6 +65,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `kanjiOrigin.js` | `KANJI_ORIGIN` (Herkunft je Kanji) |
 | `grammar.js` | `GRAMMAR`, `GRAMMAR_ORDER`, `GRAMMAR_SEQ`, `GRAMMAR_GLYPH` |
 | `dialogs.js` | `DIALOGS`, `DIALOG_LEX`, `LEX_MAXLEN` (Rollenspiel + antippbares Lexikon) |
+| `talks.js` | `TALKS`, `TALK_BY_ID`, `TALK_BY_SCENE` (freie KI-Gespräche, je eines pro Szene) |
 | `chapters.js` | `STORY_TOKENS`, `CHAPTERS`, `CHAPTER_BY_ID`, `CHAPTER_WORD` |
 | `path.js` | `PATH` (Reihenfolge der Reise-Stationen) |
 
@@ -73,10 +74,13 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 |---|---|---|
 | `xp.js` | `XP_PER_KANA/CARD/WORD/GRAMMAR/CHAPTER/DIALOG` | – |
 | `kanaStats.js` | `totalKanaCount`, `completedKanaList`, `completedKanaCount` | data/kana |
-| `speech.js` | `speak`, `speakItem`, `speakTokens`, `itemReading`, `copyText` | data/words, data/chapters |
+| `speech.js` | `speak` (gibt ein Versprechen zurück: löst auf, wenn zu Ende gesprochen), `stopSpeaking`, `onSpeechState`, `isSpeaking`, `speakItem`, `speakTokens`, `itemReading`, `copyText` | data/words, data/chapters, **lib/apiKey**, **lib/ttsCloud** |
 | `listen.js` | `SPEECH_INPUT_SUPPORTED`, `startListening`, `stopListening`, `normalizeJa`, `matchSpoken` | – (Web Speech API, ja-JP) |
-| `apiKey.js` | `getApiKey`, `setApiKey`, `hasApiKey` | – (Anthropic-Key nur in localStorage) |
-| `claude.js` | `judgeAnswer`, `pingApiKey`, `hasApiKey` (re-export) | **lib/apiKey** |
+| `apiKey.js` | `getApiKey`/`setApiKey` (Anthropic), `getTtsKey`/`setTtsKey`/`hasTtsKey` (Google TTS) | – (beide Keys nur in localStorage) |
+| `claude.js` | `chatTurn`, `judgeAnswer`, `parseJson`, `pingApiKey`, `hasApiKey` | **lib/apiKey** |
+| `ttsCloud.js` | `cloudAudioUrl`, `pingTtsKey` | **lib/apiKey** (Google Cloud TTS zur Laufzeit) |
+| `talk.js` | `talkGate`, `talkForScene`, `learnedVocabList`, `buildTalkSystem`, `buildHintSystem`, `buildDebriefSystem`, `buildDebriefPrompt`, `transcriptText`, `OPENER_CUE`, `FALLBACK_CLOSING` | data/talks, data/dialogs, **lib/dialog** |
+| `learned.js` | `learnedItems` (alle SRS-Karten zu einem Fortschritt) | data/words, **lib/kanaStats**, **lib/chapters** |
 | `srs.js` | `srsItemInfo`, `SRS_RATINGS`, `shuffled`, `feedbackColor`, `buildRounds`, `OPTIONS_PER_ROUND`, `SRS_STAGES`, `srsStageIndex` | theme, data/kana, data/words, data/chapters, useProgress |
 | `dialog.js` | `lexTokens`, `dialogGate`, `reiseVocab`, `curriculumVocab`, `tokenGrammarId`, `ROLE_GRAMMATICAL`, … | data/dialogs, data/words, data/chapters |
 | `chapters.js` | `chapterSrsKeys`, `chapterStarsLive`, `chapterStarsShown`, `computeAllChapterStars` | data/chapters, **lib/srs** |
@@ -87,12 +91,15 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `progress.js` | `periodBuckets` (XP-Aggregation für Diagramme) | – |
 
 > Erlaubte `lib`-interne Kanten (einzige Querverweise innerhalb der Schicht):
-> `chapters.js → srs.js`, `mix.js → srs.js`, `claude.js → apiKey.js`. Sonst keine.
+> `chapters.js → srs.js`, `mix.js → srs.js`, `claude.js → apiKey.js`,
+> `ttsCloud.js → apiKey.js`, `speech.js → {apiKey.js, ttsCloud.js}`,
+> `talk.js → dialog.js`, `learned.js → {kanaStats.js, chapters.js}`. Sonst keine.
 
 ### `components/` — geteilte UI
 | Datei | Exporte | Notiz |
 |---|---|---|
 | `ui.jsx` | `Card`, `Btn`, `Emoji`, `TabBar`, `Stars`, `LibSheet` | Generische Atome/Chrome; hängt nur an `theme`. |
+| `avatar.jsx` | `Avatar` | Gezeichneter Gesprächspartner + Bühne fürs freie Gespräch (SVG, Stil von `lib/scene.jsx`). Stimmungen: `idle`/`speaking`/`listening`/`thinking`/`happy`. Dauer-Bewegung als CSS-Klassen in `index.css` (`tabi-mood-*`), Zufälliges (Blinzeln, Mundtakt) in React. |
 | `kana.jsx` | `StrokeDisplay`, `DrawCanvas` | Strichanimation + Mal-Canvas. |
 | `japanese.jsx` | `CardNote`, `KanjiOrigin`, `WordDetail`, `TappableSentence`, `TappableJp`, `StoryLine` | Antippbare JP-Texte + Wort-Detail. |
 | `ueben.jsx` | `UebenHead`, `UebenEmpty`, `UebenDone` | Übungs-Rahmen (Kopf/Leer/Fertig). |
@@ -107,6 +114,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `fortschritt.jsx` | `FortschrittScreen` | – |
 | `settings.jsx` | `SettingsScreen` | `NumberSetting` |
 | `players.jsx` | *(keine)* — exportiert `LessonPlayer`, `BlockCourse`, `GrammarLesson`, `DialogPlay` | lokal: `QuizStep`, `BlockQuiz`, `GrammarExercise`. Lektions-Overlays der Pfad-Stationen (`reise.jsx`); `DialogPlay` nutzt zusätzlich der `DialogHub` in `ueben.jsx`. |
+| `talk.jsx` | `TalkPlay` | Freies KI-Gespräch (Zustandsmaschine + Avatar-Bühne + Nachbesprechung). Wird wie `players.jsx` vom `DialogHub` in `ueben.jsx` eingebunden — dieselbe dokumentierte Ausnahme (Overlay-Screen, kein Tab). |
 
 ---
 
@@ -128,6 +136,23 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
   eigenen Himmel/Rücken/Dekor zeichnet. Neue Welt in `PATH` → `BAND_THEMES` ergänzen.
 - **Rollenspiel-Freischaltung:** `lib/dialog.js` (`dialogGate`) leitet Vokabel-/
   Grammatik-Bedarf aus den Antwortsätzen ab und prüft gegen das, was die Reise lehrt.
+- **Freies Gespräch** (`screens/talk.jsx`, Didaktik: `DIDAKTIK.md` „Gesprächs-Treppe"):
+  Zu jeder Szene gibt es ein KI-gespieltes Gegenstück (`data/talks.js`). Es öffnet
+  erst, wenn die Szene gemeistert ist (`lib/talk.js: talkGate`) und ein eigener
+  Anthropic-Key hinterlegt ist. Ablauf als Zustandsmaschine
+  `intro → speaking → listening → thinking → … → ending → debrief`; das Mikrofon
+  öffnet von selbst, weil `speak()` erst auflöst, wenn der Satz zu Ende ist.
+  Der System-Prompt begrenzt den Gesprächspartner auf den gelernten Wortschatz
+  (`learnedVocabList`) und wird pro Gespräch **einmal** gebaut – sonst greift das
+  Prompt-Caching nicht. Harte Grenzen: `talk.maxTurns` (Zug-Deckel, danach höfliche
+  Verabschiedung) und `max_tokens` je Zug. Ohne Key/Netz bleibt alles beim Alten.
+  **Achtung Zustands-Falle:** Die async-Abläufe lesen den Verlauf über `turnsRef`,
+  nicht über den `turns`-State – dessen Wert ist in der Render-Schließung veraltet,
+  und die Nachbesprechung bekäme ein unvollständiges Protokoll.
+- **Gesprächs-Wendungen im SRS:** Die Nachbesprechung bietet 1–2 Wendungen zum
+  Übernehmen an (`useProgress: addPhrase` → `progress.extraPhrases` + sofort
+  eingeplante SRS-Karte). Alle Stapel/Zähler ziehen ihre Item-Liste aus
+  `lib/learned.js: learnedItems` – eine Quelle, damit „fällig" überall gleich zählt.
 - **Kapitel-Sterne:** `lib/chapters.js` berechnet Sterne aus dem SRS-Stand der
   Kapitel-Vokabeln; Höchststand wird via `bumpChapterStars` (useProgress) gehalten.
 
@@ -175,14 +200,42 @@ per Autokorrelations-Messung der ersten Mora; Details im Kopfkommentar des
 Skripts. Einzelfälle wie ひとつ entstimmlichen selbst bei 0.7 – das ist dann
 schlicht die richtige Aussprache.)
 
-### Spracheingabe & KI-Bewertung (Rollenspiel)
+### Drei Wege zur Stimme – und warum freie Sätze anders laufen
+`speak(text)` probiert der Reihe nach:
+1. **Studio-MP3** aus dem Manifest (feste Texte, s. o.),
+2. **Google Cloud TTS zur Laufzeit** (`lib/ttsCloud.js`) – nur wenn ein eigener
+   Google-Key hinterlegt ist; gleiche Stimme und Rate wie die MP3s, Ergebnis
+   landet im Cache `tabi-audio-dyn` (zweites Hören ist gratis und offline),
+3. **System-TTS** als Auffangnetz.
+
+**Freie Gespräche sind bewusst NICHT im Audio-Collector.** Ihre Sätze entstehen
+erst zur Laufzeit; ein einzelner fester Text darin (`FALLBACK_CLOSING` in
+`lib/talk.js`) bliebe sonst der einzige mit Studio-MP3 und würde mitten im
+Gespräch die Stimme wechseln. Innerhalb eines Gesprächs kommt darum **immer**
+dieselbe Quelle zum Zug (Cloud-Stimme mit Key, sonst System-TTS). Deshalb
+schlägt `npm run audio --check` hier auch nicht an – das ist Absicht, kein Loch.
+
+`speak()` gibt ein **Versprechen** zurück, das auflöst, wenn der Satz zu Ende
+gesprochen ist *oder* feststeht, dass er nicht gesprochen werden kann (keine
+Stimme, Autoplay blockiert, Datei kaputt). Darauf baut der Mikro-Autostart im
+freien Gespräch. Es darf nie eines hängen bleiben, sonst wartet das Gespräch
+ewig – jeder Fehlerpfad ruft `finish(seq)`. `onSpeechState` meldet zusätzlich
+'start'/'end' für die Mundbewegung des Avatars.
+
+### Spracheingabe & KI (Rollenspiel + freies Gespräch)
 - `lib/listen.js`: Web Speech API (`ja-JP`). `matchSpoken` normalisiert
   (Kanji→Kana-Map, Katakana→Hiragana) und vergleicht per Bigramm-Ähnlichkeit;
   Treffer nur bei klarem Abstand zur zweitbesten Option – sonst `null`.
-- `lib/claude.js` + `lib/apiKey.js`: optionale zweite Stufe (BYOK, Anthropic
-  `claude-haiku-4-5`, Key nur in `localStorage`, nie in Firestore). `judgeAnswer`
-  bewertet frei gesprochene Antworten sinngemäß; ohne Key/Netz → Fallback auf
-  `matchSpoken`-Verhalten. Verdrahtet in `DialogPlay` (`screens/players.jsx`).
+  Im freien Gespräch gibt es keine Optionen: dort zählt der erkannte Text roh.
+- `lib/claude.js` + `lib/apiKey.js`: BYOK, Anthropic `claude-haiku-4-5` (schnell –
+  im Gespräch zählt die Antwortzeit), Key nur in `localStorage`, nie in Firestore.
+  `chatTurn` führt Mehrzug-Gespräche (komplette Historie, System-Prompt mit
+  `cache_control` → ab dem zweiten Zug kostet er ein Zehntel). `judgeAnswer`
+  bewertet frei gesprochene Antworten in den Szenen sinngemäß und liefert dabei
+  eine natürlichere Formulierung (`better`) – der eigentliche Lernwert.
+  `parseJson` ist die Sollbruchstelle: Modell-JSON kommt oft in Code-Zäunen oder
+  mit Vorrede; was nicht sicher lesbar ist, ergibt `null` und der Aufrufer weicht
+  auf sein Standardverhalten aus. Ohne Key/Netz bleibt überall alles wie bisher.
 
 ---
 
@@ -197,6 +250,7 @@ Jeder Datentyp lebt in genau einer `data/`-Datei. Neue Inhalte = dort eintragen.
 - **Kapitel** (`data/chapters.js` → `CHAPTERS`): `{ id, title, steps:[…] }`. Step-`kind`: `story`, `intro` (neues Wort: `jp/reading/de`), `pic`/`pic_choice`/`audio`, `sign`, `trace`, `dialog`, `gap`, `tf`, `build`.
 - **Kanji-Herkunft** (`data/kanjiOrigin.js`): je neuem Kanji `{ type, radical?, parts?:[{c,de}], note }`.
 - **Dialog/Rollenspiel** (`data/dialogs.js` → `DIALOGS` + Lexikon `DIALOG_LEX`).
+- **Freies Gespräch** (`data/talks.js` → `TALKS`): `{ id, sceneId, title, emoji, goalDe, persona, place, role, complication, goalCheck, maxTurns }`. `place`/`role` müssen in `components/avatar.jsx` (`PLACES`/`ROLES`) existieren; `sceneId` muss eine Szene aus `DIALOGS` sein (per Test geprüft). `complication` ist die geheime Wendung – sie wird der lernenden Person nie vorab gezeigt. Kein Audio nötig (alles zur Laufzeit erzeugt, s. §4).
 - **Pfad-Station** (`data/path.js` → `PATH`): `{ world, sub }` (Überschrift) oder `{ type:'kana'|'word'|'grammar'|'chapter'|'goal', id }`.
 
 Beim Einführen neuer Wörter/Kanji ggf. `KANJI_ORIGIN` und – falls in Story-Sätzen
@@ -222,8 +276,12 @@ verwendet – `STORY_TOKENS`/`DIALOG_LEX` ergänzen, damit Wörter antippbar ble
   `dist/` nach GitHub Pages.
 - **Tests:** Vitest (`vitest.config.js`, eigene schlanke Konfiguration getrennt von
   `vite.config.js`). Reine Logik-Tests neben der getesteten Datei (`*.test.js`),
-  z. B. `useProgress.test.js` (SM-2-Algorithmus), `lib/srs.test.js`. Lokal mit
-  `npm test`; läuft außerdem blockierend in der Deploy-Pipeline.
+  z. B. `useProgress.test.js` (SM-2-Algorithmus), `lib/srs.test.js`,
+  `lib/talk.test.js` (Gesprächs-Gating + Prompt-Bau), `lib/claude.test.js`
+  (JSON-Parser), `lib/learned.test.js`. Lokal mit `npm test`; läuft außerdem
+  blockierend in der Deploy-Pipeline. Test-Umgebung ist `node` – Module, die beim
+  Import `window`/`navigator` anfassen (z. B. `lib/speech.js`), dürfen darum nicht
+  in Tests gezogen werden.
 
 ---
 

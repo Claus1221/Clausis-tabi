@@ -7,11 +7,13 @@ import { ALL_WORDS, learnedWordKanji } from '../data/words.js'
 import { GRAMMAR } from '../data/grammar.js'
 import { CHAPTERS, CHAPTER_WORD } from '../data/chapters.js'
 import { DIALOGS } from '../data/dialogs.js'
+import { TALKS } from '../data/talks.js'
 import { PATH } from '../data/path.js'
-import { totalKanaCount, completedKanaList, completedKanaCount } from '../lib/kanaStats.js'
+import { totalKanaCount, completedKanaCount } from '../lib/kanaStats.js'
 import { SRS_STAGES } from '../lib/srs.js'
 import { periodBuckets, weekSummary } from '../lib/progress.js'
-import { chapterSrsKeys, learnedChapterWords } from '../lib/chapters.js'
+import { chapterSrsKeys } from '../lib/chapters.js'
+import { learnedItems } from '../lib/learned.js'
 import { isNodeDone } from '../lib/path.js'
 import { Card } from '../components/ui.jsx'
 
@@ -50,7 +52,7 @@ export default function FortschrittScreen({ onReview }) {
   // Kapitel-Vokabeln – exakt dieselbe Menge wie die Wiederholungs-Stapel im
   // Üben-Tab. Nachträglich ergänzte, noch nie eingeführte Kapitel-Wörter bleiben
   // draußen (sie warten im Kapitel-Sheet auf ihre 🆕-Einführung).
-  const reviewPool = [...completedKanaList(completed), ...learnedWordKanji(progress.completedWordBlocks || []), ...learnedChapterWords(progress)]
+  const reviewPool = learnedItems(progress)
   const curriculumSet = new Set(reviewPool)
   const srsVals = Object.entries(progress.srs || {}).filter(([k]) => curriculumSet.has(k)).map(([, v]) => v)
   const stageCounts = SRS_STAGES.map(s => ({ ...s, n: srsVals.filter(s.test).length }))
@@ -73,6 +75,8 @@ export default function FortschrittScreen({ onReview }) {
   const kataNow = LESSONS.filter(l => l.script === 'Katakana' && completed.includes(l.id)).reduce((a, l) => a + l.kana.length, 0)
   const dialogsDone = (progress.completedDialogs || []).length
   const dialogsTotal = DIALOGS.filter(d => !d.section).length
+  const talksDone = (progress.completedTalks || []).length
+  const talksTotal = TALKS.length
   const fiveStar = Object.values(progress.chapterStars || {}).filter(v => v >= 5).length
   const goalPos = PATH.findIndex(n => n.type === 'goal')
   const preGoal = PATH.slice(0, goalPos).filter(n => n.type && n.type !== 'goal')
@@ -90,6 +94,8 @@ export default function FortschrittScreen({ onReview }) {
     { icon: '💮', label: 'Wortschatz-Profi', sub: '100 Wörter gelernt', now: Math.min(wordsKnown, 100), goal: 100 },
     { icon: '💬', label: 'Erstes Gespräch', sub: 'Erste Szene gemeistert', now: Math.min(dialogsDone, 1), goal: 1 },
     { icon: '🎭', label: 'Gesprächs-Profi', sub: 'Alle Gesprächs-Szenen gemeistert', now: dialogsDone, goal: dialogsTotal },
+    { icon: '🗣', label: 'Frei gesprochen', sub: 'Erstes freies Gespräch gemeistert', now: Math.min(talksDone, 1), goal: 1 },
+    { icon: '🏮', label: 'Gesprächspartner', sub: 'Alle freien Gespräche gemeistert', now: talksDone, goal: talksTotal },
     { icon: '📐', label: 'Grammatik-Kenner', sub: 'Alle Grammatik-Themen verstanden', now: grammarDone, goal: GRAMMAR.length },
     { icon: '🎓', label: 'Fest im Kopf', sub: 'Erste Vokabel „Gemeistert"', now: Math.min(stageCounts[4].n, 1), goal: 1 },
     { icon: '⭐', label: 'Sternenhimmel', sub: 'Drei Kapitel mit 5 Sternen', now: Math.min(fiveStar, 3), goal: 3 },

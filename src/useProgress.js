@@ -9,6 +9,8 @@ const DEFAULT = {
   completedGrammar: [],    // IDs gelesener Grammatik-Themen, z.B. ['g1']
   completedChapters: [],   // IDs abgeschlossener Geschichts-Kapitel, z.B. ['c1']
   completedDialogs: [],    // IDs abgeschlossener Gesprächs-Szenen, z.B. ['d1']
+  completedTalks: [],      // IDs gemeisterter freier KI-Gespräche, z.B. ['t-d2']
+  extraPhrases: {},        // { 'また あとで。': { kana, de, addedAt } } → aus Gesprächen übernommene Wendungen (SRS)
   chapterStars: {},        // { 'c1': 3 }  → höchster je erreichter Sterne-Stand je Kapitel (1–5)
   xpByDate: {},            // { 'YYYY-MM-DD': XP }  → XP heute, Streak, Wochenchart
   history: {},             // { 'YYYY-MM-DD': { kana, words, grammar, chapters, scenes } } → Wochen-Rückblick
@@ -29,6 +31,10 @@ export const SETTINGS_DEFAULTS = {
   standardReview: 'mix',  // was „Wiederholen" startet: 'mix' | 'srs'
   audioOnlyDialogs: false, // Gesprächs-Szenen: NPC-Zeile erst als Text nach der Antwort (echtes Hörverstehen)
   speakDialogs: false,     // Gesprächs-Szenen: Antwort sprechen statt antippen (Spracherkennung, Chrome/Android)
+  // Freies KI-Gespräch: wie viel Text mitläuft. 'gestuetzt' = japanische Zeile
+  // sofort sichtbar · 'hoerend' = erst auf Wunsch (Standard, echtes Hören) ·
+  // 'immersiv' = zusätzlich ohne deutsche Übersetzung.
+  talkScaffold: 'hoerend',
 }
 
 // Einstellungen mit Defaults zusammenführen (eine Quelle für alle Screens).
@@ -246,6 +252,31 @@ export function useProgress(uid) {
     )
   }
 
+  // Ein freies KI-Gespräch als gemeistert markieren + XP gutschreiben. Zählt im
+  // Tages-Journal als Szene mit (es IST eine Gesprächs-Übung).
+  const completeTalk = async (talkId, xp = 0, stats = { scenes: 1 }) => {
+    if (!uid || !db) return
+    await safeWrite(
+      { completedTalks: arrayUnion(talkId), xpByDate: { [localDate()]: increment(xp) }, ...histPatch(stats) },
+      { merge: true },
+    )
+  }
+
+  // Eine im Gespräch aufgeschnappte Wendung als eigene SRS-Karte übernehmen.
+  // Karten-Schlüssel = der japanische Text (wie bei Wörtern/Kana). Die Karte
+  // wird sofort eingeplant, damit sie im normalen Wiederholungs-Rhythmus
+  // auftaucht statt in einem Sonderweg. Idempotent: bereits vorhandene
+  // Wendungen werden nicht erneut eingeplant (der Lernstand bliebe sonst stehen).
+  const addPhrase = async (jp, kana, de) => {
+    if (!uid || !db || !jp) return
+    const known = (progress.extraPhrases || {})[jp]
+    const patch = { extraPhrases: { [jp]: { kana: kana || jp, de: de || '', addedAt: localDate() } } }
+    if (!known && !(progress.srs || {})[jp]) {
+      patch.srs = { [jp]: { ease: 2.5, interval: 0, reps: 0, due: addDays(1) } }
+    }
+    await safeWrite(patch, { merge: true })
+  }
+
   // Eine SRS-Karte bewerten → nächste Fälligkeit per SM-2 berechnen & speichern.
   const reviewCard = async (key, quality) => {
     if (!uid || !db) return
@@ -302,8 +333,8 @@ export function useProgress(uid) {
   // volles Überschreiben (löscht srs/xpByDate sicher), aber settings werden mitgenommen.
   const reset = async () => {
     if (!uid || !db) return
-    await safeWrite({ completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], chapterStars: {}, xpByDate: {}, history: {}, srs: {}, settings: progress.settings || {} })
+    await safeWrite({ completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], completedTalks: [], extraPhrases: {}, chapterStars: {}, xpByDate: {}, history: {}, srs: {}, settings: progress.settings || {} })
   }
 
-  return { progress, loading, saveError, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset }
+  return { progress, loading, saveError, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, completeTalk, addPhrase, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset }
 }

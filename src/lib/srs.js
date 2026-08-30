@@ -4,12 +4,16 @@ import { WORD_BY_KANJI } from '../data/words.js'
 import { CHAPTER_WORD } from '../data/chapters.js'
 import { SRS_STAGE_BOUNDS } from '../useProgress.js'
 
-// Anzeige-Infos für eine SRS-Karte (Kana oder Wort-Kanji).
-export function srsItemInfo(key) {
+// Anzeige-Infos für eine SRS-Karte (Kana, Wort-Kanji oder eine aus einem freien
+// Gespräch übernommene Wendung). `extra` ist progress.extraPhrases – ohne das
+// Argument verhält sich die Funktion exakt wie bisher.
+export function srsItemInfo(key, extra) {
   const w = WORD_BY_KANJI[key]
   if (w) return { reading: w.kana, sub: `${w.romaji} · ${w.de}`, isWord: true }
   const cw = CHAPTER_WORD[key]   // Kapitel-Vokabel (nicht im Wort-Lexikon)
   if (cw) return { reading: cw.reading, sub: cw.de, isWord: true }
+  const ph = extra?.[key]        // Wendung aus einem Gespräch
+  if (ph) return { reading: ph.kana || key, sub: ph.de, isWord: true, fromTalk: true }
   const d = KANA_DATA[key]
   return { reading: d?.romaji, sub: d?.tip, isWord: false }
 }

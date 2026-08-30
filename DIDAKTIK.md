@@ -42,8 +42,10 @@ danach Vokabeln/Grammatik/Kapitel/Dialoge eng verzahnt. Die alten Tabs
   Intervallgrenzen [1, 7, 30, 120] Tagen.
 - **Anti-Hochpump-Prinzip:** Nur *wirklich fällige* Karten verändern den Plan;
   freies Üben (Fleiß-Übung) gibt XP, verschiebt aber keine Intervalle.
-- SRS-Items: Kana (Zeichen), Wörter (Schlüssel = Kanji), Kapitel-Vokabeln.
-  Grammatik und Phrasen sind bewusst NICHT im SRS.
+- SRS-Items: Kana (Zeichen), Wörter (Schlüssel = Kanji), Kapitel-Vokabeln und
+  Wendungen, die aus einem freien Gespräch übernommen wurden (`extraPhrases`).
+  Grammatik und die festen Reise-Floskeln sind bewusst NICHT im SRS.
+  Eine Quelle für alle Stapel und Zähler: `lib/learned.js: learnedItems`.
 
 ### Abruf statt Wiedererkennen, L1 verblasst
 - Übungen fragen **ohne deutsche Krücke** ab: NPC spricht Japanisch,
@@ -55,6 +57,49 @@ danach Vokabeln/Grammatik/Kapitel/Dialoge eng verzahnt. Die alten Tabs
 - **Hören zuerst:** NPC-Zeilen und neue Wörter werden automatisch vorgelesen.
 - **Tipp-Modus:** Satzbau wechselt von Kacheln zu freier Tastatur-Eingabe,
   sobald die Vokabeln des Satzes „Gefestigt" sind (`shouldTypeSentence`).
+
+### Die Gesprächs-Treppe (vom Skript zum freien Sprechen)
+Jede Reise-Situation (Taxi, Check-in, Restaurant …) wird in vier Stufen gelernt.
+Die Treppe steht und fällt mit ihrer Reihenfolge: Erst braucht man das Skript
+der Situation, dann muss es einem weggenommen werden.
+
+| Stufe | Was passiert | Wo im Code |
+|---|---|---|
+| 1 Kennenlernen | geskriptete Szene, Antwort antippen, Hilfen sichtbar | `DialogPlay` (`scaffold: voll`) |
+| 2 Sprechen | dieselbe Szene, Antwort sprechen statt antippen | `settings.speakDialogs` |
+| 3 Ohne Vorlage | Optionen zunächst verdeckt; wer die Szene schon gemeistert hat, spielt sie automatisch eine Stufe schwerer | `hideOptions`, `HARDER_SCAFFOLD` |
+| 4 Frei | KI-Gesprächspartner, echtes Ziel **plus unbekannte Wendung** | `TalkPlay` (`screens/talk.jsx`) |
+
+**Warum Stufe 4 den Unterschied macht:** Wer eine Szene dreimal gespielt hat,
+erkennt „どちらまで？" am Klangbild statt am Inhalt. Darum hat jedes freie
+Gespräch eine `complication` (`data/talks.js`), die die lernende Person NICHT
+kennt — die Straße ist gesperrt, das Gericht ist aus, die Karte geht nicht.
+Das auswendig gelernte Skript wird damit wertlos; wer das Ziel erreicht, hat
+wirklich verstanden und reagiert.
+
+**Verständlicher Input auf Lernniveau (i+1):** Der KI-Partner darf nur mit dem
+sprechen, was schon gelernt wurde. Die Wortschatz-Grenze kommt aus demselben
+`reiseVocab`, das die Szenen-Freischaltung steuert (`lib/talk.js:
+learnedVocabList` → System-Prompt-Whitelist mit Bedeutungen). Genau das kann
+eine allgemeine Chat-App nicht — und darin liegt der didaktische Wert.
+
+**Flüssigkeit vor Genauigkeit — Korrektur erst danach:** Im Gespräch korrigiert
+der Partner nie ausdrücklich, sondern wiederholt das Gemeinte beiläufig richtig
+(Recast: „ああ、ホテルまで ですね。") und spricht weiter. Ein einzelnes Wort oder
+fehlende Partikeln versteht er wohlwollend; erst wenn wirklich nichts ankommt,
+fragt er natürlich nach — auch das ist Lernstoff (Reparatur-Strategien).
+Explizite Korrekturen kommen in der **Nachbesprechung**, zusammen mit 1–2
+Wendungen, die gefehlt haben. Die lassen sich per Knopf als SRS-Karte
+übernehmen (`addPhrase`) — so füttert jedes Gespräch das Wiederholungssystem.
+
+**Hilfe darf nichts kosten:** Der Knopf „Was sag ich?" nennt 1–2 mögliche
+Antworten. Wer Hilfe holt, wird nicht bestraft — nur die Nachbesprechung weiß
+davon. Hilfe, die sich nach Scheitern anfühlt, wird vermieden, und dann
+schweigt man lieber.
+
+**Verblassende Hilfen auch hier** (`settings.talkScaffold`): `gestuetzt`
+(Zeile sofort lesbar) → `hoerend` (Standard: erst zuhören, Text auf Wunsch) →
+`immersiv` (zusätzlich ohne Übersetzung). Nachhören geht immer.
 
 ### Story als Träger (Kapitel)
 28 Kapitel erzählen eine durchgehende Reise (Ankunft → Fuji → Tokyo →
@@ -74,8 +119,10 @@ SRS-Karten; die Kapitel-Sterne (1–5 ⭐) spiegeln deren SRS-Kenntnisstand.
 
 ### Motivation (bewusst schlank)
 XP je Aktion (Kana 10, Karte 5, Wort-Block 15, Grammatik 20, Dialog 25,
-Kapitel 30), 1000 XP/Level, einstellbares Tagesziel (Standard 200), Streak,
-16 Abzeichen mit messbarem Stand. Keine Wettbewerbs-Mechaniken.
+Kapitel 30, freies Gespräch 60 + 8 je eigenem Zug), 1000 XP/Level, einstellbares
+Tagesziel (Standard 200), Streak, 18 Abzeichen mit messbarem Stand. Keine
+Wettbewerbs-Mechaniken. Die eigenen Züge zählen auch bei abgebrochenem Gespräch —
+gesprochen ist gesprochen, sonst lohnt sich das Wagnis nicht.
 
 ## 3. Sprach-Didaktik der Audio-Ausgabe
 

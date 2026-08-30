@@ -568,7 +568,14 @@ export function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
 // ─── Gesprächs-Szene (Rollenspiel) ────────────────────────────────────────────
 // Kontext-Intro → Wechsel mit verblassenden Hilfen. Wird von der REISE (Szenen
 // sind Stationen des Pfads) und vom Üben-Tab (freies Wiederholen) geteilt.
-export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
+// Nächsthöhere Hilfe-Stufe für eine bereits gemeisterte Szene.
+const HARDER_SCAFFOLD = { voll: 'mittel', mittel: 'frei', frei: 'frei' }
+
+// `onFreeTalk` (optional): Gibt es zu dieser Szene ein freies Gespräch und ist
+// es spielbar, bietet der Abschluss-Bildschirm es als nächste Stufe an – genau
+// im richtigen Moment, solange die Situation noch frisch ist. Wo der Aufrufer
+// die Möglichkeit nicht kennt (Reise-Station), bleibt der Knopf einfach weg.
+export function DialogPlay({ node, alreadyDone, onComplete, onClose, onFreeTalk }) {
   const { awardXp, settings } = useContext(ProgressCtx)
   const [turns] = useState(() => {
     if (node.review) {
@@ -577,7 +584,13 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
     }
     return node.turns
   })
-  const scaffold = node.review ? 'mittel' : node.scaffold
+  // Verblassende Hilfen wachsen mit dem Können: Wer die Szene schon gemeistert
+  // hat, spielt sie beim nächsten Mal eine Stufe schwerer. Sonst übt der dritte
+  // Durchgang nur noch das Wiedererkennen der immer gleichen Anzeige statt der
+  // Sprache – und genau davor schützt die nächste Stufe (freies Gespräch) auch.
+  const scaffold = node.review ? 'mittel'
+    : alreadyDone ? (HARDER_SCAFFOLD[node.scaffold] || node.scaffold)
+    : node.scaffold
   const [phase, setPhase] = useState('intro')
   const [turn, setTurn] = useState(0)
   const [ans, setAns] = useState(null)
@@ -594,6 +607,10 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
   const [interim, setInterim] = useState('')// Live-Zwischenstand während des Sprechens
   const [heard, setHeard] = useState(null)  // letztes Ergebnis: { text, ok, free?, err? }
   const [judging, setJudging] = useState(false) // wartet auf KI-Bewertung einer freien Antwort
+  // Auf der Stufe „frei" mit Mikrofon sind die Antwortmöglichkeiten zunächst
+  // verdeckt: Erst selbst formulieren, dann (wer nicht weiterweiß) nachsehen.
+  // Das ist die Brücke zum freien Gespräch, wo es gar keine Vorgaben mehr gibt.
+  const [showOptions, setShowOptions] = useState(false)
   useEffect(() => () => stopListening(), []) // Szene verlassen → Mikro schließen
 
   useEffect(() => { if (phase === 'done' && !alreadyDone) onComplete() }, [phase])
@@ -624,7 +641,16 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
             {score} / {turns.length} passend{!alreadyDone && ` · +${XP_PER_DIALOG} XP`}
           </p>
         </Card>
-        <Btn onClick={onClose} style={{ width: '100%', marginTop: 16 }}>Zurück zum Pfad →</Btn>
+        {onFreeTalk && (
+          <>
+            <div style={{ background: `${C.indigo}0E`, border: `1px solid ${C.indigo}33`, borderRadius: 12, padding: '12px 14px', marginTop: 14, fontSize: 13, color: C.sumi, lineHeight: 1.6 }}>
+              🗣 <b>Nächste Stufe:</b> dieselbe Situation, aber frei gesprochen – ohne Vorgaben und mit
+              einer Wendung, die du noch nicht kennst.
+            </div>
+            <Btn onClick={onFreeTalk} variant="secondary" style={{ width: '100%', marginTop: 10 }}>Jetzt frei sprechen →</Btn>
+          </>
+        )}
+        <Btn onClick={onClose} variant={onFreeTalk ? 'ghost' : 'primary'} style={{ width: '100%', marginTop: onFreeTalk ? 8 : 16 }}>Zurück zum Pfad →</Btn>
       </div>
     )
   }
@@ -639,7 +665,7 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
   const next = () => {
     stopListening(); setHeard(null); setInterim('')
     if (turn === turns.length - 1) { setPhase('done'); return }
-    setAns(null); setPeeked(false); setTurn(x => x + 1)
+    setAns(null); setPeeked(false); setShowOptions(false); setTurn(x => x + 1)
   }
 
   // Zuhören starten; das Ergebnis wählt die passende Option wie ein Fingertipp.
@@ -657,15 +683,17 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
         // „nicht erkannt" – es wird nie geraten.
         if (hasApiKey() && m.heard) {
           setJudging(true)
-          const accepted = await judgeAnswer({ npcJp: t.npc, npcDe: t.de, sampleJp: t.answer, heard: m.heard })
+          const verdict = await judgeAnswer({ npcJp: t.npc, npcDe: t.de, sampleJp: t.answer, heard: m.heard })
           setJudging(false)
-          if (accepted) {
-            setHeard({ text: m.heard, ok: true, free: true })
+          if (verdict?.ok) {
+            // `better` ist der eigentliche Lernwert: nicht nur „durchgekommen",
+            // sondern wie man es wirklich sagt.
+            setHeard({ text: m.heard, ok: true, free: true, better: verdict.better, note: verdict.note })
             setAns(m.heard)
             awardXp(XP_PER_CARD); setScore(s => s + 1)
             return
           }
-          setHeard({ text: m.heard, ok: false, free: accepted === false })
+          setHeard({ text: m.heard, ok: false, free: verdict ? false : undefined, note: verdict?.note })
           return
         }
         setHeard({ text: m.heard, ok: false })
@@ -674,12 +702,15 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
       onEnd: () => { setMic(false); setInterim('') },
     })
   }
+  // Verdeckt bleiben die Optionen nur, solange man auf der freien Stufe spricht
+  // und noch nicht geantwortet oder bewusst nachgesehen hat.
+  const hideOptions = speakMode && scaffold === 'frei' && !revealed && !showOptions
   const micHint = heard && !heard.ok && (
     heard.err === 'not-allowed' ? 'Mikrofon-Zugriff verweigert – bitte in den Browser-Einstellungen für diese Seite erlauben.'
     : heard.err === 'network' ? 'Die Spracherkennung braucht eine Internetverbindung.'
     : heard.err === 'no-speech' ? 'Nichts gehört – sprich nach dem Antippen des Mikros einfach los.'
     : heard.err ? `Spracherkennung gerade nicht möglich (${heard.err}). Du kannst weiter antippen.`
-    : heard.free === false ? `Verstanden: „${heard.text}" – passt auch inhaltlich nicht ganz. Nochmal sprechen oder antippen.`
+    : heard.free === false ? `Verstanden: „${heard.text}" – ${heard.note || 'passt auch inhaltlich nicht ganz'}. Nochmal sprechen oder antippen.`
     : heard.text ? `Verstanden: „${heard.text}" – das passt zu keiner der Antworten. Nochmal sprechen oder antippen.`
     : 'Nichts verstanden – nochmal versuchen oder antippen.'
   )
@@ -737,7 +768,13 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
           )}
         </div>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+      {hideOptions && (
+        <button onClick={() => setShowOptions(true)} style={{
+          background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+          fontSize: 13, color: C.textMuted, fontFamily: 'inherit', marginBottom: 4,
+        }}>👀 Antwortmöglichkeiten zeigen</button>
+      )}
+      <div style={{ display: hideOptions ? 'none' : 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
         {options.map(o => {
           const correct = o === t.answer, chosen = o === ans
           const fb = feedbackColor(!revealed ? 'neutral' : correct ? 'correct' : chosen ? 'wrong' : 'neutral')
@@ -760,6 +797,15 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose }) {
             )}
             <span style={{ display: 'block', fontWeight: 400, fontSize: 13, color: C.textMuted, marginTop: 2 }}>NPC: „{t.de}"</span>
           </p>
+          {/* Der eigentliche Lernwert einer frei gesprochenen Antwort: nicht nur
+              „durchgekommen", sondern wie man es wirklich sagt. */}
+          {heard?.better && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: `${C.matcha}12`, border: `1px solid ${C.matcha}44`, borderRadius: 10, padding: '9px 12px', marginTop: 10 }}>
+              <span style={{ fontSize: 11, color: C.textMuted, letterSpacing: 0.5 }}>NATÜRLICHER</span>
+              <span style={{ flex: 1, fontSize: 17, fontFamily: JP, color: C.matcha, fontWeight: 600 }}>{heard.better}</span>
+              <button onClick={() => speak(heard.better)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15 }} aria-label="Anhören">🔊</button>
+            </div>
+          )}
           <div style={{ background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 10, padding: '10px 12px', marginTop: 10 }}>
             <div style={{ fontSize: 11, color: C.textMuted, letterSpacing: 1, marginBottom: 6 }}>RICHTIGE ANTWORT · WÖRTER ANTIPPEN</div>
             <TappableJp text={t.answer} size={18} />

@@ -2,8 +2,9 @@ import { useContext, useState } from 'react'
 import { C, JP } from '../theme.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
 import { SPEECH_INPUT_SUPPORTED } from '../lib/listen.js'
-import { getApiKey, setApiKey } from '../lib/apiKey.js'
+import { getApiKey, setApiKey, getTtsKey, setTtsKey } from '../lib/apiKey.js'
 import { pingApiKey } from '../lib/claude.js'
+import { pingTtsKey } from '../lib/ttsCloud.js'
 import { Card, Btn } from '../components/ui.jsx'
 
 // ─── Einstellungen ───────────────────────────────────────────────────────────
@@ -37,36 +38,34 @@ function NumberSetting({ label, hint, value, min, max, step, suffix, onChange })
 // Antworten in den Gesprächs-Szenen frei (statt nur feste Musterantworten).
 // Bleibt bewusst außerhalb von saveSettings/progress – rein gerätelokal,
 // siehe lib/apiKey.js. Ohne Key läuft alles wie bisher weiter.
-function ApiKeySetting() {
-  const [value, setValue] = useState(() => getApiKey())
-  const [status, setStatus] = useState(getApiKey() ? 'saved' : 'empty')
+// Ein gerätelokal gespeicherter API-Key (Eingabe, Testen, Entfernen). Wird für
+// zwei unabhängige Dienste genutzt (Anthropic, Google TTS) – daher als eine
+// Komponente mit hineingereichten Lese-/Schreib-/Prüf-Funktionen.
+function KeySetting({ intro, placeholder, read, write, ping, okHint }) {
+  const [value, setValue] = useState(() => read())
+  const [status, setStatus] = useState(read() ? 'saved' : 'empty')
 
-  const save = () => { setApiKey(value.trim()); setStatus(value.trim() ? 'saved' : 'empty') }
-  const clear = () => { setApiKey(''); setValue(''); setStatus('empty') }
+  const save = () => { write(value.trim()); setStatus(value.trim() ? 'saved' : 'empty') }
+  const clear = () => { write(''); setValue(''); setStatus('empty') }
   const test = async () => {
     if (!value.trim() || status === 'testing') return
     setStatus('testing')
-    setStatus((await pingApiKey(value.trim())) ? 'ok' : 'invalid')
+    setStatus((await ping(value.trim())) ? 'ok' : 'invalid')
   }
 
   return (
     <Card style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 10, lineHeight: 1.5 }}>
-        Optional: Mit einem eigenen Anthropic-API-Key kann die App gesprochene Antworten in den
-        Gesprächs-Szenen auch werten, wenn sie sinngemäß statt wortgleich zur Musterantwort passen.
-        Der Key bleibt ausschließlich auf diesem Gerät gespeichert und wird nirgends synchronisiert.
-        Ohne Key funktioniert alles wie bisher.
-      </div>
+      <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 10, lineHeight: 1.5 }}>{intro}</div>
       <input
         type="password" value={value} onChange={e => { setValue(e.target.value); setStatus('empty') }}
-        placeholder="sk-ant-…" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+        placeholder={placeholder} autoCapitalize="none" autoCorrect="off" spellCheck={false}
         style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', fontSize: 14, borderRadius: 8, border: `1.5px solid ${C.washiDark}`, marginBottom: 8 }} />
       <div style={{ display: 'flex', gap: 8 }}>
         <Btn onClick={save} style={{ flex: 1 }}>Speichern</Btn>
         <Btn onClick={test} variant="ghost" style={{ flex: 1 }}>{status === 'testing' ? 'Prüfe …' : 'Testen'}</Btn>
-        {getApiKey() && <Btn onClick={clear} variant="ghost" style={{ flex: 1 }}>Entfernen</Btn>}
+        {read() && <Btn onClick={clear} variant="ghost" style={{ flex: 1 }}>Entfernen</Btn>}
       </div>
-      {status === 'ok' && <div style={{ fontSize: 12, color: C.matcha, marginTop: 8 }}>✓ Key funktioniert.</div>}
+      {status === 'ok' && <div style={{ fontSize: 12, color: C.matcha, marginTop: 8 }}>✓ {okHint || 'Key funktioniert.'}</div>}
       {status === 'invalid' && <div style={{ fontSize: 12, color: C.shu, marginTop: 8 }}>✗ Key ungültig oder keine Verbindung.</div>}
       {status === 'saved' && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 8 }}>Gespeichert (nur auf diesem Gerät).</div>}
     </Card>
@@ -151,9 +150,51 @@ export default function SettingsScreen({ onClose }) {
         </div>
       </Card>
 
+      {/* Freies Gespräch */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, margin: '18px 0 8px' }}>FREIES GESPRÄCH</div>
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 10 }}>
+          Wie viel Text im freien KI-Gespräch mitläuft:
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[['gestuetzt', '📖 Gestützt'], ['hoerend', '🎧 Hörend'], ['immersiv', '🇯🇵 Immersiv']].map(([id, lbl]) => {
+            const on = (settings.talkScaffold || 'hoerend') === id
+            return (
+              <button key={id} onClick={() => set({ talkScaffold: id })}
+                style={{
+                  flex: 1, padding: '12px 6px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                  border: `2px solid ${on ? C.indigo : C.washiDark}`,
+                  background: on ? `${C.indigo}12` : '#fff', color: on ? C.indigo : C.sumi,
+                }}>{lbl}</button>
+            )
+          })}
+        </div>
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 10, lineHeight: 1.5 }}>
+          <b>Gestützt</b>: die japanische Zeile steht sofort da. <b>Hörend</b>: erst zuhören, Text auf Wunsch
+          einblenden. <b>Immersiv</b>: zusätzlich ohne deutsche Übersetzung. Nachhören und der Hilfe-Knopf
+          gehen in allen Stufen.
+        </div>
+      </Card>
+
       {/* KI-Bewertung freier Antworten */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, margin: '18px 0 8px' }}>KI-BEWERTUNG (EIGENER API-KEY)</div>
-      <ApiKeySetting />
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, margin: '18px 0 8px' }}>KI-GESPRÄCHSPARTNER (EIGENER API-KEY)</div>
+      <KeySetting
+        read={getApiKey} write={setApiKey} ping={pingApiKey} placeholder="sk-ant-…"
+        intro={'Mit einem eigenen Anthropic-API-Key schaltest du die freien Gespräche frei: Dein Gegenüber '
+          + 'wird dann live erzeugt, reagiert wirklich auf das, was du sagst, und bespricht das Gespräch mit dir nach. '
+          + 'Außerdem werden gesprochene Antworten in den Szenen sinngemäß gewertet, statt nur wortgleich. '
+          + 'Der Key bleibt ausschließlich auf diesem Gerät gespeichert und wird nirgends synchronisiert. '
+          + 'Ohne Key funktioniert alles wie bisher.'} />
+
+      {/* Studio-Stimme für frei erzeugte Sätze */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, margin: '18px 0 8px' }}>STUDIO-STIMME IM GESPRÄCH (OPTIONAL)</div>
+      <KeySetting
+        read={getTtsKey} write={setTtsKey} ping={pingTtsKey} placeholder="Google-Cloud-API-Key"
+        okHint="Stimme erreichbar."
+        intro={'Die Sätze im freien Gespräch entstehen erst beim Sprechen – für sie gibt es keine vorproduzierten '
+          + 'Aufnahmen, deshalb liest sie sonst die Geräte-Stimme vor. Mit einem eigenen Google-Cloud-Key '
+          + '(Text-to-Speech aktiviert) klingen auch sie nach derselben Studio-Stimme wie der Rest der App. '
+          + 'Der Gratis-Rahmen von Google reicht dafür bei täglichem Üben locker aus.'} />
 
       {/* Übungs-Parameter */}
       <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, margin: '18px 0 8px' }}>PARAMETER</div>
