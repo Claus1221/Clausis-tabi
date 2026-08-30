@@ -56,9 +56,19 @@ export default function TalkPlay({ talk, alreadyDone, onComplete, onClose }) {
   // Wortschatz-Grenze und Prompts einmal beim Betreten festzurren: Sie können
   // sich während eines Gesprächs nicht ändern, und ein stabiler System-Prompt
   // ist Voraussetzung fürs Prompt-Caching (siehe lib/claude.js).
+  // Der erste Durchgang einer Situation ist die Trockenübung: Vorschläge sind
+  // eingeblendet und es kommt nichts Unerwartetes. Ab dem zweiten Mal wird aus
+  // der Übung ein echtes Gespräch. (Siehe DIDAKTIK.md, Gesprächs-Treppe.)
+  const gentle = !alreadyDone
+  const guided = settings.talkGuide === 'immer' ? true
+    : settings.talkGuide === 'aus' ? false
+    : gentle
   const [prompts] = useState(() => {
     const vocab = learnedVocabList(progress)
-    return { system: buildTalkSystem(talk, vocab), hint: buildHintSystem(talk, vocab) }
+    return {
+      system: buildTalkSystem(talk, vocab, { guided, withComplication: !gentle }),
+      hint: buildHintSystem(talk, vocab),
+    }
   })
 
   const [phase, setPhase] = useState('intro')   // intro|speaking|listening|thinking|error|ending
@@ -183,10 +193,17 @@ export default function TalkPlay({ talk, alreadyDone, onComplete, onClose }) {
     }
     const de = str(res.json?.de)
     const done = res.json?.done === true
+    // Im geführten Gespräch liefert derselbe Zug schon die Vorschläge mit.
+    // Sie zählen NICHT als „mit Hilfe": sie standen ja ungefragt da – die
+    // Nachbesprechung soll nur wissen, wann jemand aktiv um Hilfe gebeten hat.
+    const offered = guided && Array.isArray(res.json?.hints)
+      ? res.json.hints.filter(h => typeof h?.jp === 'string' && h.jp.trim()).slice(0, 2)
+      : null
     historyRef.current = [...nextHistory, { role: 'assistant', content: res.raw }]
 
     const npcCount = turnsRef.current.length + 1
     updateTurns(t => [...t, { npc, de }])
+    if (offered?.length) setHints(offered)
     setPhase('speaking')
     await speak(npc)
     if (!aliveRef.current || endedRef.current) return
@@ -342,8 +359,20 @@ export default function TalkPlay({ talk, alreadyDone, onComplete, onClose }) {
         </Card>
         <div style={{ background: `${C.indigo}0E`, border: `1px solid ${C.indigo}33`, borderRadius: 12, padding: '12px 14px', marginTop: 12, fontSize: 13, color: C.sumi, lineHeight: 1.6 }}>
           🎙 Hier ist nichts vorgegeben: {speechOk ? 'Sprich frei – das Mikrofon öffnet von selbst, sobald dein Gegenüber ausgeredet hat.' : 'Tippe deine Antworten – Spracheingabe gibt es auf diesem Gerät nicht.'}
-          {' '}Es kann anders laufen als geübt. Weißt du nicht weiter, hilft der Knopf <b>„Was sag ich?"</b>.
+          {' '}Weißt du nicht weiter, hilft der Knopf <b>„Was sag ich?"</b>.
         </div>
+        {gentle ? (
+          <div style={{ background: `${C.matcha}12`, border: `1px solid ${C.matcha}44`, borderRadius: 12, padding: '12px 14px', marginTop: 10, fontSize: 13, color: C.sumi, lineHeight: 1.6 }}>
+            🌱 <b>Erster Durchgang – zum Warmwerden.</b> Das Gespräch läuft geradlinig
+            {guided ? ', und zu jedem Zug stehen Antwort-Vorschläge da.' : '.'} Ab dem zweiten Mal
+            wird es ernst: ohne Vorschläge und mit einer Wendung, die du nicht kennst.
+          </div>
+        ) : (
+          <div style={{ background: `${C.shu}0E`, border: `1px solid ${C.shu}33`, borderRadius: 12, padding: '12px 14px', marginTop: 10, fontSize: 13, color: C.sumi, lineHeight: 1.6 }}>
+            🔥 <b>Diesmal echt.</b> Es kommt etwas dazwischen, das du noch nicht kennst –
+            hör genau hin und reagier darauf.
+          </div>
+        )}
         <Btn onClick={() => beginTurn(OPENER_CUE)} style={{ width: '100%', marginTop: 16 }}>Gespräch beginnen →</Btn>
         {!SPEECH_INPUT_SUPPORTED && (
           <p style={{ fontSize: 12, color: C.textMuted, marginTop: 10, lineHeight: 1.5 }}>

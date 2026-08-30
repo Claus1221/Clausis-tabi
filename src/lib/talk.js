@@ -93,13 +93,28 @@ function promptHead(talk, vocabList) {
 }
 
 // ─── System-Prompt für einen Gesprächszug ────────────────────────────────────
-export function buildTalkSystem(talk, vocabList) {
+// Zwei Schalter machen den Einstieg flach (siehe DIDAKTIK.md, Gesprächs-Treppe):
+//  • `withComplication` – beim ERSTEN Durchgang einer Situation läuft das
+//    Gespräch geradlinig. Frei sprechen UND etwas Unerwartetes abfangen sind
+//    zwei Aufgaben auf einmal; die Wendung kommt ab dem zweiten Mal.
+//  • `guided` – der Partner legt jedem Zug ein bis zwei mögliche Antworten bei,
+//    die die App dauerhaft einblendet: frei sprechen mit Sicherheitsnetz. Sie
+//    stecken bewusst in DERSELBEN Antwort statt in einem zweiten Aufruf – das
+//    kostet nichts extra und verzögert das Gespräch nicht.
+export function buildTalkSystem(talk, vocabList, opts = {}) {
+  const { guided = false, withComplication = true } = opts
   return [
     promptHead(talk, vocabList),
     '',
-    `DEINE GEHEIME WENDUNG: ${talk.complication}`,
-    'Spiele sie im Mittelteil des Gesprächs aus – nicht im ersten Zug. Verrate nie,',
-    'dass es sich um eine vorbereitete Wendung handelt.',
+    ...(withComplication ? [
+      'DEINE GEHEIME WENDUNG: ' + talk.complication,
+      'Spiele sie im Mittelteil des Gesprächs aus – nicht im ersten Zug. Verrate nie,',
+      'dass es sich um eine vorbereitete Wendung handelt.',
+    ] : [
+      'DIESES MAL OHNE ÜBERRASCHUNG: Führe das Gespräch geradlinig zum Ziel. Keine',
+      'Komplikationen, keine Extra-Rückfragen. Die lernende Person spricht gerade zum',
+      'ersten Mal frei – sie soll die Situation einmal glatt durchlaufen.',
+    ]),
     '',
     'WENN DIE ANTWORT FEHLERHAFT IST:',
     '· Korrigiere NIEMALS ausdrücklich und wechsle nie ins Deutsche.',
@@ -111,12 +126,18 @@ export function buildTalkSystem(talk, vocabList) {
     '  „すみません、もう いちど おねがいします。"',
     '',
     'ABSCHLUSS:',
-    `· Ziel erreicht bedeutet: ${talk.goalCheck}`,
+    '· Ziel erreicht bedeutet: ' + talk.goalCheck,
     '· Ist es erreicht, verabschiede dich in derselben Antwort natürlich und setze "done": true.',
     '· Sonst "done": false. Halte das Gespräch am Laufen, ohne es künstlich zu verlängern.',
     '',
     'ANTWORTFORMAT – ausschließlich dieses JSON, nichts davor und nichts danach:',
-    '{"npc": "deine japanische Zeile", "de": "deutsche Übersetzung", "done": false}',
+    guided
+      ? '{"npc": "deine japanische Zeile", "de": "deutsche Übersetzung", "done": false, "hints": [{"jp": "mögliche Antwort", "de": "deutsche Übersetzung"}]}'
+      : '{"npc": "deine japanische Zeile", "de": "deutsche Übersetzung", "done": false}',
+    ...(guided
+      ? ['Bei "hints": ein bis zwei kurze, natürliche Antworten, die DIE LERNENDE PERSON',
+         'jetzt sagen könnte – nicht du. Auch im Abschlusszug (dort z. B. eine Verabschiedung).']
+      : []),
   ].join('\n')
 }
 

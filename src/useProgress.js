@@ -35,6 +35,10 @@ export const SETTINGS_DEFAULTS = {
   // sofort sichtbar · 'hoerend' = erst auf Wunsch (Standard, echtes Hören) ·
   // 'immersiv' = zusätzlich ohne deutsche Übersetzung.
   talkScaffold: 'hoerend',
+  // Freies Gespräch: Antwort-Vorschläge einblenden. 'auto' = beim ersten
+  // Durchgang einer Situation ja, danach nicht mehr (Sicherheitsnetz, das sich
+  // von selbst löst). 'immer' / 'aus' überstimmen das.
+  talkGuide: 'auto',
 }
 
 // Einstellungen mit Defaults zusammenführen (eine Quelle für alle Screens).

@@ -93,6 +93,9 @@ export async function cloudAudioUrl(text) {
 }
 
 // Erreichbarkeits-/Gültigkeits-Check für den „Testen"-Knopf in den Einstellungen.
+// Gibt die Meldung von Google DURCH: „Key ungültig" ist selten die Wahrheit –
+// meist ist die Text-to-Speech-API im Projekt nicht aktiviert oder der Key auf
+// andere HTTP-Referrer beschränkt. Ohne diesen Text sucht man im Dunkeln.
 export async function pingTtsKey(key) {
   try {
     const res = await fetch(`${API_URL}?key=${encodeURIComponent(key)}`, {
@@ -104,8 +107,12 @@ export async function pingTtsKey(key) {
         audioConfig: { audioEncoding: 'MP3', speakingRate: RATE },
       }),
     })
-    return res.ok
+    if (res.ok) return { ok: true }
+    let detail = ''
+    try { detail = (await res.json())?.error?.message || '' } catch { /* keine JSON-Antwort */ }
+    return { ok: false, message: detail || `HTTP ${res.status}` }
   } catch {
-    return false
+    // Hier landet auch ein CORS-Abbruch – der Browser verrät den Grund nicht.
+    return { ok: false, message: 'Keine Antwort von Google (Internet, Browser-Blocker oder Referrer-Sperre des Keys).' }
   }
 }

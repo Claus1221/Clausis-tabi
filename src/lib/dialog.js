@@ -1,6 +1,7 @@
 import { DIALOGS, DIALOG_LEX, LEX_MAXLEN } from '../data/dialogs.js'
 import { WORD_BLOCKS } from '../data/words.js'
 import { CHAPTERS } from '../data/chapters.js'
+import { SRS_STAGE_BOUNDS } from '../useProgress.js'
 
 
 // Zerlegt eine Dialog-Zeile in Tokens. Leerzeichen & Satzzeichen werden als
@@ -104,4 +105,37 @@ export function dialogGate(node, progress, done) {
   const missGrammar = grammar.filter(g => !learnedG.has(g))
   const missVocab = vocab.filter(w => teachableV.has(w) && !learnedV.has(w))
   return { open: missGrammar.length === 0 && missVocab.length === 0, missGrammar, missVocab }
+}
+
+// ─── Aufwärmen vor einer Szene ───────────────────────────────────────────────
+// Die Sätze, die eine Szene von dir verlangt – ohne Doppelte, in Spielreihenfolge.
+// Bis hierher gab es sie nirgends als Ganzes zu üben: Die Vokabeln kamen einzeln
+// in einem Wortblock vor, der Satz selbst tauchte erst im Ernstfall auf.
+export function phrasesFromTurns(turns) {
+  const seen = new Set()
+  const out = []
+  for (const t of turns || []) {
+    if (!t.answer || seen.has(t.answer)) continue
+    seen.add(t.answer)
+    out.push({ jp: t.answer, de: t.answerDe || '' })
+  }
+  return out
+}
+
+// Dasselbe für eine ganze Szene. Wiederholungs-Knoten würfeln ihre Züge beim
+// Start aus mehreren Szenen zusammen – dort muss der Aufrufer die WIRKLICH
+// gespielten Züge an phrasesFromTurns geben, sonst wärmt man Sätze auf, die
+// gar nicht drankommen.
+export function dialogPhrases(node) {
+  return phrasesFromTurns(node.turns || (node.from || []).flatMap(id => DIALOGS.find(d => d.id === id)?.turns || []))
+}
+
+// Welche Kernwörter der Szene stehen im Wiederholungsplan noch ganz am Anfang?
+// Bewusst NUR Wörter, die überhaupt als Karte geführt werden – für alles andere
+// (feste Wendungen, Partikeln) gibt es keinen belastbaren Kenntnisstand, und ein
+// falscher Alarm wäre schlimmer als gar keiner.
+export function dialogShakyWords(node, progress) {
+  const srs = progress?.srs || {}
+  return dialogRequirements(node).vocab
+    .filter(w => srs[w] && (srs[w].interval || 0) < SRS_STAGE_BOUNDS[0])
 }

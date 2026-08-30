@@ -34,39 +34,61 @@ function NumberSetting({ label, hint, value, min, max, step, suffix, onChange })
   )
 }
 
-// Eigener Anthropic-API-Key (BYOK): schaltet freies Bewerten gesprochener
-// Antworten in den Gesprächs-Szenen frei (statt nur feste Musterantworten).
-// Bleibt bewusst außerhalb von saveSettings/progress – rein gerätelokal,
-// siehe lib/apiKey.js. Ohne Key läuft alles wie bisher weiter.
 // Ein gerätelokal gespeicherter API-Key (Eingabe, Testen, Entfernen). Wird für
 // zwei unabhängige Dienste genutzt (Anthropic, Google TTS) – daher als eine
 // Komponente mit hineingereichten Lese-/Schreib-/Prüf-Funktionen.
+//
+// Zwei Dinge, die hier absichtlich so sind:
+//  • Geprüft wird immer der GESPEICHERTE Key – genau der, den die App später
+//    benutzt. Das Eingabefeld ist ein Passwort-Feld und kann vom Passwort-
+//    Manager mit etwas anderem befüllt worden sein; ein Test darauf hätte
+//    „ungültig" gemeldet, obwohl der hinterlegte Key funktioniert.
+//  • Schlägt der Test fehl, wird die Meldung des Dienstes gezeigt statt eines
+//    pauschalen „ungültig". Bei Google steht dort z. B., dass die API im
+//    Projekt nicht aktiviert oder der Key auf andere Referrer beschränkt ist –
+//    ohne diesen Text sucht man endlos am falschen Ende.
 function KeySetting({ intro, placeholder, read, write, ping, okHint }) {
   const [value, setValue] = useState(() => read())
   const [status, setStatus] = useState(read() ? 'saved' : 'empty')
+  const [error, setError] = useState('')
 
-  const save = () => { write(value.trim()); setStatus(value.trim() ? 'saved' : 'empty') }
-  const clear = () => { write(''); setValue(''); setStatus('empty') }
+  const saved = read()
+  const unsaved = value.trim() !== (saved || '')
+
+  const save = () => { write(value.trim()); setError(''); setStatus(value.trim() ? 'saved' : 'empty') }
+  const clear = () => { write(''); setValue(''); setError(''); setStatus('empty') }
   const test = async () => {
-    if (!value.trim() || status === 'testing') return
-    setStatus('testing')
-    setStatus((await ping(value.trim())) ? 'ok' : 'invalid')
+    if (!saved || status === 'testing') return
+    setStatus('testing'); setError('')
+    const res = await ping(saved)
+    setStatus(res?.ok ? 'ok' : 'invalid')
+    setError(res?.ok ? '' : (res?.message || ''))
   }
 
   return (
     <Card style={{ marginBottom: 12 }}>
       <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 10, lineHeight: 1.5 }}>{intro}</div>
       <input
-        type="password" value={value} onChange={e => { setValue(e.target.value); setStatus('empty') }}
+        type="password" value={value} onChange={e => { setValue(e.target.value); setError(''); setStatus('empty') }}
         placeholder={placeholder} autoCapitalize="none" autoCorrect="off" spellCheck={false}
+        autoComplete="off" data-lpignore="true" data-1p-ignore=""
         style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', fontSize: 14, borderRadius: 8, border: `1.5px solid ${C.washiDark}`, marginBottom: 8 }} />
       <div style={{ display: 'flex', gap: 8 }}>
         <Btn onClick={save} style={{ flex: 1 }}>Speichern</Btn>
-        <Btn onClick={test} variant="ghost" style={{ flex: 1 }}>{status === 'testing' ? 'Prüfe …' : 'Testen'}</Btn>
-        {read() && <Btn onClick={clear} variant="ghost" style={{ flex: 1 }}>Entfernen</Btn>}
+        <Btn onClick={test} variant="ghost" style={{ flex: 1, opacity: saved ? 1 : 0.5 }}>
+          {status === 'testing' ? 'Prüfe …' : 'Testen'}
+        </Btn>
+        {saved && <Btn onClick={clear} variant="ghost" style={{ flex: 1 }}>Entfernen</Btn>}
       </div>
+      {unsaved && value.trim() && (
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 8 }}>Erst speichern – getestet wird immer der gespeicherte Key.</div>
+      )}
       {status === 'ok' && <div style={{ fontSize: 12, color: C.matcha, marginTop: 8 }}>✓ {okHint || 'Key funktioniert.'}</div>}
-      {status === 'invalid' && <div style={{ fontSize: 12, color: C.shu, marginTop: 8 }}>✗ Key ungültig oder keine Verbindung.</div>}
+      {status === 'invalid' && (
+        <div style={{ fontSize: 12, color: C.shu, marginTop: 8, lineHeight: 1.5 }}>
+          ✗ {error || 'Key ungültig oder keine Verbindung.'}
+        </div>
+      )}
       {status === 'saved' && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 8 }}>Gespeichert (nur auf diesem Gerät).</div>}
     </Card>
   )
@@ -173,6 +195,31 @@ export default function SettingsScreen({ onClose }) {
           <b>Gestützt</b>: die japanische Zeile steht sofort da. <b>Hörend</b>: erst zuhören, Text auf Wunsch
           einblenden. <b>Immersiv</b>: zusätzlich ohne deutsche Übersetzung. Nachhören und der Hilfe-Knopf
           gehen in allen Stufen.
+        </div>
+      </Card>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 10 }}>
+          Antwort-Vorschläge während des Gesprächs:
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[['auto', '🌱 Am Anfang'], ['immer', '🧷 Immer'], ['aus', '🚀 Nie']].map(([id, lbl]) => {
+            const on = (settings.talkGuide || 'auto') === id
+            return (
+              <button key={id} onClick={() => set({ talkGuide: id })}
+                style={{
+                  flex: 1, padding: '12px 6px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                  border: `2px solid ${on ? C.indigo : C.washiDark}`,
+                  background: on ? `${C.indigo}12` : '#fff', color: on ? C.indigo : C.sumi,
+                }}>{lbl}</button>
+            )
+          })}
+        </div>
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 10, lineHeight: 1.5 }}>
+          „Am Anfang" ist das Sicherheitsnetz, das sich von selbst löst: Beim <b>ersten</b> Durchgang
+          einer Situation stehen zu jedem Zug ein bis zwei mögliche Antworten da, und es kommt nichts
+          Unerwartetes. Ab dem zweiten Mal sprichst du ohne Netz – und die Situation hat eine Wendung,
+          die du nicht kennst.
         </div>
       </Card>
 

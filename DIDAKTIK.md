@@ -59,29 +59,48 @@ danach Vokabeln/Grammatik/Kapitel/Dialoge eng verzahnt. Die alten Tabs
   sobald die Vokabeln des Satzes „Gefestigt" sind (`shouldTypeSentence`).
 
 ### Die Gesprächs-Treppe (vom Skript zum freien Sprechen)
-Jede Reise-Situation (Taxi, Check-in, Restaurant …) wird in vier Stufen gelernt.
-Die Treppe steht und fällt mit ihrer Reihenfolge: Erst braucht man das Skript
-der Situation, dann muss es einem weggenommen werden.
+Jede Reise-Situation (Taxi, Check-in, Restaurant …) wird in Stufen gelernt. Die
+Treppe steht und fällt mit ihrer Reihenfolge: Erst braucht man das Skript der
+Situation, dann muss es einem Schritt für Schritt weggenommen werden.
 
 | Stufe | Was passiert | Wo im Code |
 |---|---|---|
+| 0 Aufwärmen | die 3–5 Sätze, die gleich gebraucht werden: hören, Wörter antippen, einmal wiedererkennen | `SceneWarmup` (`screens/players.jsx`) |
 | 1 Kennenlernen | geskriptete Szene, Antwort antippen, Hilfen sichtbar | `DialogPlay` (`scaffold: voll`) |
 | 2 Sprechen | dieselbe Szene, Antwort sprechen statt antippen | `settings.speakDialogs` |
 | 3 Ohne Vorlage | Optionen zunächst verdeckt; wer die Szene schon gemeistert hat, spielt sie automatisch eine Stufe schwerer | `hideOptions`, `HARDER_SCAFFOLD` |
-| 4 Frei | KI-Gesprächspartner, echtes Ziel **plus unbekannte Wendung** | `TalkPlay` (`screens/talk.jsx`) |
+| 4a Geführt frei | KI-Gesprächspartner, geradlinig, mit eingeblendeten Antwort-Vorschlägen | `TalkPlay`, `guided`/`withComplication` |
+| 4b Frei | KI-Gesprächspartner, ohne Netz, **plus unbekannte Wendung** | `TalkPlay` (ab dem 2. Durchgang) |
 
-**Warum Stufe 4 den Unterschied macht:** Wer eine Szene dreimal gespielt hat,
-erkennt „どちらまで？" am Klangbild statt am Inhalt. Darum hat jedes freie
-Gespräch eine `complication` (`data/talks.js`), die die lernende Person NICHT
-kennt — die Straße ist gesperrt, das Gericht ist aus, die Karte geht nicht.
-Das auswendig gelernte Skript wird damit wertlos; wer das Ziel erreicht, hat
-wirklich verstanden und reagiert.
+**Stufe 0 ist die Antwort auf „ins kalte Wasser geworfen".** Vorher begann eine
+Szene mit dem Ziel auf Deutsch – und dann sprach sofort der Gesprächspartner.
+Die Sätze, die man dabei braucht, hatte man als GANZEN Satz nie geübt: Die
+Vokabeln kamen einzeln in einem Wortblock vor, womöglich vor Tagen. Das
+Aufwärmen zeigt sie erst und fragt sie dann ab. Es ist zugleich die
+**Festigungs-Bremse**: In die Szene kommt nur, wer jeden Satz einmal
+wiedererkannt hat. Bremse heißt aber nicht Sperre – falsch Beantwortetes kommt
+einfach nochmal, beliebig oft. (Bewusst so statt einer SRS-Schwelle: die
+Lexikon-Schlüssel der Dialoge decken sich nur teilweise mit den SRS-Karten, eine
+Schwelle darauf hätte oft falschen Alarm geschlagen. Wo es einen echten
+Kartenstand gibt, wird er als Hinweis eingeblendet – `dialogShakyWords`.)
+
+**Stufe 4a ist die fehlende Sprosse.** Frei sprechen UND etwas Unerwartetes
+abfangen sind zwei Aufgaben auf einmal. Beim ERSTEN Durchgang einer Situation
+läuft das Gespräch darum geradlinig, und zu jedem Zug stehen ein bis zwei
+mögliche Antworten da (`settings.talkGuide`, Standard `auto`). Erst ab dem
+zweiten Mal fällt das Netz weg und die geheime Wendung kommt dazu. Ein
+Sicherheitsnetz, das sich von selbst löst.
+
+**Warum die Wendung überhaupt sein muss:** Wer eine Szene dreimal gespielt hat,
+erkennt „どちらまで？" am Klangbild statt am Inhalt. Die `complication`
+(`data/talks.js`) macht das auswendig gelernte Skript wertlos – die Straße ist
+gesperrt, das Gericht ist aus, die Karte geht nicht.
 
 **Verständlicher Input auf Lernniveau (i+1):** Der KI-Partner darf nur mit dem
 sprechen, was schon gelernt wurde. Die Wortschatz-Grenze kommt aus demselben
 `reiseVocab`, das die Szenen-Freischaltung steuert (`lib/talk.js:
 learnedVocabList` → System-Prompt-Whitelist mit Bedeutungen). Genau das kann
-eine allgemeine Chat-App nicht — und darin liegt der didaktische Wert.
+eine allgemeine Chat-App nicht – und darin liegt der didaktische Wert.
 
 **Flüssigkeit vor Genauigkeit — Korrektur erst danach:** Im Gespräch korrigiert
 der Partner nie ausdrücklich, sondern wiederholt das Gemeinte beiläufig richtig
@@ -95,11 +114,13 @@ Wendungen, die gefehlt haben. Die lassen sich per Knopf als SRS-Karte
 **Hilfe darf nichts kosten:** Der Knopf „Was sag ich?" nennt 1–2 mögliche
 Antworten. Wer Hilfe holt, wird nicht bestraft — nur die Nachbesprechung weiß
 davon. Hilfe, die sich nach Scheitern anfühlt, wird vermieden, und dann
-schweigt man lieber.
+schweigt man lieber. Die eingeblendeten Vorschläge der Stufe 4a zählen NICHT
+als Hilfe: sie standen ja ungefragt da.
 
 **Verblassende Hilfen auch hier** (`settings.talkScaffold`): `gestuetzt`
 (Zeile sofort lesbar) → `hoerend` (Standard: erst zuhören, Text auf Wunsch) →
 `immersiv` (zusätzlich ohne Übersetzung). Nachhören geht immer.
+
 
 ### Story als Träger (Kapitel)
 28 Kapitel erzählen eine durchgehende Reise (Ankunft → Fuji → Tokyo →

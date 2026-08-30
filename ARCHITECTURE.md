@@ -82,7 +82,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `talk.js` | `talkGate`, `talkForScene`, `learnedVocabList`, `buildTalkSystem`, `buildHintSystem`, `buildDebriefSystem`, `buildDebriefPrompt`, `transcriptText`, `OPENER_CUE`, `FALLBACK_CLOSING` | data/talks, data/dialogs, **lib/dialog** |
 | `learned.js` | `learnedItems` (alle SRS-Karten zu einem Fortschritt) | data/words, **lib/kanaStats**, **lib/chapters** |
 | `srs.js` | `srsItemInfo`, `SRS_RATINGS`, `shuffled`, `feedbackColor`, `buildRounds`, `OPTIONS_PER_ROUND`, `SRS_STAGES`, `srsStageIndex` | theme, data/kana, data/words, data/chapters, useProgress |
-| `dialog.js` | `lexTokens`, `dialogGate`, `reiseVocab`, `curriculumVocab`, `tokenGrammarId`, `ROLE_GRAMMATICAL`, … | data/dialogs, data/words, data/chapters |
+| `dialog.js` | `lexTokens`, `dialogGate`, `reiseVocab`, `curriculumVocab`, `tokenGrammarId`, `ROLE_GRAMMATICAL`, `phrasesFromTurns`, `dialogPhrases`, `dialogShakyWords`, … | data/dialogs, data/words, data/chapters, useProgress |
 | `chapters.js` | `chapterSrsKeys`, `chapterStarsLive`, `chapterStarsShown`, `computeAllChapterStars` | data/chapters, **lib/srs** |
 | `furigana.jsx` | `renderFuri`, `furiPlain`, `HAS_JP` | – (enthält JSX → `.jsx`) |
 | `scene.jsx` | `sceneTree`, `sceneTorii`, `verticalRidge`, `buildBackdrop(bands)`, `roadPath`, `STATE_PALETTE` | – (SVG-JSX → `.jsx`) |
@@ -149,6 +149,19 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
   **Achtung Zustands-Falle:** Die async-Abläufe lesen den Verlauf über `turnsRef`,
   nicht über den `turns`-State – dessen Wert ist in der Render-Schließung veraltet,
   und die Nachbesprechung bekäme ein unvollständiges Protokoll.
+- **Aufwärmen vor der Szene** (`SceneWarmup` in `screens/players.jsx`): Zwischen
+  Intro und Szene liegt eine Phase, die die Antwortsätze zeigt (hören, Wörter
+  antippen) und danach einmal abfragt. Sie ist zugleich die Festigungs-Bremse –
+  in die Szene kommt nur, wer jeden Satz erkannt hat; Falsches wandert ans Ende
+  der Warteschlange statt zu blockieren. Die Sätze kommen aus
+  `lib/dialog.js: phrasesFromTurns(turns)` – bewusst aus den WIRKLICH gespielten
+  Zügen, weil Wiederholungs-Knoten ihre Züge beim Start zusammenwürfeln.
+- **Sanfter erster Durchgang eines freien Gesprächs:** `buildTalkSystem` kennt
+  zwei Schalter. Beim ersten Mal (`!alreadyDone`) läuft das Gespräch geradlinig
+  (`withComplication: false`) und der Partner legt jedem Zug Antwort-Vorschläge
+  bei (`guided`, steuerbar über `settings.talkGuide`). Die Vorschläge stecken in
+  DERSELBEN Antwort statt in einem zweiten Aufruf – sonst würde jeder Zug doppelt
+  kosten und länger dauern.
 - **Gesprächs-Wendungen im SRS:** Die Nachbesprechung bietet 1–2 Wendungen zum
   Übernehmen an (`useProgress: addPhrase` → `progress.extraPhrases` + sofort
   eingeplante SRS-Karte). Alle Stapel/Zähler ziehen ihre Item-Liste aus
@@ -249,7 +262,7 @@ Jeder Datentyp lebt in genau einer `data/`-Datei. Neue Inhalte = dort eintragen.
 - **Grammatik** (`data/grammar.js` → `GRAMMAR`): `{ id, glyph, title, summary, body:[{h?,text}], examples:[{jp,kana,de,tokens}], exercises:[{q,a,options,hint}] }`. Reihenfolge der Freischaltung: `GRAMMAR_ORDER`.
 - **Kapitel** (`data/chapters.js` → `CHAPTERS`): `{ id, title, steps:[…] }`. Step-`kind`: `story`, `intro` (neues Wort: `jp/reading/de`), `pic`/`pic_choice`/`audio`, `sign`, `trace`, `dialog`, `gap`, `tf`, `build`.
 - **Kanji-Herkunft** (`data/kanjiOrigin.js`): je neuem Kanji `{ type, radical?, parts?:[{c,de}], note }`.
-- **Dialog/Rollenspiel** (`data/dialogs.js` → `DIALOGS` + Lexikon `DIALOG_LEX`).
+- **Dialog/Rollenspiel** (`data/dialogs.js` → `DIALOGS` + Lexikon `DIALOG_LEX`): Jeder Zug ist `{ npc, de, options, answer, answerDe }`. `answerDe` ist die deutsche Bedeutung der ANTWORT (nicht der NPC-Zeile) – ohne sie kann das Aufwärmen nicht abfragen; ein Test erzwingt, dass sie überall steht. Deutsche Felder werden nie gesprochen, brauchen also kein Audio.
 - **Freies Gespräch** (`data/talks.js` → `TALKS`): `{ id, sceneId, title, emoji, goalDe, persona, place, role, complication, goalCheck, maxTurns }`. `place`/`role` müssen in `components/avatar.jsx` (`PLACES`/`ROLES`) existieren; `sceneId` muss eine Szene aus `DIALOGS` sein (per Test geprüft). `complication` ist die geheime Wendung – sie wird der lernenden Person nie vorab gezeigt. Kein Audio nötig (alles zur Laufzeit erzeugt, s. §4).
 - **Pfad-Station** (`data/path.js` → `PATH`): `{ world, sub }` (Überschrift) oder `{ type:'kana'|'word'|'grammar'|'chapter'|'goal', id }`.
 

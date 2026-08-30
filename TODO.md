@@ -4,6 +4,25 @@ Backlog der noch zu programmierenden bzw. zu überarbeitenden Features.
 
 ## Erledigt (zuletzt)
 
+- [x] **Sanfter Einstieg in die Gespräche** – „Ins kalte Wasser geworfen" hatte
+      eine konkrete Ursache: Eine Szene begann mit dem Ziel auf Deutsch, dann
+      sprach sofort der NPC – die nötigen Sätze hatte man als GANZEN Satz nie
+      geübt. Neu ist Stufe 0 (`SceneWarmup`): die Sätze erst hören und antippen,
+      dann einmal abfragen; wer sie nicht erkennt, bekommt sie nochmal (das ist
+      zugleich die Festigungs-Bremse). Dafür haben alle 29 Antwortsätze jetzt
+      eine deutsche Übersetzung (`answerDe`). Dazu die fehlende Sprosse zum
+      freien Gespräch: Der ERSTE Durchgang einer Situation läuft geradlinig und
+      blendet zu jedem Zug Antwort-Vorschläge ein; ab dem zweiten Mal fällt das
+      Netz weg und die geheime Wendung kommt (`settings.talkGuide`).
+- [x] **„Testen" meldete ungültige Keys, obwohl sie funktionierten** – Zwei
+      Ursachen: (a) Getestet wurde der Inhalt des Eingabefelds, nicht der
+      gespeicherte Key – ein Passwort-Manager füllt `type="password"`-Felder
+      gern selbst. Jetzt wird immer der GESPEICHERTE Key geprüft (der, den die
+      App auch benutzt), und die Felder sind gegen Autofill gesperrt.
+      (b) Jeder Fehler wurde zu „Key ungültig oder keine Verbindung"
+      eingedampft. Jetzt steht die Meldung des Dienstes da – bei Google z. B.
+      „API not enabled" oder die Referrer-Sperre des Keys.
+
 - [x] **Natürliche Gesprächsführung: freies KI-Gespräch mit Avatar** – Oberste
       Stufe der neuen „Gesprächs-Treppe" (`DIDAKTIK.md`): Zu jeder geskripteten
       Szene gibt es ein freies Gegenstück (`data/talks.js`), in dem eine KI den

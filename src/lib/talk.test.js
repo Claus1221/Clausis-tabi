@@ -142,3 +142,38 @@ describe('Nachbesprechung', () => {
     expect(sys).toMatch(/Höchstens 3 Korrekturen/)
   })
 })
+
+describe('buildTalkSystem: sanfter erster Durchgang', () => {
+  const vocab = ['こんにちは', 'です']
+
+  it('verschweigt die Wendung beim ersten Durchgang', () => {
+    const sys = buildTalkSystem(talk, vocab, { withComplication: false })
+    expect(sys).not.toContain(talk.complication)
+    expect(sys).toContain('OHNE ÜBERRASCHUNG')
+  })
+
+  it('spielt die Wendung ab dem zweiten Durchgang aus', () => {
+    const sys = buildTalkSystem(talk, vocab, { withComplication: true })
+    expect(sys).toContain(talk.complication)
+    expect(sys).not.toContain('OHNE ÜBERRASCHUNG')
+  })
+
+  it('verlangt im geführten Modus Antwort-Vorschläge im selben Zug', () => {
+    // Wichtig: in DERSELBEN Antwort – ein zweiter Aufruf je Zug würde die
+    // Kosten verdoppeln und das Gespräch verzögern.
+    const sys = buildTalkSystem(talk, vocab, { guided: true })
+    expect(sys).toContain('"hints"')
+    expect(sys).toContain('LERNENDE PERSON')
+  })
+
+  it('lässt die Vorschläge ohne geführten Modus weg', () => {
+    expect(buildTalkSystem(talk, vocab, { guided: false })).not.toContain('"hints"')
+    expect(buildTalkSystem(talk, vocab)).not.toContain('"hints"')
+  })
+
+  it('bleibt bei gleichen Schaltern Byte-für-Byte gleich (Prompt-Caching)', () => {
+    const a = buildTalkSystem(talk, vocab, { guided: true, withComplication: false })
+    const b = buildTalkSystem(talk, vocab, { guided: true, withComplication: false })
+    expect(a).toBe(b)
+  })
+})

@@ -4,6 +4,7 @@ import { ProgressCtx } from '../state/ProgressContext.js'
 import { KANA_DATA } from '../data/kana.js'
 import { ALL_WORDS } from '../data/words.js'
 import { DIALOGS } from '../data/dialogs.js'
+import { phrasesFromTurns, dialogShakyWords } from '../lib/dialog.js'
 import { XP_PER_CARD, XP_PER_DIALOG } from '../lib/xp.js'
 import { speak, copyText } from '../lib/speech.js'
 import { SPEECH_INPUT_SUPPORTED, startListening, stopListening, matchSpoken } from '../lib/listen.js'
@@ -568,6 +569,110 @@ export function GrammarLesson({ topic, alreadyDone, onDone, onClose }) {
 // ─── Gesprächs-Szene (Rollenspiel) ────────────────────────────────────────────
 // Kontext-Intro → Wechsel mit verblassenden Hilfen. Wird von der REISE (Szenen
 // sind Stationen des Pfads) und vom Üben-Tab (freies Wiederholen) geteilt.
+// ─── Aufwärmen vor einer Szene ───────────────────────────────────────────────
+// Bisher begann eine Szene mit dem Ziel auf Deutsch – und dann sprach sofort der
+// Gesprächspartner. Die Sätze, die man dabei braucht, hatte man als GANZEN Satz
+// nie geübt: Die Vokabeln kamen einzeln in einem Wortblock vor, womöglich vor
+// Tagen. Genau daher kam das Gefühl, ins kalte Wasser geworfen zu werden.
+//
+// Das Aufwärmen zeigt die Sätze zuerst (hören, Wörter antippen) und fragt sie
+// dann einmal ab. Es ist zugleich die Festigungs-Bremse: In die Szene kommt nur,
+// wer jeden Satz einmal wiedererkannt hat. Bremse heißt aber nicht Sperre –
+// falsch Beantwortetes kommt einfach nochmal, beliebig oft.
+function SceneWarmup({ node, phrases, shaky, onDone, onClose }) {
+  const checks = phrases.slice(0, 5)
+  const [overview, setOverview] = useState(true)
+  // Warteschlange der noch zu erkennenden Sätze; Fehler wandern ans Ende.
+  const [queue, setQueue] = useState(() => checks.map((_, i) => i))
+  const [picked, setPicked] = useState(null)
+  const [again, setAgain] = useState(false)   // dieser Satz kam schon einmal daneben
+
+  const idx = queue[0]
+  const current = checks[idx]
+  const options = useMemo(() => shuffled(checks.map(p => p.jp)), [idx, again])
+
+  if (overview) {
+    return (
+      <div style={{ padding: 20 }}>
+        <UebenHead title={node.title} idx={0} total={0} onClose={onClose} />
+        <Card style={{ padding: '16px 18px' }}>
+          <div style={{ fontSize: 11, color: C.textMuted, letterSpacing: 1, marginBottom: 4 }}>DAS BRAUCHST DU GLEICH</div>
+          <p style={{ fontSize: 13, color: C.textMuted, margin: '0 0 14px', lineHeight: 1.6 }}>
+            Hör dir die Sätze einmal an und tipp die Wörter an, die du noch nicht kennst.
+          </p>
+          {checks.map((p, i) => (
+            <div key={p.jp} style={{ paddingTop: i ? 12 : 0, marginTop: i ? 12 : 0, borderTop: i ? `1px solid ${C.washiDark}` : 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <button onClick={() => speak(p.jp)} aria-label="Anhören"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 17, padding: 0, lineHeight: 1.6 }}>🔊</button>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <TappableJp text={p.jp} size={18} />
+                  {p.de && <div style={{ fontSize: 12.5, color: C.textMuted, marginTop: 2 }}>„{p.de}"</div>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </Card>
+        {shaky.length > 0 && (
+          <div style={{ background: `${C.shu}0E`, border: `1px solid ${C.shu}33`, borderRadius: 12, padding: '11px 14px', marginTop: 12, fontSize: 12.5, color: C.sumi, lineHeight: 1.6 }}>
+            🌱 Noch frisch im Wiederholungsplan: <span style={{ fontFamily: JP }}>{shaky.slice(0, 4).join(' · ')}</span> – die kommen gleich vor.
+          </div>
+        )}
+        <Btn onClick={() => setOverview(false)} style={{ width: '100%', marginTop: 16 }}>Kurz abfragen →</Btn>
+      </div>
+    )
+  }
+
+  const revealed = picked != null
+  const correct = revealed && picked === current.jp
+  const choose = (o) => { if (revealed) return; setPicked(o) }
+  const next = () => {
+    const wasRight = picked === current.jp
+    setPicked(null)
+    if (wasRight) {
+      const rest = queue.slice(1)
+      if (!rest.length) { onDone(); return }
+      setQueue(rest)
+    } else {
+      // Nicht erkannt → derselbe Satz kommt am Ende nochmal.
+      setQueue(q => [...q.slice(1), q[0]])
+      setAgain(a => !a)
+    }
+  }
+
+  return (
+    <div style={{ padding: 20 }}>
+      <UebenHead title={node.title} idx={checks.length - queue.length} total={checks.length} onClose={onClose} />
+      <p style={{ fontSize: 11, color: C.textMuted, letterSpacing: 1, margin: '0 0 6px' }}>WIE SAGST DU DAS?</p>
+      <Card style={{ padding: '16px 18px', marginBottom: 14 }}>
+        <div style={{ fontSize: 17, fontWeight: 600, color: C.sumi }}>„{current.de}"</div>
+      </Card>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {options.map(o => {
+          const isRight = o === current.jp
+          const fb = feedbackColor(!revealed ? 'neutral' : isRight ? 'correct' : o === picked ? 'wrong' : 'neutral')
+          return (
+            <button key={o} onClick={() => choose(o)} disabled={revealed}
+              style={{ padding: '12px 14px', borderRadius: 10, border: `2px solid ${fb.border}`, background: fb.bg,
+                fontSize: 17, fontFamily: JP, color: C.sumi, textAlign: 'left', cursor: revealed ? 'default' : 'pointer' }}>{o}</button>
+          )
+        })}
+      </div>
+      {revealed && (
+        <>
+          <p style={{ marginTop: 12, fontWeight: 600, color: correct ? C.matcha : C.shu }}>
+            {correct ? '✓ Genau so.' : '✗ Noch nicht – der Satz kommt gleich nochmal.'}
+          </p>
+          <button onClick={() => speak(current.jp)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: C.textMuted, fontFamily: 'inherit' }}>🔊 anhören</button>
+          <Btn onClick={next} style={{ width: '100%', marginTop: 12 }}>
+            {correct && queue.length === 1 ? 'Los geht\u2019s →' : 'Weiter →'}
+          </Btn>
+        </>
+      )}
+    </div>
+  )
+}
+
 // Nächsthöhere Hilfe-Stufe für eine bereits gemeisterte Szene.
 const HARDER_SCAFFOLD = { voll: 'mittel', mittel: 'frei', frei: 'frei' }
 
@@ -576,7 +681,7 @@ const HARDER_SCAFFOLD = { voll: 'mittel', mittel: 'frei', frei: 'frei' }
 // im richtigen Moment, solange die Situation noch frisch ist. Wo der Aufrufer
 // die Möglichkeit nicht kennt (Reise-Station), bleibt der Knopf einfach weg.
 export function DialogPlay({ node, alreadyDone, onComplete, onClose, onFreeTalk }) {
-  const { awardXp, settings } = useContext(ProgressCtx)
+  const { progress, awardXp, settings } = useContext(ProgressCtx)
   const [turns] = useState(() => {
     if (node.review) {
       const pool = node.from.flatMap(id => DIALOGS.find(d => d.id === id)?.turns || [])
@@ -591,6 +696,9 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose, onFreeTalk 
   const scaffold = node.review ? 'mittel'
     : alreadyDone ? (HARDER_SCAFFOLD[node.scaffold] || node.scaffold)
     : node.scaffold
+  // Die Sätze, die diese Szene verlangt – Grundlage fürs Aufwärmen.
+  const phrases = useMemo(() => phrasesFromTurns(turns), [turns])
+  const shaky = useMemo(() => dialogShakyWords(node, progress), [node, progress])
   const [phase, setPhase] = useState('intro')
   const [turn, setTurn] = useState(0)
   const [ans, setAns] = useState(null)
@@ -617,6 +725,11 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose, onFreeTalk 
   // NPC-Zeile beim Erscheinen vorlesen (Hören-zuerst).
   useEffect(() => { if (phase === 'play') speak(turns[turn]?.npc) }, [phase, turn])
 
+  if (phase === 'warmup') {
+    return <SceneWarmup node={node} phrases={phrases} shaky={shaky}
+      onDone={() => setPhase('play')} onClose={onClose} />
+  }
+
   if (phase === 'intro') {
     return (
       <div style={{ padding: 20 }}>
@@ -626,7 +739,19 @@ export function DialogPlay({ node, alreadyDone, onComplete, onClose, onFreeTalk 
           <p style={{ fontSize: 13, color: C.textMuted, margin: '14px 0 2px', letterSpacing: 1 }}>SITUATION</p>
           <p style={{ fontWeight: 600, fontSize: 17, color: C.sumi, margin: 0 }}>{node.goal}</p>
         </Card>
-        <Btn onClick={() => setPhase('play')} style={{ width: '100%', marginTop: 16 }}>Los geht's →</Btn>
+        {phrases.length > 0 && (
+          <div style={{ background: `${C.indigo}0E`, border: `1px solid ${C.indigo}33`, borderRadius: 12, padding: '12px 14px', marginTop: 12, fontSize: 13, color: C.sumi, lineHeight: 1.6 }}>
+            🧤 Vorher wärmst du kurz auf: die {phrases.length} Sätze, die du gleich brauchst – hören, verstehen, einmal wiedererkennen. Dauert eine halbe Minute.
+          </div>
+        )}
+        <Btn onClick={() => setPhase(phrases.length ? 'warmup' : 'play')} style={{ width: '100%', marginTop: 16 }}>
+          {phrases.length ? 'Aufwärmen & los →' : 'Los geht\u2019s →'}
+        </Btn>
+        {/* Wer die Szene schon gemeistert hat, darf das Aufwärmen überspringen –
+            für ihn ist es Wiederholung, nicht Vorbereitung. */}
+        {alreadyDone && phrases.length > 0 && (
+          <Btn onClick={() => setPhase('play')} variant="ghost" style={{ width: '100%', marginTop: 8 }}>Direkt in die Szene</Btn>
+        )}
       </div>
     )
   }

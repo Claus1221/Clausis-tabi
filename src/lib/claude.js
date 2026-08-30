@@ -82,13 +82,28 @@ export function parseJson(text) {
 }
 
 // Schneller Erreichbarkeits-/Gültigkeits-Check für den „Testen"-Knopf in den
-// Einstellungen (minimaler Request, praktisch kostenlos).
+// Einstellungen (minimaler Request, praktisch kostenlos). Eigener fetch statt
+// callClaude, weil der bei einem Fehler nur `null` liefert – hier ist die
+// Meldung des Servers aber genau das, was weiterhilft (falscher Key, kein
+// Guthaben, gesperrte Domain sehen sonst alle gleich aus).
 export async function pingApiKey(key) {
   try {
-    const text = await callClaude({ key, messages: [{ role: 'user', content: 'Hallo' }], maxTokens: 1 })
-    return text != null
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ model: MODEL, max_tokens: 1, messages: [{ role: 'user', content: 'Hallo' }] }),
+    })
+    if (res.ok) return { ok: true }
+    let detail = ''
+    try { detail = (await res.json())?.error?.message || '' } catch { /* keine JSON-Antwort */ }
+    return { ok: false, message: detail || `HTTP ${res.status}` }
   } catch {
-    return false
+    return { ok: false, message: 'Keine Antwort von Anthropic (Internet oder Browser-Blocker).' }
   }
 }
 
