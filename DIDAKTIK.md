@@ -135,6 +135,16 @@ nochmal ansehen".
 `immersiv` (zusätzlich ohne Übersetzung). Nachhören geht immer.
 
 
+### Grammatik-Umfang
+31 Themen von は und です bis zur Wörterbuchform. Die letzten acht (eigene
+Pfad-Welt 会話の力 kurz vor dem Abschied) zielen bewusst auf das, was ein
+Gespräch braucht und was bis dahin ganz fehlte: あります/います („es gibt" –
+der häufigste Reisesatz überhaupt), 〜たいです („ich möchte"), 〜てもいいですか
+(„darf ich?"), 〜てはいけません (Verbote auf Schildern – die muss man LESEN
+können, nicht sagen), 〜から („weil"), 〜ましょうか („soll ich?"), die
+Wörterbuchform und 〜ことができます („können"). Jedes Thema hat mindestens vier
+Übungen, damit die Wiederholungskarte variieren kann.
+
 ### Story als Träger (Kapitel)
 28 Kapitel erzählen eine durchgehende Reise (Ankunft → Fuji → Tokyo →
 Freundin Yuki → Abschied). Jedes Kapitel: Erzählbeats (`story`, antippbare

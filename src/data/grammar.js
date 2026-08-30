@@ -451,10 +451,171 @@ export const GRAMMAR = [
       { q: '三本 (drei Flaschen) – wie liest man das?', a: 'さんぼん', options: ['さんぼん', 'さんほん', 'さんぽん'], hint: 'ほん wird nach 3 stimmhaft zu ぼん.' },
     ],
   },
+  {
+    id: 'g24', glyph: '在', title: 'あります & います – „es gibt"', summary: 'あります für Dinge, います für Lebewesen',
+    body: [
+      { text: 'Für „es gibt / ist vorhanden" hat das Japanische zwei Verben – je nachdem, ob etwas lebt oder nicht.' },
+      { h: 'Die Regel', text: 'あります für Dinge, Pflanzen und Abstraktes. います für Menschen und Tiere. Beides mit が: トイレが あります。' },
+      { h: 'Wo?', text: 'Der Ort steht mit に davor: ここに トイレが あります。 – „Hier gibt es eine Toilette." Genau der Satz, den man auf Reisen am häufigsten braucht.' },
+    ],
+    examples: [
+      { jp: 'ここにトイレがあります。', kana: 'ここにトイレがあります。', de: 'Hier gibt es eine Toilette.', tokens: [
+        { t: 'ここ', de: 'hier', b: 'Ortswort' }, { t: 'に', de: 'an/in', b: 'Partikel – Ort' }, { t: 'トイレ', de: 'Toilette', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Partikel – Subjekt' }, { t: 'あります', de: 'gibt es', b: 'Verb – für Dinge' }, { t: '。' } ] },
+      { jp: 'あそこに猫がいます。', kana: 'あそこにねこがいます。', de: 'Dort ist eine Katze.', tokens: [
+        { t: 'あそこ', de: 'dort (weiter weg)', b: 'Ortswort' }, { t: 'に', de: 'an/in', b: 'Partikel – Ort' }, { t: '猫', r: 'ねこ', de: 'Katze', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Partikel – Subjekt' }, { t: 'います', de: 'ist da', b: 'Verb – für Lebewesen' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: 'ここにトイレが＿。 (Hier gibt es eine Toilette.)', a: 'あります', options: ['あります', 'います', 'です'], hint: 'Eine Toilette lebt nicht → あります.' },
+      { q: 'ここに猫が＿。 (Hier ist eine Katze.)', a: 'います', options: ['います', 'あります', 'です'], hint: 'Tiere leben → います.' },
+      { q: 'Welches Verb gilt für Menschen?', a: 'います', options: ['います', 'あります', 'beide'], hint: 'Menschen und Tiere: います.' },
+      { q: 'ここ＿トイレがあります。 (Ortsangabe)', a: 'に', options: ['に', 'を', 'で'], hint: 'Der Ort der Existenz steht mit に.' },
+      { q: 'トイレ＿あります。 (Welche Partikel vor あります?)', a: 'が', options: ['が', 'を', 'は'], hint: 'Was existiert, steht mit が.' },
+    ],
+  },
+  {
+    id: 'g25', glyph: '欲', title: '〜たいです – „ich möchte"', summary: 'ます weg, たいです dran: 食べたいです',
+    body: [
+      { text: 'Um zu sagen, was man möchte, hängt man an den Verbstamm 〜たいです. Der Verbstamm ist die ます-Form ohne ます.' },
+      { h: 'Bildung', text: '食べます → 食べ + たいです = 食べたいです („ich möchte essen"). 行きます → 行きたいです. 見ます → 見たいです.' },
+      { h: 'Achtung', text: '〜たい verhält sich wie ein い-Adjektiv: verneint 食べたくないです, in der Vergangenheit 食べたかったです. Und: Man sagt es nur über SICH SELBST – bei anderen wäre es anmaßend.' },
+    ],
+    examples: [
+      { jp: 'お茶が飲みたいです。', kana: 'おちゃがのみたいです。', de: 'Ich möchte Tee trinken.', tokens: [
+        { t: 'お茶', r: 'おちゃ', de: 'Tee', b: 'Nomen' }, { t: 'が', de: '(Objekt bei たい)', b: 'Partikel – bei 〜たい oft が statt を' }, { t: '飲みたい', r: 'のみたい', de: 'möchte trinken', b: '飲みます + たい' }, { t: 'です', de: '(höflich)', b: 'Kopula' }, { t: '。' } ] },
+      { jp: '東京へ行きたいです。', kana: 'とうきょうへいきたいです。', de: 'Ich möchte nach Tokyo fahren.', tokens: [
+        { t: '東京', r: 'とうきょう', de: 'Tokyo', b: 'Ortsname' }, { t: 'へ', r: 'え', de: 'nach', b: 'Partikel – Richtung' }, { t: '行きたい', r: 'いきたい', de: 'möchte gehen/fahren', b: '行きます + たい' }, { t: 'です', de: '(höflich)', b: 'Kopula' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '食べ＿です。 (Ich möchte essen.)', a: 'たい', options: ['たい', 'ます', 'ました'], hint: 'Verbstamm + たいです.' },
+      { q: '行きます → „ich möchte gehen" =', a: '行きたいです', options: ['行きたいです', '行くたいです', '行きますたい'], hint: 'ます weg, たいです dran.' },
+      { q: '„Ich möchte nicht essen." 食べ＿です。', a: 'たくない', options: ['たくない', 'たいない', 'たくありません'], hint: '〜たい ist ein い-Adjektiv: たい → たくない.' },
+      { q: 'Über wen sagt man 〜たいです?', a: 'über sich selbst', options: ['über sich selbst', 'über andere', 'über beide'], hint: 'Fremde Wünsche kann man nicht kennen – dafür gibt es andere Formen.' },
+    ],
+  },
+  {
+    id: 'g26', glyph: '可', title: '〜てもいいですか – „darf ich?"', summary: 'て-Form + もいいですか = um Erlaubnis fragen',
+    body: [
+      { text: 'Die höfliche Art, um Erlaubnis zu bitten: て-Form + もいいですか。 Wörtlich „ist es auch gut, wenn ich ~?".' },
+      { h: 'Bildung', text: '見ます → 見て → 見てもいいですか。 („Darf ich schauen?") 入ります → 入って → 入ってもいいですか。' },
+      { h: 'Die Antwort', text: 'Ja: はい、どうぞ。 („Ja, bitte.") Nein: すみません、ちょっと… – ein direktes „nein" gilt als unhöflich; das ちょっと reicht völlig.' },
+    ],
+    examples: [
+      { jp: '写真を撮ってもいいですか。', kana: 'しゃしんをとってもいいですか。', de: 'Darf ich ein Foto machen?', tokens: [
+        { t: '写真', r: 'しゃしん', de: 'Foto', b: 'Nomen' }, { t: 'を', r: 'お', de: '(Objekt)', b: 'Partikel – Objekt' }, { t: '撮って', r: 'とって', de: 'machen (て-Form)', b: 'て-Form von 撮ります' }, { t: 'もいいですか', de: 'darf ich?', b: 'Erlaubnis-Frage' }, { t: '。' } ] },
+      { jp: 'ここに座ってもいいですか。', kana: 'ここにすわってもいいですか。', de: 'Darf ich mich hierher setzen?', tokens: [
+        { t: 'ここ', de: 'hier', b: 'Ortswort' }, { t: 'に', de: 'auf/an', b: 'Partikel – Ziel' }, { t: '座って', r: 'すわって', de: 'setzen (て-Form)', b: 'て-Form von 座ります' }, { t: 'もいいですか', de: 'darf ich?', b: 'Erlaubnis-Frage' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '見＿もいいですか。 (Darf ich schauen?)', a: 'て', options: ['て', 'ます', 'た'], hint: 'Erlaubnis fragt man mit der て-Form.' },
+      { q: 'Was heißt 食べてもいいですか?', a: 'Darf ich essen?', options: ['Darf ich essen?', 'Ich möchte essen.', 'Bitte iss.'], hint: '〜てもいいですか = um Erlaubnis bitten.' },
+      { q: 'Die freundliche Zusage lautet:', a: 'はい、どうぞ。', options: ['はい、どうぞ。', 'いいえ、だめです。', 'そうですか。'], hint: 'どうぞ = „bitte sehr, nur zu".' },
+      { q: 'Wie lehnt man höflich ab?', a: 'すみません、ちょっと…', options: ['すみません、ちょっと…', 'いいえ。', 'だめ！'], hint: 'Ein direktes Nein gilt als unhöflich – ちょっと… genügt.' },
+    ],
+  },
+  {
+    id: 'g27', glyph: '禁', title: '〜てはいけません – „man darf nicht"', summary: 'て-Form + はいけません = Verbot (auf Schildern häufig)',
+    body: [
+      { text: 'Das Gegenstück zur Erlaubnis: て-Form + はいけません = „das darf man nicht". Auf Schildern steht oft die kürzere Form 〜ないでください („bitte nicht ~").' },
+      { h: 'Bildung', text: '入ります → 入って → 入ってはいけません。 („Eintritt verboten.") 撮ります → 撮ってはいけません。 („Fotografieren verboten.")' },
+      { h: 'Auf Reisen', text: 'Diese Formen liest man selten selbst laut – aber man muss sie ERKENNEN: in Tempeln, Museen und Zügen hängen sie überall.' },
+    ],
+    examples: [
+      { jp: 'ここで写真を撮ってはいけません。', kana: 'ここでしゃしんをとってはいけません。', de: 'Hier darf man nicht fotografieren.', tokens: [
+        { t: 'ここ', de: 'hier', b: 'Ortswort' }, { t: 'で', de: 'an/in', b: 'Partikel – Ort der Handlung' }, { t: '写真', r: 'しゃしん', de: 'Foto', b: 'Nomen' }, { t: 'を', r: 'お', de: '(Objekt)', b: 'Partikel – Objekt' }, { t: '撮って', r: 'とって', de: 'machen (て-Form)', b: 'て-Form von 撮ります' }, { t: 'はいけません', de: 'darf man nicht', b: 'Verbot' }, { t: '。' } ] },
+      { jp: 'ここに入ってはいけません。', kana: 'ここにはいってはいけません。', de: 'Hier darf man nicht hinein.', tokens: [
+        { t: 'ここ', de: 'hier', b: 'Ortswort' }, { t: 'に', de: 'hinein', b: 'Partikel – Ziel' }, { t: '入って', r: 'はいって', de: 'hineingehen (て-Form)', b: 'て-Form von 入ります' }, { t: 'はいけません', de: 'darf man nicht', b: 'Verbot' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '入っ＿いけません。 (Man darf nicht hinein.)', a: 'ては', options: ['ては', 'ても', 'てから'], hint: '〜てはいけません = Verbot, 〜てもいいです = Erlaubnis.' },
+      { q: 'Was heißt 撮ってはいけません?', a: 'Fotografieren verboten', options: ['Fotografieren verboten', 'Bitte fotografieren', 'Darf ich fotografieren?'], hint: 'いけません = „geht nicht / darf nicht".' },
+      { q: 'Welche Endung erlaubt, welche verbietet?', a: 'てもいい = erlaubt, てはいけない = verboten', options: ['てもいい = erlaubt, てはいけない = verboten', 'beide erlauben', 'beide verbieten'], hint: 'も = auch/schon in Ordnung, は + いけません = so nicht.' },
+      { q: 'Auf einem Schild steht 入らないでください。 Das heißt:', a: 'Bitte nicht hineingehen.', options: ['Bitte nicht hineingehen.', 'Bitte hineingehen.', 'Hier ist der Eingang.'], hint: '〜ないでください = höfliche Bitte, etwas NICHT zu tun.' },
+    ],
+  },
+  {
+    id: 'g28', glyph: '故', title: '〜から – „weil"', summary: 'Grund + から, dann die Folge',
+    body: [
+      { text: 'から nach einem vollständigen Satz heißt „weil". Anders als im Deutschen steht der GRUND zuerst, die Folge danach.' },
+      { h: 'Bildung', text: '暑いですから、水を飲みます。 – „Weil es heiß ist, trinke ich Wasser." Wörtlich: „Es ist heiß, deshalb trinke ich Wasser."' },
+      { h: 'Kurzantwort', text: 'から kann auch allein am Ende stehen, als Begründung auf eine Frage: どうして？ – 高いですから。 („Warum?" – „Weil es teuer ist.")' },
+    ],
+    examples: [
+      { jp: '暑いですから、水を飲みます。', kana: 'あついですから、みずをのみます。', de: 'Weil es heiß ist, trinke ich Wasser.', tokens: [
+        { t: '暑い', r: 'あつい', de: 'heiß', b: 'い-Adjektiv' }, { t: 'です', de: '(höflich)', b: 'Kopula' }, { t: 'から', de: 'weil', b: 'Partikel – Grund' }, { t: '、' }, { t: '水', r: 'みず', de: 'Wasser', b: 'Nomen' }, { t: 'を', r: 'お', de: '(Objekt)', b: 'Partikel – Objekt' }, { t: '飲みます', r: 'のみます', de: 'trinke', b: 'Verb – ます-Form' }, { t: '。' } ] },
+      { jp: '安いですから、買います。', kana: 'やすいですから、かいます。', de: 'Weil es billig ist, kaufe ich es.', tokens: [
+        { t: '安い', r: 'やすい', de: 'billig', b: 'い-Adjektiv' }, { t: 'です', de: '(höflich)', b: 'Kopula' }, { t: 'から', de: 'weil', b: 'Partikel – Grund' }, { t: '、' }, { t: '買います', r: 'かいます', de: 'kaufe', b: 'Verb – ます-Form' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '暑いです＿、水を飲みます。 (weil)', a: 'から', options: ['から', 'まで', 'より'], hint: 'から nach dem Grund.' },
+      { q: 'Was steht im Japanischen ZUERST?', a: 'der Grund', options: ['der Grund', 'die Folge', 'egal'], hint: 'Grund + から, dann die Folge – umgekehrt zum deutschen „weil"-Satz am Ende.' },
+      { q: 'どうしてですか。 – 高いです＿。 (Weil es teuer ist.)', a: 'から', options: ['から', 'ので', 'ね'], hint: 'から kann als Kurzantwort allein stehen.' },
+      { q: 'Was heißt 高いですから、買いません。?', a: 'Weil es teuer ist, kaufe ich es nicht.', options: ['Weil es teuer ist, kaufe ich es nicht.', 'Es ist teuer, aber ich kaufe es.', 'Ist es teuer? Ich kaufe es nicht.'], hint: 'から = weil; 買いません = kaufe nicht.' },
+    ],
+  },
+  {
+    id: 'g29', glyph: '申', title: '〜ましょうか – „soll ich?"', summary: 'Hilfe anbieten: 持ちましょうか',
+    body: [
+      { text: 'ましょう kennst du schon als „lass uns ~". Mit か daran wird daraus ein Angebot: „Soll ich ~?"' },
+      { h: 'Der Unterschied', text: '行きましょう。 = „Lass uns gehen." · 行きましょうか。 = „Sollen wir gehen?" / „Soll ich gehen?" Das か macht aus dem Vorschlag eine Frage.' },
+      { h: 'Auf Reisen', text: 'Sehr nützlich, um Hilfe anzubieten – oder um zu verstehen, wenn jemand SIE dir anbietet: 手伝いましょうか。 („Soll ich helfen?")' },
+    ],
+    examples: [
+      { jp: '手伝いましょうか。', kana: 'てつだいましょうか。', de: 'Soll ich helfen?', tokens: [
+        { t: '手伝い', r: 'てつだい', de: 'helfen', b: 'Verbstamm von 手伝います' }, { t: 'ましょう', de: 'lass uns / soll ich', b: 'Vorschlagsform' }, { t: 'か', de: '(Frage)', b: 'Partikel – Frage' }, { t: '。' } ] },
+      { jp: '窓を開けましょうか。', kana: 'まどをあけましょうか。', de: 'Soll ich das Fenster öffnen?', tokens: [
+        { t: '窓', r: 'まど', de: 'Fenster', b: 'Nomen' }, { t: 'を', r: 'お', de: '(Objekt)', b: 'Partikel – Objekt' }, { t: '開け', r: 'あけ', de: 'öffnen', b: 'Verbstamm von 開けます' }, { t: 'ましょう', de: 'soll ich', b: 'Vorschlagsform' }, { t: 'か', de: '(Frage)', b: 'Partikel – Frage' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '手伝いましょう＿。 (Soll ich helfen?)', a: 'か', options: ['か', 'ね', 'よ'], hint: 'Erst das か macht aus dem Vorschlag ein Angebot.' },
+      { q: 'Was ist der Unterschied zwischen 行きましょう und 行きましょうか?', a: 'か fragt statt vorzuschlagen', options: ['か fragt statt vorzuschlagen', 'kein Unterschied', 'か verneint'], hint: 'ましょう = lass uns; ましょうか = sollen wir / soll ich?' },
+      { q: '„Soll ich das Fenster öffnen?" 窓を開け＿か。', a: 'ましょう', options: ['ましょう', 'ません', 'ました'], hint: 'Verbstamm + ましょうか.' },
+      { q: 'Jemand sagt zu dir 手伝いましょうか。 Was passiert?', a: 'Er bietet dir Hilfe an', options: ['Er bietet dir Hilfe an', 'Er bittet dich um Hilfe', 'Er hat schon geholfen'], hint: 'Ein Angebot – die passende Antwort wäre はい、おねがいします。' },
+    ],
+  },
+  {
+    id: 'g30', glyph: '辞', title: 'Die Wörterbuchform', summary: 'Die Grundform des Verbs – Basis für vieles',
+    body: [
+      { text: 'Bisher kennst du Verben nur in der höflichen ます-Form. Im Wörterbuch stehen sie aber in ihrer Grundform – der Wörterbuchform (じしょけい).' },
+      { h: 'Die zwei Gruppen', text: 'Verben auf 〜えます/〜います mit einer Silbe davor (食べます, 見ます) → ます wird zu る: 食べる, 見る. Alle anderen (飲みます, 行きます) → das い der ます-Silbe wird zu う: 飲む, 行く.' },
+      { h: 'Wozu?', text: 'Die Wörterbuchform ist unhöflich unter Fremden – aber sie ist der Baustein für „können", „wenn" und vieles mehr. Und ohne sie findet man ein Verb im Wörterbuch nicht.' },
+    ],
+    examples: [
+      { jp: '食べます。食べる。', kana: 'たべます。たべる。', de: 'essen (höflich / Grundform)', tokens: [
+        { t: '食べます', r: 'たべます', de: 'esse (höflich)', b: 'ます-Form' }, { t: '。' }, { t: '食べる', r: 'たべる', de: 'essen', b: 'Wörterbuchform' }, { t: '。' } ] },
+      { jp: '飲みます。飲む。', kana: 'のみます。のむ。', de: 'trinken (höflich / Grundform)', tokens: [
+        { t: '飲みます', r: 'のみます', de: 'trinke (höflich)', b: 'ます-Form' }, { t: '。' }, { t: '飲む', r: 'のむ', de: 'trinken', b: 'Wörterbuchform' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '食べます → Wörterbuchform =', a: '食べる', options: ['食べる', '食べう', '食べく'], hint: 'ます → る bei 食べます.' },
+      { q: '飲みます → Wörterbuchform =', a: '飲む', options: ['飲む', '飲る', '飲みる'], hint: 'み → む: das い wird zu う.' },
+      { q: '行きます → Wörterbuchform =', a: '行く', options: ['行く', '行る', '行きる'], hint: 'き → く.' },
+      { q: 'Wann benutzt man die Wörterbuchform NICHT?', a: 'als höfliche Anrede an Fremde', options: ['als höfliche Anrede an Fremde', 'im Wörterbuch', 'unter Freunden'], hint: 'Fremden gegenüber bleibt es bei der ます-Form.' },
+    ],
+  },
+  {
+    id: 'g31', glyph: '能', title: '〜ことができます – „können"', summary: 'Wörterbuchform + ことができます',
+    body: [
+      { text: 'Um zu sagen, dass man etwas kann, hängt man an die Wörterbuchform ことができます.' },
+      { h: 'Bildung', text: '食べる → 食べることができます („ich kann essen"). 話す → 話すことができます. Verneint: 〜ことができません.' },
+      { h: 'Kurzform', text: 'Bei Nomen geht es kürzer: 日本語ができます。 – „Ich kann Japanisch." Das braucht man auf Reisen ständig.' },
+    ],
+    examples: [
+      { jp: '日本語を話すことができます。', kana: 'にほんごをはなすことができます。', de: 'Ich kann Japanisch sprechen.', tokens: [
+        { t: '日本語', r: 'にほんご', de: 'Japanisch', b: 'Nomen' }, { t: 'を', r: 'お', de: '(Objekt)', b: 'Partikel – Objekt' }, { t: '話す', r: 'はなす', de: 'sprechen', b: 'Wörterbuchform' }, { t: 'ことができます', de: 'kann', b: 'Fähigkeit' }, { t: '。' } ] },
+      { jp: '英語ができません。', kana: 'えいごができません。', de: 'Ich kann kein Englisch.', tokens: [
+        { t: '英語', r: 'えいご', de: 'Englisch', b: 'Nomen' }, { t: 'が', de: '(Subjekt)', b: 'Partikel – bei できます' }, { t: 'できません', de: 'kann nicht', b: 'Verneinung von できます' }, { t: '。' } ] },
+    ],
+    exercises: [
+      { q: '食べる＿ができます。 (Ich kann essen.)', a: 'こと', options: ['こと', 'もの', 'とき'], hint: 'Wörterbuchform + ことができます.' },
+      { q: 'Welche Verbform steht vor ことができます?', a: 'die Wörterbuchform', options: ['die Wörterbuchform', 'die ます-Form', 'die て-Form'], hint: 'Darum lohnt sich die Wörterbuchform.' },
+      { q: '„Ich kann kein Japanisch." 日本語が＿。', a: 'できません', options: ['できません', 'できます', 'ありません'], hint: 'Kurzform bei Nomen: 〜ができます / できません.' },
+      { q: '日本語ができますか。 heißt:', a: 'Können Sie Japanisch?', options: ['Können Sie Japanisch?', 'Sprechen Sie bitte Japanisch.', 'Ich lerne Japanisch.'], hint: 'Genau die Frage, die einem auf Reisen gestellt wird.' },
+    ],
+  },
 ]
 
 // Grammatik-Reihenfolge identisch zur Reise (Satz-Grundgerüst zuerst).
-export const GRAMMAR_ORDER = ['g2', 'g1', 'g6', 'g3', 'g4', 'g5', 'g7', 'g8', 'g9', 'g10', 'g23', 'g12', 'g13', 'g14', 'g15', 'g16', 'g17', 'g18', 'g19', 'g20', 'g11', 'g21', 'g22']
+export const GRAMMAR_ORDER = ['g2', 'g1', 'g6', 'g3', 'g4', 'g5', 'g7', 'g8', 'g9', 'g10', 'g23', 'g12', 'g13', 'g14', 'g15', 'g16', 'g17', 'g18', 'g19', 'g20', 'g11', 'g21', 'g22', 'g24', 'g25', 'g26', 'g27', 'g28', 'g29', 'g30', 'g31']
 export const GRAMMAR_SEQ = GRAMMAR_ORDER.map(id => GRAMMAR.find(g => g.id === id))
 
 export const GRAMMAR_GLYPH = Object.fromEntries(GRAMMAR.map(g => [g.id, g.glyph]))
