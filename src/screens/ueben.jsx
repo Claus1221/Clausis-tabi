@@ -204,9 +204,9 @@ function GrammarSrsCard({ topic, onDone }) {
     return (
       <>
         <Card style={{ textAlign: 'center', padding: '22px 16px', marginBottom: 14 }}>
-          <div style={{ fontSize: 42, fontFamily: JP, color: C.shu }}>{topic.glyph}</div>
-          <div style={{ fontWeight: 600, marginTop: 6 }}>{topic.title}</div>
-          <div style={{ fontSize: 13, color: C.textMuted, marginTop: 6 }}>{topic.summary}</div>
+          <div style={{ fontSize: 42, fontFamily: JP, color: C.shu }}>{topic?.glyph || '文'}</div>
+          <div style={{ fontWeight: 600, marginTop: 6 }}>{topic?.title || 'Grammatik'}</div>
+          <div style={{ fontSize: 13, color: C.textMuted, marginTop: 6 }}>{topic?.summary}</div>
         </Card>
         <Btn onClick={() => onDone(true)} style={{ width: '100%' }}>Weiter →</Btn>
       </>
@@ -437,7 +437,10 @@ function MixQuiz({ onClose }) {
 
 // Eine einzelne Aufgabe der gemischten Wiederholung – Rendering je nach Format.
 function MixStep({ task, cardReview, onNext }) {
-  const { awardXp } = useContext(ProgressCtx)
+  // progress wird fuer die Karteikarten-Info gebraucht (uebernommene Wendungen
+  // stehen in progress.extraPhrases) – fehlte es hier, brach die Runde bei der
+  // ersten Karteikarte mit einem leeren Bildschirm ab.
+  const { progress, awardXp } = useContext(ProgressCtx)
   const [answer, setAnswer] = useState(null)   // Multiple-Choice
   const [val, setVal] = useState('')           // Tippen-Eingabe
   const [typed, setTyped] = useState(null)      // Tippen-Ergebnis
