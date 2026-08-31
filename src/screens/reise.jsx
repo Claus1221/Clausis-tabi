@@ -174,7 +174,7 @@ function IntroStep({ step }) {
       </div>
       <div style={{ fontSize: 13, color: C.textMuted, marginTop: 12 }}>{step.reading}</div>
       <div style={{ fontSize: 48, fontFamily: JP, color: C.sumi, lineHeight: 1.1 }}>{step.jp}</div>
-      <button onClick={() => speak(step.reading || step.jp)}
+      <button onClick={() => speak(step.say || step.reading || step.jp)}
         style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6, background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, color: C.indigo, borderRadius: 20, padding: '7px 16px', fontSize: 14, cursor: 'pointer' }}>
         🔊 Anhören
       </button>

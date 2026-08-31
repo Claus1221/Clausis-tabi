@@ -63,7 +63,7 @@ export const KANJI_ORIGIN = {
   '九': { type: 'Ideogramm', note: 'Ein gebogener Arm – als Zahlzeichen für neun entlehnt.' },
   '十': { type: 'Piktogramm', radical: true, note: 'Senkrechter und waagrechter Strich gekreuzt – ursprünglich ein Knoten in einer Zählschnur, die Zahl zehn.' },
   '百': { type: 'Zusammengesetzt', parts: [{ c: '一', de: 'eins' }, { c: '白', de: 'bai – Lautgeber' }], note: 'Eins 一 über 白 (Lautgeber bai) – hundert.' },
-  '千': { type: 'Ideogramm', note: 'Ein Mensch 人 mit einem markierenden Strich – tausend.' },
+  '千': { type: 'Ideogramm', parts: [{ c: '人', de: 'Mensch – Lautgeber' }, { c: '一', de: 'ein Querstrich' }], note: 'Ein Mensch 人 mit einem Querstrich quer durch den Rumpf: 人 gab nur den Klang (altchinesisch „nin" → sen), der Strich zählt eine Einheit – tausend. In der heutigen Form ist von 人 nur der schräge Strich ノ oben übrig, darunter steht 十 (zehn).' },
   '万': { type: 'Piktogramm', note: 'Ursprünglich das Bild eines Skorpions – als Zahlzeichen für zehntausend entlehnt.' },
   '円': { type: 'Ideogramm', note: 'Vereinfachtes 圓 (Kreis/rund) – auch die japanische Währung Yen, rund wie eine Münze.' },
   '全': { type: 'Zusammengesetzt', parts: [{ c: '入', de: 'eintreten' }, { c: '王', de: 'Schatz' }], note: 'Unversehrt eingebrachter Schatz – „ganz / vollständig".' },

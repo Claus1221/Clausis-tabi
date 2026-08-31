@@ -186,12 +186,14 @@ function ttsSpeak(text, seq = speakSeq) {
 // Lesung eines bekannten Wort-/Kapitel-Items auflösen (sonst der Text selbst –
 // z. B. Partikel oder konjugierte Verbformen, die TTS schon richtig liest).
 // Verhindert Fehllesungen bei mehrdeutigen Kanji (z. B. 上 als „kami" statt „ue",
-// 月 als „getsu" statt „tsuki").
+// 月 als „getsu" statt „tsuki"). Ausnahme: Kapitel-Vokabeln mit eigenem `say`
+// (Gleichklang-Paare wie 箸/橋, beide はし) – dort geht das Kanji zur Stimme,
+// damit sie die richtige Tonhöhe wählt (siehe data/chapters.js).
 export function itemReading(item) {
   const w = WORD_BY_KANJI[item]
   if (w) return w.kana
   const cw = CHAPTER_WORD[item]   // Kapitel-Vokabel (nicht im Wort-Lexikon)
-  return cw ? cw.reading : item
+  return cw ? (cw.say || cw.reading) : item
 }
 
 // Ein SRS-Item vorlesen: bei Wörtern die Kana-Lesung, bei Kana das Zeichen selbst.

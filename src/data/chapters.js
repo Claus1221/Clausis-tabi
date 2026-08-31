@@ -242,7 +242,7 @@ export const CHAPTERS = [
     { kind: 'intro', emoji: 'restaurant', jp: 'レストラン', reading: 'レストラン', de: 'Restaurant' },
     { kind: 'intro', emoji: 'rice', jp: 'ご飯', reading: 'ごはん', de: 'Reis / Essen' },
     { kind: 'intro', emoji: 'meat', jp: '肉', reading: 'にく', de: 'Fleisch' },
-    { kind: 'intro', emoji: 'chopsticks', jp: '箸', reading:'はし', de: 'Essstäbchen' },
+    { kind: 'intro', emoji: 'chopsticks', jp: '箸', reading: 'はし', say: '箸', de: 'Essstäbchen' },
     { kind: 'audio', say: 'たべます', options: ['食べます', '飲みます', '見ます'], answer: '食べます', de: 'essen' },
     { kind: 'pic', emoji: 'rice', options: ['ご飯', '肉', '箸'], answer: 'ご飯', de: 'Reis / Essen' },
     { kind: 'audio', say: 'にく', options: ['肉', 'ご飯', '魚'], answer: '肉', de: 'Fleisch' },
@@ -350,7 +350,7 @@ export const CHAPTERS = [
     { kind: 'intro', emoji: 'torii', jp: '後ろ', reading: 'うしろ', de: 'hinter' },
     { kind: 'intro', emoji: 'torii', jp: '隣', reading: 'となり', de: 'neben' },
     { kind: 'intro', emoji: 'water', jp: '池', reading: 'いけ', de: 'Teich' },
-    { kind: 'intro', emoji: 'bridge', jp: '橋', reading: 'はし', de: 'Brücke' },
+    { kind: 'intro', emoji: 'bridge', jp: '橋', reading: 'はし', say: '橋', de: 'Brücke' },
     { kind: 'audio', say: 'まえ', options: ['前', '後ろ', '隣'], answer: '前', de: 'vor' },
     { kind: 'pic', emoji: 'bridge', options: ['橋', '池', '寺'], answer: '橋', de: 'Brücke' },
     { kind: 'audio', say: 'いけ', options: ['池', '橋', '前'], answer: '池', de: 'Teich' },
@@ -636,6 +636,12 @@ export const CHAPTER_BY_ID = Object.fromEntries(CHAPTERS.map(c => [c.id, c]))
 //   2–5 Sterne = wachsen mit dem SRS-Kenntnisstand der Kapitel-Vokabeln
 //   5 Sterne = alle Vokabeln „Gemeistert"
 // Üben (Üben-Tab UND die Kapitel-Übung) bewertet dieselben Karten → hebt Sterne.
+// `say`: Was die Sprachausgabe bekommt – normalerweise die Kana-Lesung (sie
+// verhindert Fehllesungen mehrdeutiger Kanji). Bei Gleichklang-Paaren (箸
+// „Essstäbchen" vs. 橋 „Brücke", beide はし) klingt die Kana-Form beide Male gleich,
+// klingen, obwohl sich die Tonhöhe unterscheidet (はし hoch-tief vs. tief-hoch).
+// Solche Schritte tragen ein eigenes `say` mit dem Kanji – daran erkennt die
+// Studio-Stimme das Wort und spricht die richtige Betonung.
 export const CHAPTER_WORD = Object.fromEntries(
-  CHAPTERS.flatMap(c => c.steps.filter(s => s.kind === 'intro').map(s => [s.jp, { reading: s.reading, de: s.de }])),
+  CHAPTERS.flatMap(c => c.steps.filter(s => s.kind === 'intro').map(s => [s.jp, { reading: s.reading, say: s.say || s.reading, de: s.de }])),
 )

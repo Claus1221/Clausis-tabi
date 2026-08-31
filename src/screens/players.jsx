@@ -4,6 +4,7 @@ import { ProgressCtx } from '../state/ProgressContext.js'
 import { KANA_DATA } from '../data/kana.js'
 import { ALL_WORDS } from '../data/words.js'
 import { DIALOGS } from '../data/dialogs.js'
+import { drillSpeech } from '../data/grammar.js'
 import { phrasesFromTurns, dialogShakyWords } from '../lib/dialog.js'
 import { XP_PER_CARD, XP_PER_DIALOG } from '../lib/xp.js'
 import { speak, copyText } from '../lib/speech.js'
@@ -14,6 +15,7 @@ import { HAS_JP } from '../lib/furigana.jsx'
 import { Card, Btn, Emoji } from '../components/ui.jsx'
 import { UebenHead } from '../components/ueben.jsx'
 import { StrokeDisplay, DrawCanvas } from '../components/kana.jsx'
+import { SpeakLine } from '../components/grammarDrill.jsx'
 import { WordDetail, TappableSentence, TappableJp } from '../components/japanese.jsx'
 
 // ─── Lesson player ────────────────────────────────────────────────────────────
@@ -412,6 +414,10 @@ function GrammarExercise({ ex, idx, total, onNext, isLast }) {
   }
 
   const shown = revealed ? ex.q.replace('＿', ex.a) : ex.q
+  // Wie im Üben-Tab (s. components/grammarDrill.jsx): der gelöste Satz zum
+  // Anhören – bei Lückensätzen erst nach der Antwort.
+  const say = drillSpeech(ex)
+  const hearable = say && (revealed || !ex.q.includes('＿'))
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -425,6 +431,7 @@ function GrammarExercise({ ex, idx, total, onNext, isLast }) {
             )}</span>
           ))}
         </div>
+        {hearable && <SpeakLine text={say} />}
       </Card>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>

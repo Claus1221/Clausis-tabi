@@ -23,7 +23,7 @@ import { KANA_DATA } from '../src/data/kana.js'
 import { WORD_BLOCKS, WORD_BY_KANJI } from '../src/data/words.js'
 import { PHRASES } from '../src/data/phrases.js'
 import { DIALOGS } from '../src/data/dialogs.js'
-import { GRAMMAR } from '../src/data/grammar.js'
+import { GRAMMAR, drillSpeech } from '../src/data/grammar.js'
 import { CHAPTERS, STORY_TOKENS, CHAPTER_WORD } from '../src/data/chapters.js'
 
 const VOICE = 'ja-JP-Neural2-B'
@@ -46,7 +46,7 @@ const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'a
 const KANA_ONLY = /^[぀-ヿー]+$/
 const HAS_JP = /[぀-ヿ一-龯]/
 const tokensJoin = (toks) => toks.map(t => (t.r && KANA_ONLY.test(t.r)) ? t.r : t.t).join('')
-const itemReading = (it) => WORD_BY_KANJI[it]?.kana ?? CHAPTER_WORD[it]?.reading ?? it
+const itemReading = (it) => WORD_BY_KANJI[it]?.kana ?? CHAPTER_WORD[it]?.say ?? CHAPTER_WORD[it]?.reading ?? it
 const tileReading = (t) => t === 'は' ? 'わ' : t === 'へ' ? 'え' : itemReading(t)
 const furiPlain = (s) => s.replace(/\([^)]*\)/g, '')
 
@@ -76,6 +76,11 @@ function collectTexts() {
   for (const d of DIALOGS) for (const t of d.turns || []) {      // Gesprächs-Szenen
     add(t.npc); (t.options || []).forEach(add)
   }
+  for (const g of GRAMMAR) for (const ex of g.exercises || []) { // Grammatik-Übungen (gelöster Satz)
+    const say = drillSpeech(ex)
+    if (!say) continue                                            // reine Regelfrage – nichts zu hören
+    /[。！？]/.test(say) ? add(say) : addWord(say)                      // Satz vs. Zitierform
+  }
   for (const g of GRAMMAR) for (const e of g.examples || []) {   // Grammatik-Beispiele
     if (e.tokens) {
       add(tokensJoin(e.tokens))
@@ -89,12 +94,12 @@ function collectTexts() {
   }
   for (const c of CHAPTERS) for (const s of c.steps) {           // Kapitel-Schritte
     if (s.kind === 'audio') add(s.say)
-    else if (s.kind === 'intro') addWord(s.reading || s.jp)
+    else if (s.kind === 'intro') addWord(s.say || s.reading || s.jp)
     else if (s.kind === 'story' && s.jp) { add(furiPlain(s.jp)); if (s.tokens) add(tokensJoin(s.tokens)) }
     else if (s.kind === 'dialog') { add(s.line); (s.options || []).forEach(add) }
     else if (s.kind === 'build') addBuild(s.tiles, s.answer)
   }
-  Object.values(CHAPTER_WORD).forEach(w => addWord(w.reading))   // Kapitel-Vokabeln (SRS)
+  Object.values(CHAPTER_WORD).forEach(w => addWord(w.say || w.reading))   // Kapitel-Vokabeln (SRS)
   return [...texts.entries()]
 }
 

@@ -3,6 +3,8 @@ import { C, JP } from '../theme.js'
 import { Card, Btn } from './ui.jsx'
 import { shuffled, feedbackColor } from '../lib/srs.js'
 import { HAS_JP } from '../lib/furigana.jsx'
+import { drillSpeech } from '../data/grammar.js'
+import { speak } from '../lib/speech.js'
 
 // ─── Grammatik-Karte (Lückensatz mit Auswahl) ────────────────────────────────
 // Die Form, in der Grammatik im Wiederholungsplan auftaucht: ein Satz mit Lücke,
@@ -17,6 +19,12 @@ export function GrammarDrill({ topic, ex, onDone }) {
   const options = useMemo(() => shuffled(ex.options), [ex])
   const revealed = ans != null
   const correct = ans === ex.a
+  // Hören gehört zum Anwenden: der Satz, den man gerade gebaut hat, soll auch
+  // klingen. Bei Lückensätzen erst nach der Antwort – vorher wäre die
+  // vorgelesene Fassung die Lösung. Fragen ohne Lücke („一本 – wie liest man
+  // das?") verraten nichts und sind sofort hörbar.
+  const say = drillSpeech(ex)
+  const hearable = say && (revealed || !ex.q.includes('＿'))
 
   return (
     <>
@@ -35,6 +43,7 @@ export function GrammarDrill({ topic, ex, onDone }) {
             )}</span>
           ))}
         </div>
+        {hearable && <SpeakLine text={say} />}
       </Card>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -62,5 +71,19 @@ export function GrammarDrill({ topic, ex, onDone }) {
         </>
       )}
     </>
+  )
+}
+
+// Hören-Knopf unter einem Übungssatz (geteilt mit der Reise-Übung in players.jsx).
+export function SpeakLine({ text }) {
+  return (
+    <button onClick={() => speak(text)}
+      style={{
+        marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6,
+        background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, color: C.indigo,
+        borderRadius: 20, padding: '5px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+      }}>
+      🔊 Anhören
+    </button>
   )
 }

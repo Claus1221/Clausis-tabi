@@ -368,7 +368,7 @@ export const GRAMMAR = [
     exercises: [
       { q: 'これは＿ですか。 (Was ist das?)', a: '何', options: ['何', 'だれ', 'いつ'], hint: '何 = was.' },
       { q: '＿行きますか。 (Wann gehst du?)', a: 'いつ', options: ['いつ', 'どこ', 'だれ'], hint: 'いつ = wann.' },
-          { q: '＿行きますか。 (Wohin gehst du?)', a: 'どこ', options: ['どこ', 'いつ', '何'], hint: 'どこ fragt nach dem Ort.' },
+          { q: '＿へ行きますか。 (Wohin gehst du?)', a: 'どこ', options: ['どこ', 'いつ', '何'], hint: 'どこ fragt nach dem Ort – mit Richtungs-Partikel: どこへ行きますか。' },
       { q: 'これは＿の犬ですか。 (Wessen Hund ist das?)', a: 'だれ', options: ['だれ', '何', 'いつ'], hint: 'だれの = wessen.' },
       { q: 'Was steht bei einer Frage mit Fragewort am Satzende?', a: 'か', options: ['か', 'ね', 'よ'], hint: 'Auch mit Fragewort braucht es das か.' },
     ],
@@ -619,3 +619,29 @@ export const GRAMMAR_ORDER = ['g2', 'g1', 'g6', 'g3', 'g4', 'g5', 'g7', 'g8', 'g
 export const GRAMMAR_SEQ = GRAMMAR_ORDER.map(id => GRAMMAR.find(g => g.id === id))
 
 export const GRAMMAR_GLYPH = Object.fromEntries(GRAMMAR.map(g => [g.id, g.glyph]))
+
+// ─── Was bei einer Übung vorgelesen wird ────────────────────────────────
+// Übungsfragen sind gemischt: mal ein reiner Lückensatz („山＿高いです。"), mal
+// mit deutscher Hilfe in Klammern oder Anführungszeichen, mal eine Frage über
+// Japanisch („一本 – wie liest man das?"). Vorgelesen wird der japanische Teil der
+// GELÖSTEN Aufgabe:
+//   • Lückensatz → der Satz mit eingesetzter Lösung,
+//   • Frage ohne Lücke → die japanische Lösung selbst (山は高いです。, いっぽん …),
+//   • ist die Lösung deutsch → der längste japanische Abschnitt der Frage.
+// Deutsche Zusätze fallen dabei weg, japanische Ziffern bleiben drin (きっぷを２枚).
+// Kommt gar kein zusammenhängendes Japanisch vor („Wie wird は gelesen?"), gibt es
+// nichts zu hören → leerer String, und die Oberfläche zeigt keinen Hören-Knopf.
+const JP_RUN = /[぀-ヿ一-龠々〜、。！？0-9０-９]+/g
+const JP_CORE = /[぀-ヿ一-龠]/g
+const jpCount = (s) => (s.match(JP_CORE) || []).length
+function longestJa(text) {
+  const runs = (text.match(JP_RUN) || [])
+    .map(r => r.replace(/^[、。！？0-9０-９]+/, '').trim())
+    .filter(r => jpCount(r) >= 2)   // ein einzelnes Zeichen ist kein Satz („は" allein
+  return runs.sort((a, b) => jpCount(b) - jpCount(a))[0] || ''   // würde die Stimme „ha" lesen)
+}
+export function drillSpeech(ex) {
+  const q = ex.q || ''
+  if (q.includes('＿')) return longestJa(q.replace('＿', ex.a || ''))
+  return (jpCount(ex.a || '') >= 2 ? longestJa(ex.a) : '') || longestJa(q)
+}
