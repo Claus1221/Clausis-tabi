@@ -7,6 +7,8 @@ import { pingApiKey } from '../lib/claude.js'
 import { pingTtsKey } from '../lib/ttsCloud.js'
 import { Card, Btn } from '../components/ui.jsx'
 import { useAuth } from '../AuthGate.jsx'
+import { useLang } from '../LangGate.jsx'
+import { LANGS } from '../lib/lang.js'
 import AdminUsers from './adminUsers.jsx'
 
 // ─── Einstellungen ───────────────────────────────────────────────────────────
@@ -100,6 +102,8 @@ export default function SettingsScreen({ onClose }) {
   const { settings, saveSettings } = useContext(ProgressCtx)
   const set = (patch) => saveSettings(patch)
   const { isAdmin } = useAuth()
+  const { lang, setLang, langs } = useLang()
+  const otherLangs = langs.filter(id => id !== lang)
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
@@ -108,6 +112,29 @@ export default function SettingsScreen({ onClose }) {
         <h2 style={{ fontSize: 20, fontFamily: JP, color: C.indigo, margin: 0 }}>Einstellungen</h2>
       </div>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 20, marginLeft: 30 }}>Übungen nach deinem Geschmack einstellen</p>
+
+      {/* Sprache – nur wer mehr als eine Sprache wählen darf, sieht die Karte.
+          Der Lernstand liegt je Sprache getrennt; Wechseln verliert nichts. */}
+      {otherLangs.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, marginBottom: 8 }}>SPRACHE</div>
+          <Card style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 14, color: C.sumi, marginBottom: 10 }}>
+              Du lernst gerade: {LANGS[lang].name} ({LANGS[lang].app})
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {otherLangs.map(id => (
+                <Btn key={id} onClick={() => setLang(id)} variant="ghost" style={{ flex: 1 }}>
+                  Zu {LANGS[id].name} wechseln
+                </Btn>
+              ))}
+            </div>
+            <div style={{ fontSize: 12, color: C.textMuted, marginTop: 10 }}>
+              Dein Lernstand bleibt für jede Sprache erhalten.
+            </div>
+          </Card>
+        </>
+      )}
 
       {/* Standard-Wiederholung */}
       <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, marginBottom: 8 }}>STANDARD-WIEDERHOLUNG</div>
