@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
-import { auth, googleProvider, isConfigured, ALLOWED_EMAILS } from './firebase'
+import { doc, getDoc } from 'firebase/firestore'
+import { auth, db, googleProvider, isConfigured, ADMIN_EMAILS } from './firebase'
+import { accessState, normalizeEmail } from './lib/access'
 
 // ─── Theme (passend zur App) ─────────────────────────────────────────────────
 const C = {
@@ -11,13 +13,6 @@ const C = {
 // ─── Auth-Context (für TabiApp: aktueller Nutzer + Abmelden) ──────────────────
 const AuthContext = createContext(null)
 export const useAuth = () => useContext(AuthContext)
-
-function isAllowed(user) {
-  if (!user) return false
-  if (ALLOWED_EMAILS.length === 0) return true
-  const email = (user.email || '').toLowerCase()
-  return ALLOWED_EMAILS.map(e => e.toLowerCase()).includes(email)
-}
 
 // ─── Layout-Hülle für die Vollbild-Screens ───────────────────────────────────
 function Shell({ children }) {
@@ -94,6 +89,31 @@ function NoAccessScreen({ user, onLogout }) {
   )
 }
 
+function OfflineScreen({ onRetry, onLogout }) {
+  return (
+    <Shell>
+      <h1 style={{ fontSize: 20, color: C.indigo, margin: '0 0 8px' }}>Keine Verbindung</h1>
+      <p style={{ color: C.textMuted, fontSize: 14, maxWidth: 320 }}>
+        Keine Verbindung. Für die erste Anmeldung auf diesem Gerät wird einmal Internet gebraucht.
+      </p>
+      <button onClick={onRetry}
+        style={{
+          marginTop: 22, background: C.shu, color: '#fff', border: 'none',
+          borderRadius: 10, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+        }}>
+        Erneut versuchen
+      </button>
+      <button onClick={onLogout}
+        style={{
+          marginTop: 12, background: 'none', color: C.textMuted, border: 'none',
+          fontSize: 13, cursor: 'pointer', textDecoration: 'underline',
+        }}>
+        Abmelden
+      </button>
+    </Shell>
+  )
+}
+
 function SetupScreen() {
   return (
     <Shell>
@@ -117,11 +137,40 @@ export function AuthGate({ children }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  // Freigabe-Zustand des angemeldeten Nutzers (siehe lib/access.js).
+  const [access, setAccess] = useState('checking')
+  // Hochzählen = Abfrage für den aktuellen Nutzer wiederholen.
+  const [recheckTick, setRecheckTick] = useState(0)
 
   useEffect(() => {
     if (!isConfigured) { setLoading(false); return }
     return onAuthStateChanged(auth, u => { setUser(u); setLoading(false) })
   }, [])
+
+  // Freigabe prüfen: Admin kommt ohne Abfrage durch, alle anderen brauchen das
+  // Dokument allowed/<e-mail>. Bei jedem Nutzerwechsel zuerst auf 'checking'
+  // zurücksetzen, damit das Ergebnis des Vorgängers nie für den Nächsten gilt;
+  // `cancelled` verwirft Antworten, die erst nach dem Wechsel eintreffen.
+  useEffect(() => {
+    setAccess('checking')
+    if (!user) return
+    const email = normalizeEmail(user.email || '')
+    if (accessState({ email, admins: ADMIN_EMAILS, docExists: false }) === 'admin') {
+      setAccess('admin')
+      return
+    }
+    let cancelled = false
+    getDoc(doc(db, 'allowed', email))
+      .then(snap => {
+        if (!cancelled) setAccess(accessState({ email, admins: ADMIN_EMAILS, docExists: snap.exists() }))
+      })
+      .catch(err => {
+        if (!cancelled) setAccess(accessState({ email, admins: ADMIN_EMAILS, docExists: false, errorCode: err.code || 'unknown' }))
+      })
+    return () => { cancelled = true }
+  }, [user, recheckTick])
+
+  const recheckAccess = () => setRecheckTick(t => t + 1)
 
   const login = async () => {
     setError(null); setBusy(true)
@@ -139,7 +188,7 @@ export function AuthGate({ children }) {
 
   if (DEV_BYPASS) {
     return (
-      <AuthContext.Provider value={{ user: null, logout: () => {} }}>
+      <AuthContext.Provider value={{ user: null, logout: () => {}, isAdmin: false, recheckAccess: () => {} }}>
         {children}
       </AuthContext.Provider>
     )
@@ -147,10 +196,12 @@ export function AuthGate({ children }) {
   if (!isConfigured) return <SetupScreen />
   if (loading) return <Splash text="Lädt…" />
   if (!user) return <LoginScreen onLogin={login} error={error} busy={busy} />
-  if (!isAllowed(user)) return <NoAccessScreen user={user} onLogout={logout} />
+  if (access === 'checking') return <Splash text="Lädt…" />
+  if (access === 'offline') return <OfflineScreen onRetry={recheckAccess} onLogout={logout} />
+  if (access === 'denied') return <NoAccessScreen user={user} onLogout={logout} />
 
   return (
-    <AuthContext.Provider value={{ user, logout }}>
+    <AuthContext.Provider value={{ user, logout, isAdmin: access === 'admin', recheckAccess }}>
       {children}
     </AuthContext.Provider>
   )

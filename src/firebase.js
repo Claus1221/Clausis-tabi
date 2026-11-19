@@ -23,13 +23,10 @@ const firebaseConfig = {
   appId: "1:426555633535:web:0242c89b897dc30254f44a"
 }
 
-// Nur diese Google-Konten dürfen die App benutzen.
-// Leer lassen ([]) = jedes eingeloggte Google-Konto darf rein.
-// Für eine reine Privat-App: trage hier deine eigene Gmail-Adresse ein.
-export const ALLOWED_EMAILS = [
-  'clausalbers@gmail.com',
-  'balkonien4ever@web.de',
-]
+// Admin-Konten: kommen immer rein und schalten weitere Nutzer frei. Alle anderen
+// Konten müssen in der Firestore-Sammlung `allowed` stehen (Dokument-ID = E-Mail
+// in Kleinbuchstaben); das prüfen AuthGate und die Firestore-Regeln.
+export const ADMIN_EMAILS = ['clausalbers@gmail.com']
 
 // true, sobald oben echte Werte eingetragen sind.
 export const isConfigured = !Object.values(firebaseConfig).some(

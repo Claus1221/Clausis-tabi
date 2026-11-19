@@ -42,8 +42,8 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | Datei | Rolle |
 |---|---|
 | `main.jsx` | Mount-Punkt: `<AuthGate><TabiApp/></AuthGate>`. |
-| `AuthGate.jsx` | Google-Login, erlaubte Konten, `useAuth()`-Context. |
-| `firebase.js` | Firebase-Init; exportiert `auth`, `db`, `ALLOWED_EMAILS`, `isConfigured`. `db` läuft mit persistentem Offline-Cache (IndexedDB, mehrere Tabs geteilt) – lesen/schreiben funktioniert auch offline, Sync folgt automatisch. |
+| `AuthGate.jsx` | Google-Login, Freigabe-Prüfung (Admin aus `ADMIN_EMAILS`, sonst Dokument `allowed/<e-mail>` in Firestore; Zustände prüfen/Kein Zugang/Offline), `useAuth()`-Context mit `user`, `logout`, `isAdmin`, `recheckAccess`. |
+| `firebase.js` | Firebase-Init; exportiert `auth`, `db`, `ADMIN_EMAILS`, `isConfigured`. `db` läuft mit persistentem Offline-Cache (IndexedDB, mehrere Tabs geteilt) – lesen/schreiben funktioniert auch offline, Sync folgt automatisch. |
 | `useProgress.js` | **Firestore-Hook + Fortschritts-Domäne**: `useProgress(uid)` (live-Daten + Schreib-Funktionen + `saveError`), `computeStats`, `dueKana`, `sm2`, `getSettings`, `localDate`, `addDays`, `SETTINGS_DEFAULTS`, `SRS_STAGE_BOUNDS`. Fortschritts-Felder u. a. `completedTalks` (gemeisterte freie Gespräche) und `extraPhrases` (aus Gesprächen übernommene Wendungen; `addPhrase` legt sie an UND plant sie als SRS-Karte ein). Schreibvorgänge laufen über das interne `safeWrite` (try/catch → `saveError`), damit ein echter Schreibfehler (Firestore-Regel, Quota) sichtbar wird statt den Fortschritt still zu verlieren. Unit-Tests: `useProgress.test.js`. |
 | `kanaStrokes.js` | Generierte KanjiVG-Strichpfade: `HIRAGANA`, `KATAKANA`, `KANA_STROKES`, `STROKE_VIEWBOX`. (Generator: `scripts/gen-kana-strokes.mjs`.) |
 | `theme.js` | `C` (Farb-Token) · `JP` (japanische Font-Stack). |
@@ -72,6 +72,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 ### `lib/` — reine Logik
 | Datei | Exporte (Auswahl) | Abhängig von |
 |---|---|---|
+| `access.js` | `normalizeEmail`, `isValidEmail`, `isAdminEmail`, `accessState` (Admin/freigegeben/gesperrt/offline) | – |
 | `xp.js` | `XP_PER_KANA/CARD/WORD/GRAMMAR/CHAPTER/DIALOG` | – |
 | `kanaStats.js` | `totalKanaCount`, `completedKanaList`, `completedKanaCount` | data/kana |
 | `speech.js` | `speak` (gibt ein Versprechen zurück: löst auf, wenn zu Ende gesprochen), `stopSpeaking`, `onSpeechState`, `speakItem`, `speakTokens`, `itemReading`, `copyText` | data/words, data/chapters, **lib/apiKey**, **lib/ttsCloud** |
