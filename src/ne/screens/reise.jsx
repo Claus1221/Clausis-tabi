@@ -2,15 +2,16 @@ import { useState, useRef, useEffect, useContext } from 'react'
 import { C, NE } from '../../theme.js'
 import { ProgressCtx } from '../../state/ProgressContext.js'
 import { Btn } from '../../components/ui.jsx'
-import { XP_PER_KANA, XP_PER_WORD } from '../../lib/xp.js'
+import { XP_PER_KANA, XP_PER_WORD, XP_PER_GRAMMAR } from '../../lib/xp.js'
 import { NE_PATH } from '../data/path.js'
 import { SCRIPT_LESSONS } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
+import { GRAMMAR_BY_ID, grammarKey } from '../data/grammar.js'
 import { nfc } from '../lib/deva.js'
 import { isNodeDone, nodeMeta, stationStates } from '../lib/path.js'
 import { wordKey } from '../lib/learned.js'
 import { buildBackdrop, roadPath, startFlags, STATE_PALETTE } from '../lib/scene.jsx'
-import { ScriptLesson, WordBlock } from './players.jsx'
+import { ScriptLesson, WordBlock, GrammarLesson } from './players.jsx'
 
 // ─── Reise: die Yatra-Karte ───────────────────────────────────────────────────
 // Gegenstück zu src/screens/reise.jsx: Stationen entlang eines gewundenen Wegs, je
@@ -19,12 +20,11 @@ import { ScriptLesson, WordBlock } from './players.jsx'
 // Stationen ohne Daten (nodeMeta null, Typen späterer Tasks) fallen still weg; am
 // Ende steht eine Tafel „Hier geht es bald weiter“.
 
-// Kulisse je Welt in Pfad-Reihenfolge; der Bereich der Tafel am Ende zeigt die Berge
-// als Ausblick. Neue Welten hier ergänzen (Standard: berge).
-const BAND_THEMES = ['tal', 'huegel', 'see', 'berge']
+// Kulisse je Welt: steht an der Welt-Überschrift in data/path.js (theme); der Bereich der
+// Tafel am Ende zeigt die Berge als Ausblick (Standard: berge).
 
 export default function ReiseScreen() {
-  const { progress, completeLesson, completeWordBlock, scheduleNew } = useContext(ProgressCtx)
+  const { progress, completeLesson, completeWordBlock, completeGrammar, scheduleNew } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
   // Station öffnen und dabei merken, ob sie schon erledigt war (s. ScriptLesson unten).
   const open = node => setActive({ ...node, wasDone: isNodeDone(node, progress) })
@@ -80,15 +80,31 @@ export default function ReiseScreen() {
     )
   }
 
+  if (active?.type === 'grammar') {
+    const topic = GRAMMAR_BY_ID[active.id]
+    const already = active.wasDone // Stand beim Öffnen, Begründung wie oben
+    const close = () => setActive(null)
+    return (
+      <GrammarLesson topic={topic} alreadyDone={already} onClose={close}
+        onComplete={() => {
+          // Wie bei Schrift und Wörtern: die Themen-Karte ('g:' + id) idempotent und
+          // immer einplanen, XP und Zähler `grammar` nur beim ersten Abschluss.
+          scheduleNew([grammarKey(topic.id)])
+          if (!already) completeGrammar(topic.id, XP_PER_GRAMMAR, { grammar: 1 })
+        }} />
+    )
+  }
+
   // ─ Layout der Karte ─
   const R = 30, AMP = 86, CENTER = 160, XPAT = [0, 1, 0, -1]
   const bands = [], headers = [], laid = []
-  let y = 22, ni = 0, bandStart = null, bandIdx = -1
+  let y = 22, ni = 0, bandStart = null, bandIdx = -1, bandTheme = 'tal'
   NE_PATH.forEach((it, i) => {
     if (it.world) {
-      if (bandIdx >= 0) bands.push({ top: bandStart, bottom: y, idx: bandIdx })
+      if (bandIdx >= 0) bands.push({ top: bandStart, bottom: y, idx: bandIdx, theme: bandTheme })
       bandIdx++
       bandStart = y
+      bandTheme = it.theme || 'berge'
       headers.push({ y, world: it.world, sub: it.sub })
       y += 62 // Devanagari-Zeilen sind höher als japanische – mehr Luft bis zur Station
       return
@@ -98,11 +114,11 @@ export default function ReiseScreen() {
     y += 2 * R + 56
     ni++
   })
-  if (bandIdx >= 0) bands.push({ top: bandStart, bottom: y, idx: bandIdx })
+  if (bandIdx >= 0) bands.push({ top: bandStart, bottom: y, idx: bandIdx, theme: bandTheme })
   // Tafel am Pfadende: der Weg führt noch ein Stück zu ihr hin.
   const boardY = y + 10
   const BOARD_H = 120
-  bands.push({ top: y, bottom: y + BOARD_H + 40, idx: bands.length })
+  bands.push({ top: y, bottom: y + BOARD_H + 40, idx: bands.length, theme: 'berge' })
   const trackH = boardY + BOARD_H + 40
   const roadPts = laid.map(n => [n.x, n.y])
   roadPts.push([CENTER, boardY + 8])
@@ -113,7 +129,6 @@ export default function ReiseScreen() {
     ...b,
     top: i === 0 ? 0 : b.top,
     bottom: i === bands.length - 1 ? backdropH : b.bottom,
-    theme: BAND_THEMES[b.idx] || 'berge',
   })))
 
   const current = currentIdx >= 0 ? NE_PATH[currentIdx] : null
@@ -125,7 +140,7 @@ export default function ReiseScreen() {
           Deine Reise <span style={{ fontFamily: NE }}>यात्रा</span>
         </h2>
         <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12, lineHeight: 1.5 }}>
-          Station für Station durch Nepal – zuerst die Schrift (Devanagari, Zeichen für Zeichen), dann die ersten Wörter.
+          Station für Station durch Nepal – zuerst die Schrift (Devanagari, Zeichen für Zeichen), dann Wörter und Grammatik im Wechsel.
         </p>
         {current ? (
           <Btn onClick={() => open(current)} style={{ width: '100%', minHeight: 48, marginBottom: 12 }}>

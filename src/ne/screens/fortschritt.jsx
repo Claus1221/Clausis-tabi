@@ -6,13 +6,14 @@ import { periodBuckets, weekSummary } from '../../lib/progress.js'
 import { Card } from '../../components/ui.jsx'
 import { SCRIPT_DATA, SCRIPT_LESSONS } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
+import { GRAMMAR } from '../data/grammar.js'
 import { learnedItems, dueItems, srsEntry, itemInfo } from '../lib/learned.js'
 import { SRS_STAGES } from '../lib/srs.js'
 
 // ─── Fortschritt (Yatra) ──────────────────────────────────────────────────────
 // Gegenstück zu src/screens/fortschritt.jsx mit dem, was es im Nepali-Kurs heute gibt:
 // XP/Level/Streak, Woche, Level-Balken, XP-Verlauf, Kenntnisstufen der Karten mit
-// „fällig“-Sprung und der Stand von Schrift und Wörtern. Kapitel-Sterne und Abzeichen folgen, wenn
+// „fällig“-Sprung und der Stand von Schrift, Wörtern und Grammatik. Kapitel-Sterne und Abzeichen folgen, wenn
 // es Kapitel gibt. Zurücksetzen liegt in den Einstellungen (nur dort, eindeutig Nepali).
 
 const label = { fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1 }
@@ -40,7 +41,7 @@ export default function FortschrittScreen({ onReview }) {
   const cardTotal = srsVals.length
   const due = dueItems(progress).length
 
-  // learned enthält Zeichen und Wörter (w:-Schlüssel) – gezählt wird je Art über itemInfo.
+  // learned enthält Zeichen, Wörter (w:) und Grammatik (g:) – gezählt wird je Art über itemInfo.
   const charsTotal = Object.keys(SCRIPT_DATA).length
   const charsLearned = learned.filter(k => itemInfo(k).kind === 'script').length
   const lessonsDone = SCRIPT_LESSONS.filter(l => (progress.completedLessons || []).includes(l.id)).length
@@ -49,6 +50,10 @@ export default function FortschrittScreen({ onReview }) {
   const wordsLearned = learned.filter(k => itemInfo(k).kind === 'word').length
   const blocksDone = WORD_BLOCKS.filter(b => (progress.completedWordBlocks || []).includes(b.id)).length
   const wordPct = Math.round(wordsLearned / Math.max(1, wordsTotal) * 100)
+  // Grammatik: eine Karte je Thema (g:-Schlüssel) – eigene Art, nicht unter Wörtern.
+  const grammarTotal = GRAMMAR.length
+  const grammarLearned = learned.filter(k => itemInfo(k).kind === 'grammar').length
+  const grammarPct = Math.round(grammarLearned / Math.max(1, grammarTotal) * 100)
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
@@ -168,7 +173,7 @@ export default function FortschrittScreen({ onReview }) {
 
       {/* Schrift */}
       <Card style={{ marginBottom: 16 }}>
-        <div style={{ ...label, marginBottom: 12 }}>SCHRIFT UND WÖRTER</div>
+        <div style={{ ...label, marginBottom: 12 }}>SCHRIFT, WÖRTER, GRAMMATIK</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
           <span style={{ fontSize: 13, fontWeight: 500 }}>Devanagari lesen</span>
           <span style={{ fontSize: 12, color: C.textMuted }}>{pct}%</span>
@@ -188,6 +193,16 @@ export default function FortschrittScreen({ onReview }) {
         </div>
         <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>
           {wordsLearned} / {wordsTotal} Wörter gelernt · {blocksDone} / {WORD_BLOCKS.length} Wortblöcke
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', margin: '12px 0 4px' }}>
+          <span style={{ fontSize: 13, fontWeight: 500 }}>Grammatik</span>
+          <span style={{ fontSize: 12, color: C.textMuted }}>{grammarPct}%</span>
+        </div>
+        <div style={{ height: 6, background: C.washiDark, borderRadius: 3, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${grammarPct}%`, background: C.indigo, borderRadius: 3 }} />
+        </div>
+        <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>
+          {grammarLearned} / {grammarTotal} Themen gelernt
         </div>
       </Card>
     </div>

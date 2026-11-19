@@ -1,5 +1,6 @@
 import { SCRIPT_LESSONS, SCRIPT_DATA } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
+import { GRAMMAR_BY_ID } from '../data/grammar.js'
 
 // Reine Pfad-Logik der Yatra-Karte (kein React). Gegenstück zu src/lib/path.js.
 
@@ -21,7 +22,7 @@ export function isNodeDone(node, progress) {
 }
 
 // Titel + Stationszeichen. null für Überschriften und für Stationen, deren Daten es
-// heute nicht gibt (Grammatik, Kapitel … kommen in späteren Tasks) – die Karte lässt
+// heute nicht gibt (Kapitel, Szenen, Ziel kommen in späteren Tasks) – die Karte lässt
 // solche Stationen still aus, statt zu stürzen. Spätere Tasks ergänzen hier ihren Typ.
 export function nodeMeta(node) {
   if (node?.type === 'script') {
@@ -36,10 +37,16 @@ export function nodeMeta(node) {
     const b = WORD_BLOCKS.find(x => x.id === node.id)
     return b ? { title: b.title, glyph: b.theme } : null
   }
+  if (node?.type === 'grammar') {
+    const g = GRAMMAR_BY_ID[node.id]
+    return g ? { title: g.title, glyph: g.glyph } : null
+  }
   return null
 }
 
-// Station = kein Überschrift-Eintrag und mit Daten.
+// Station = kein Überschrift-Eintrag und mit Daten. Eine Station ohne Daten (Kapitel,
+// Szene, Ziel, solange es sie nicht gibt) ist damit weder erledigt noch offen – sie
+// hält die Stationen dahinter nicht auf.
 const isStation = n => !n.world && nodeMeta(n) !== null
 
 // Index der nächsten offenen Station: die erste nicht erledigte (Überschriften und

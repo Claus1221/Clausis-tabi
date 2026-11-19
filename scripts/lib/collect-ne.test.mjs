@@ -64,6 +64,32 @@ describe('collectNeTexts', () => {
     expect(u.filter(([x]) => x === 'नमस्ते छ')).toEqual([['नमस्ते छ', RATE_WORD]])
   })
 
+  // Grammatik im Format von src/ne/data/grammar.js (nur die gelesenen Felder).
+  const grammar = [{
+    id: 'ng1',
+    examples: [{ dev: 'म सन्चै छु।', tokens: [{ t: 'म', r: 'ma', de: 'ich' }, { t: 'सन्चै', r: 'sancai', de: 'wohlauf' }, { t: 'छु', r: 'chu', de: 'bin' }, { t: '।' }] }],
+    exercises: [
+      { q: 'म सन्चै ＿＿।', a: 'छु', options: ['छु', 'म', 'यो'] },
+      { q: 'म＿＿ पानी चाहिन्छ।', a: 'लाई', options: ['लाई', 'को', 'एक जना'] },
+    ],
+  }]
+  const grammarNewWords = { ng1: [{ dev: 'जर्मन', roman: 'jarman', de: 'deutsch' }] }
+
+  it('Grammatik: Beispielsatz und gelöste Lückensätze mit Satz-Tempo', () => {
+    const t = collectNeTexts({ grammar })
+    expect(t).toContainEqual(['म सन्चै छु।', RATE_SENTENCE])
+    expect(t).toContainEqual(['मलाई पानी चाहिन्छ।', RATE_SENTENCE])
+    expect(t.some(([x]) => x.includes('＿'))).toBe(false) // nie die Lücke sprechen
+  })
+  it('Grammatik: antippbare Tokens, Antwort-Optionen und neue Wörter mit Wort-Tempo', () => {
+    const t = collectNeTexts({ grammar, grammarNewWords })
+    for (const w of ['म', 'सन्चै', 'छु', 'यो', 'लाई', 'को', 'एक जना', 'जर्मन']) expect(t, w).toContainEqual([w, RATE_WORD])
+    expect(t.some(([x]) => x === '।')).toBe(false)
+  })
+  it('neue Wörter eines Themas ohne GRAMMAR-Daten: trotzdem gesammelt', () => {
+    expect(collectNeTexts({ grammarNewWords })).toEqual([['जर्मन', RATE_WORD]])
+  })
+
   it('fehlende Quellen sind erlaubt', () => {
     expect(collectNeTexts({})).toEqual([])
   })

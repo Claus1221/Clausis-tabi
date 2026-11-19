@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { C, NE } from '../../theme.js'
 import { Btn, Card } from '../../components/ui.jsx'
-import { XP_PER_KANA, XP_PER_WORD } from '../../lib/xp.js'
+import { XP_PER_KANA, XP_PER_WORD, XP_PER_GRAMMAR } from '../../lib/xp.js'
 import { SCRIPT_DATA } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
 import { speak, stopSpeaking, soundAvailable } from '../lib/speech.js'
@@ -14,12 +14,14 @@ import { NE_PATH } from '../data/path.js'
 import TraceCanvas from '../components/TraceCanvas.jsx'
 import { useSound, usePlayback, ListenButton, NoSoundMark, NO_SOUND_HINT } from '../components/sound.jsx'
 import { NeText, TappableSentence, useShowRoman } from '../components/text.jsx'
+import { GapDrill } from '../components/GapDrill.jsx'
+import { GrammarHead, GrammarExplain, GrammarExamples } from '../components/grammar.jsx'
 
 // ─── Spieler für Yatra-Lektionen ──────────────────────────────────────────────
 // Gegenstück zu src/screens/players.jsx. Grundsatz: alles geht ohne Ton (Ton-Bausteine
 // in components/sound.jsx). Gelesen wird über die Umschrift.
-// ScriptLesson (Schrift) und WordBlock (Wörter) teilen Rahmen und Abschluss-Muster
-// (LessonFrame, useFinishOnce).
+// ScriptLesson (Schrift), WordBlock (Wörter) und GrammarLesson (Grammatik) teilen Rahmen
+// und Abschluss-Muster (LessonFrame, useFinishOnce).
 
 // Ein Zeichen vorstellen: groß, Art, Umschrift, Anhören, Merkhilfe.
 // Die Umschrift (roman) steht hier IMMER, unabhängig von settings.showRoman: die Lesung
@@ -195,6 +197,10 @@ function useFinishOnce(onComplete, onClose) {
 // scrollbarer Inhalt, Fußleiste (footer = null → keine, z. B. beim Quiz).
 function LessonFrame({ title, step, total, onClose, footer, children }) {
   const pct = Math.round((step / Math.max(1, total - 1)) * 100)
+  // Neuer Schritt beginnt oben – sonst bliebe nach einer langen Erklärung die Scroll-
+  // Position stehen und der nächste Schritt öffnete mitten im Inhalt.
+  const bodyRef = useRef(null)
+  useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0 }, [step])
   return (
     <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
       <div style={{ padding: '8px 16px 10px', background: '#fff', borderBottom: `1px solid ${C.washiDark}` }}>
@@ -210,7 +216,7 @@ function LessonFrame({ title, step, total, onClose, footer, children }) {
         <h3 style={{ fontSize: 14, color: C.indigo, margin: 0 }}>{title}</h3>
       </div>
 
-      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>{children}</div>
+      <div ref={bodyRef} style={{ flex: 1, overflow: 'auto', padding: 20 }}>{children}</div>
 
       {footer && (
         <div style={{ padding: '14px 20px', paddingBottom: 'max(14px, env(safe-area-inset-bottom))', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
@@ -312,6 +318,121 @@ export function ScriptLesson({ lesson, alreadyDone = false, onComplete, onClose 
         <Btn onClick={finish} disabled={finishing} style={{ width: '100%', minHeight: 48 }}>Lektion abschließen ✓</Btn>
       ) : (
         <Btn onClick={next} style={{ width: '100%', minHeight: 48 }}>{cur.kind === 'intro' ? 'Los geht’s →' : 'Weiter →'}</Btn>
+      )}>
+      {content}
+    </LessonFrame>
+  )
+}
+
+// ─── Grammatik ────────────────────────────────────────────────────────────────
+
+// Alle Übungen eines Themas als Lückensätze, nacheinander. Falsch beim ersten Versuch →
+// die Übung kommt EINMAL am Ende der Lektion wieder (mit neu gemischten Optionen); auch
+// ein zweiter Fehler hält die Lektion nicht auf. onFinish(beim ersten Versuch richtig, Anzahl).
+function GrammarDrillStep({ topic, sound, onFinish }) {
+  const [list, setList] = useState(() => topic.exercises.map(ex => ({ ex, retry: false })))
+  const [pos, setPos] = useState(0)
+  const [right, setRight] = useState(0)
+  const cur = list[pos]
+
+  // GapDrill ruft onDone je Erscheinen genau einmal (eigene Sperre, key je Position) –
+  // die Werte aus diesem Render sind also aktuell.
+  const done = correct => {
+    const nr = right + (correct && !cur.retry ? 1 : 0)
+    const nl = !correct && !cur.retry ? [...list, { ...cur, retry: true }] : list
+    if (pos + 1 >= nl.length) { onFinish(nr, topic.exercises.length); return }
+    setRight(nr)
+    setList(nl)
+    setPos(pos + 1)
+  }
+
+  const last = pos + 1 >= list.length
+  const head = (
+    <p style={{ color: C.textMuted, fontSize: 13, margin: '0 0 10px', textAlign: 'center' }}>
+      {cur.retry ? '🔁 Noch einmal' : 'Anwenden'} · {pos + 1} / {list.length}
+    </p>
+  )
+  // key je Position: eine wiederholte Übung ist eine neue Runde (neu gemischt, offen).
+  return <GapDrill key={pos} ex={cur.ex} sound={sound} head={head} onDone={done}
+    nextLabel={last ? 'Übungen abschließen →' : 'Nächster Satz →'} />
+}
+
+// Grammatik-Lektion: Erklärung (mit neuen Wörtern) → Beispiele zum Antippen (Anhören nur
+// mit Ton) → alle Übungen als Lückensätze → Abschluss. Vergibt selbst nichts:
+// onComplete (Reise-Screen) bucht XP_PER_GRAMMAR und plant die Themen-Karte ein –
+// Abschluss-Muster wie ScriptLesson (useFinishOnce). alreadyDone: Wiederholung eines
+// erledigten Themas – dann ohne XP-Versprechen.
+export function GrammarLesson({ topic, alreadyDone = false, onComplete, onClose }) {
+  const sound = useSound()
+  const hasDrill = topic.exercises.length > 0
+  const steps = useMemo(() => [
+    { kind: 'explain' },
+    ...(topic.examples.length ? [{ kind: 'examples' }] : []),
+    ...(hasDrill ? [{ kind: 'drill' }] : []),
+    { kind: 'done' },
+  ], [topic, hasDrill])
+  const [step, setStep] = useState(0)
+  const [score, setScore] = useState(null) // [richtig beim ersten Versuch, Anzahl]
+  useEffect(() => () => stopSpeaking(), [step])
+  const [finishing, finish] = useFinishOnce(onComplete, onClose)
+
+  const cur = steps[step]
+  const next = () => setStep(s => Math.min(s + 1, steps.length - 1))
+
+  let content
+  if (cur.kind === 'explain') {
+    content = (
+      <>
+        <GrammarHead topic={topic} />
+        <GrammarExplain topic={topic} />
+        {sound === false && (
+          <div style={{ background: `${C.indigo}12`, borderRadius: 10, padding: 12, fontSize: 13, color: C.indigo, lineHeight: 1.5, marginTop: 14 }}>
+            🔇 {NO_SOUND_HINT}
+          </div>
+        )}
+      </>
+    )
+  } else if (cur.kind === 'examples') {
+    content = (
+      <>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.indigo, textAlign: 'center', marginBottom: 4 }}>BEISPIELE</div>
+        <p style={{ fontSize: 14, color: C.textMuted, textAlign: 'center', margin: '0 0 12px', lineHeight: 1.5 }}>
+          <span style={{ fontFamily: NE, color: C.shu }}>{topic.glyph}</span> im Satz. Tippe ein Wort an, um zu sehen, was es heißt.
+        </p>
+        <GrammarExamples topic={topic} sound={sound} hint />
+      </>
+    )
+  } else if (cur.kind === 'drill') {
+    content = <GrammarDrillStep topic={topic} sound={sound} onFinish={(r, n) => { setScore([r, n]); next() }} />
+  } else {
+    content = (
+      <div style={{ textAlign: 'center', padding: '8px 0' }}>
+        <div style={{ fontSize: 56, marginBottom: 8 }}>🎉</div>
+        <h2 style={{ fontSize: 26, fontFamily: NE, color: C.matcha, marginBottom: 4 }}>धेरै राम्रो!</h2>
+        <p style={{ color: C.textMuted, marginBottom: 12 }}>Sehr gut gemacht!</p>
+        {alreadyDone ? (
+          <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>Schon abgeschlossen – diese Runde bringt keine neuen XP.</p>
+        ) : (
+          <p style={{ fontSize: 22, fontWeight: 700, color: C.shu, marginBottom: 12 }}>+{XP_PER_GRAMMAR} XP</p>
+        )}
+        {score && <p style={{ marginBottom: 8 }}>Beim ersten Versuch richtig: <strong>{score[0]} / {score[1]}</strong></p>}
+        <p style={{ lineHeight: 1.6, marginBottom: 10 }}>Dieses Thema kommt in deinen Wiederholungen als Lückensatz wieder:</p>
+        <div style={{ display: 'inline-block', background: `${C.matcha}20`, borderRadius: 10, padding: '6px 14px', fontSize: 16, color: C.sumi, lineHeight: 1.5 }}>
+          {topic.title}
+        </div>
+      </div>
+    )
+  }
+
+  // Fußleiste bei den Übungen ausgeblendet: GapDrill hat eigene Knöpfe.
+  return (
+    <LessonFrame title={topic.title} step={step} total={steps.length} onClose={onClose}
+      footer={cur.kind === 'drill' ? null : cur.kind === 'done' ? (
+        <Btn onClick={finish} disabled={finishing} style={{ width: '100%', minHeight: 48 }}>Thema abschließen ✓</Btn>
+      ) : (
+        <Btn onClick={next} style={{ width: '100%', minHeight: 48 }}>
+          {cur.kind === 'explain' ? (steps[1].kind === 'examples' ? 'Zu den Beispielen →' : 'Weiter →') : hasDrill ? 'Zu den Übungen →' : 'Weiter →'}
+        </Btn>
       )}>
       {content}
     </LessonFrame>

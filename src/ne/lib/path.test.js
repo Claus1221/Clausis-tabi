@@ -2,21 +2,23 @@ import { describe, it, expect } from 'vitest'
 import { NE_PATH } from '../data/path.js'
 import { SCRIPT_LESSONS } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
+import { GRAMMAR, GRAMMAR_ORDER } from '../data/grammar.js'
 import { isNodeDone, nodeMeta, nextOpenIndex, stationStates, wordsBefore } from './path.js'
 
 const stations = NE_PATH.filter(n => !n.world)
 const EMPTY = { completedLessons: [] }
-const ALL_DONE = { completedLessons: SCRIPT_LESSONS.map(l => l.id), completedWordBlocks: WORD_BLOCKS.map(b => b.id) }
+const ALL_DONE = { completedLessons: SCRIPT_LESSONS.map(l => l.id), completedWordBlocks: WORD_BLOCKS.map(b => b.id), completedGrammar: GRAMMAR.map(g => g.id) }
 const wordIds = new Set(WORD_BLOCKS.map(b => b.id))
 
 describe('NE_PATH', () => {
   it('beginnt mit einer Welt-Überschrift', () => {
     expect(NE_PATH[0].world).toBeTruthy()
   })
-  // Ausnahme: Wort-Stationen, deren Block es in words.js (noch) nicht gibt – die Karte
-  // lässt sie still aus, bis die Daten da sind.
+  // Kapitel, Szenen und Ziel haben heute noch keine Daten – die Karte lässt sie still aus.
   it('jede Station mit Daten hat nodeMeta ≠ null (Titel + Zeichen)', () => {
-    for (const n of stations.filter(x => x.type !== 'word' || wordIds.has(x.id))) {
+    const grammarIds = new Set(GRAMMAR.map(g => g.id))
+    const withData = n => n.type === 'script' || (n.type === 'word' && wordIds.has(n.id)) || (n.type === 'grammar' && grammarIds.has(n.id))
+    for (const n of stations.filter(withData)) {
       const m = nodeMeta(n)
       expect(m, `${n.type}:${n.id}`).not.toBeNull()
       expect(m.title).toBeTruthy()
@@ -34,6 +36,35 @@ describe('NE_PATH', () => {
   it('Wortblöcke erst nach der letzten Schrift-Lektion (Wörter setzen alle Zeichen voraus)', () => {
     const lastScript = NE_PATH.findLastIndex(n => n.type === 'script')
     NE_PATH.forEach((n, i) => { if (n.type === 'word') expect(i, n.id).toBeGreaterThan(lastScript) })
+  })
+  it('jede Schrift-Lektion, jeder Wortblock und jedes Grammatik-Thema hat genau eine Station', () => {
+    const ids = [...SCRIPT_LESSONS.map(l => ['script', l.id]), ...WORD_BLOCKS.map(b => ['word', b.id]), ...GRAMMAR.map(g => ['grammar', g.id])]
+    for (const [type, id] of ids) expect(stations.filter(n => n.type === type && n.id === id), `${type}:${id}`).toHaveLength(1)
+  })
+  it('Grammatik-Stationen in der Reihenfolge von GRAMMAR_ORDER', () => {
+    expect(stations.filter(n => n.type === 'grammar').map(n => n.id)).toEqual(GRAMMAR_ORDER)
+  })
+  it('jede Grammatik-Station hat nodeMeta mit Titel und Zeichen des Themas', () => {
+    for (const g of GRAMMAR) expect(nodeMeta({ type: 'grammar', id: g.id })).toEqual({ title: g.title, glyph: g.glyph })
+  })
+  it('keine Station doppelt; IDs nach Schema', () => {
+    const keys = stations.map(n => `${n.type}:${n.id}`)
+    expect(new Set(keys).size).toBe(keys.length)
+    const PATTERN = { script: /^s\d+$/, word: /^nw\d+$/, grammar: /^ng\d+$/, chapter: /^nc\d+$/, dialog: /^nd\d+$/, goal: /^goal$/ }
+    for (const n of stations) expect(n.id, n.type).toMatch(PATTERN[n.type])
+  })
+  it('Kapitel, Szenen und Ziel stehen schon im Pfad (Daten folgen) und werden heute übersprungen', () => {
+    expect(stations.filter(n => n.type === 'chapter')).toHaveLength(10)
+    expect(stations.filter(n => n.type === 'dialog')).toHaveLength(6)
+    expect(stations.at(-1)).toEqual({ type: 'goal', id: 'goal' })
+    // Ziel und alles ohne Daten sind kein Hindernis: alles mit Daten erledigt → nichts offen.
+    expect(stationStates(NE_PATH, ALL_DONE).includes('current')).toBe(false)
+  })
+  it('jede Welt-Überschrift hat Titel, Untertitel und eine bekannte Kulisse', () => {
+    for (const w of NE_PATH.filter(n => n.world)) {
+      expect(w.sub, w.world).toBeTruthy()
+      expect(['tal', 'huegel', 'see', 'berge'], w.world).toContain(w.theme)
+    }
   })
 })
 
@@ -82,6 +113,16 @@ describe('nextOpenIndex', () => {
     const path = [{ world: 'A' }, { type: 'word', id: 'gibtsnicht' }, { type: 'script', id: 's1' }]
     expect(nextOpenIndex(path, EMPTY)).toBe(2)
   })
+  it('überspringt Kapitel/Szenen/Ziel ohne Daten auch mitten im Pfad', () => {
+    const path = [{ world: 'A' }, { type: 'script', id: 's1' }, { type: 'chapter', id: 'nc1' }, { type: 'dialog', id: 'nd1' }, { type: 'goal', id: 'goal' }, { type: 'script', id: 's2' }]
+    expect(nextOpenIndex(path, { completedLessons: ['s1'] })).toBe(5)
+    expect(nextOpenIndex(path, { completedLessons: ['s1', 's2'] })).toBe(path.length)
+  })
+  it('Grammatik-Station zählt über completedGrammar', () => {
+    const path = [{ world: 'A' }, { type: 'grammar', id: GRAMMAR_ORDER[0] }, { type: 'script', id: 's1' }]
+    expect(nextOpenIndex(path, EMPTY)).toBe(1)
+    expect(nextOpenIndex(path, { completedGrammar: [GRAMMAR_ORDER[0]] })).toBe(2)
+  })
 })
 
 describe('stationStates', () => {
@@ -89,6 +130,10 @@ describe('stationStates', () => {
   it('erledigt / offen / gesperrt wie auf der japanischen Karte; Überschriften und Unbekanntes null', () => {
     expect(stationStates(path, EMPTY)).toEqual([null, 'current', 'locked', null, 'locked'])
     expect(stationStates(path, { completedLessons: ['s1'] })).toEqual([null, 'done', 'current', null, 'locked'])
+  })
+  it('eine Station ohne Daten blockiert die folgende nicht (weder erledigt noch offen)', () => {
+    const p = [{ world: 'A' }, { type: 'script', id: 's1' }, { type: 'chapter', id: 'nc1' }, { type: 'script', id: 's2' }]
+    expect(stationStates(p, { completedLessons: ['s1'] })).toEqual([null, 'done', null, 'current'])
   })
   it('eine erledigte Station hinter der offenen bleibt erledigt', () => {
     expect(stationStates(path, { completedLessons: ['s3'] })).toEqual([null, 'current', 'locked', null, 'done'])

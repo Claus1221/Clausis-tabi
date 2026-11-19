@@ -77,7 +77,7 @@ export default function NepaliApp() {
   // ankam. scheduleNew ist idempotent und schreibt nichts vor dem ersten Snapshot.
   useEffect(() => {
     scheduleNew(learnedItems(progress))
-  }, [progress.completedLessons, progress.completedWordBlocks, progress.srs]) // eslint-disable-line
+  }, [progress.completedLessons, progress.completedWordBlocks, progress.completedGrammar, progress.srs]) // eslint-disable-line
 
   // Wiederholungen leben im Üben-Tab; andere Screens springen dorthin.
   const goToReview = () => { setUebenMode('srs'); setTab('ueben') }

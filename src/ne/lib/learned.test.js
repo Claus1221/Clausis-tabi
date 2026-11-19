@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { SCRIPT_LESSONS, SCRIPT_DATA } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
+import { GRAMMAR, GRAMMAR_ORDER, grammarKey } from '../data/grammar.js'
 import { learnedItems, itemInfo, dueItems, srsEntry, wordKey } from './learned.js'
 import { NE_SETTINGS_DEFAULTS, neSettings } from './settings.js'
 import { SETTINGS_DEFAULTS, addDays } from '../../useProgress.js'
@@ -61,6 +62,43 @@ describe('learnedItems – Wörter (Schlüssel w: + Text)', () => {
     const words = WORD_BLOCKS.flatMap(b => b.words)
     expect(all.length).toBe(Object.keys(SCRIPT_DATA).length + words.length)
     for (const k of all) expect(isNfc(k), k).toBe(true)
+  })
+})
+
+describe('learnedItems / itemInfo – Grammatik (Schlüssel g: + id)', () => {
+  const ALL = {
+    completedLessons: SCRIPT_LESSONS.map(l => l.id),
+    completedWordBlocks: WORD_BLOCKS.map(b => b.id),
+    completedGrammar: GRAMMAR.map(g => g.id),
+  }
+  it('abgeschlossene Themen kommen als g:-Schlüssel dazu, in GRAMMAR_ORDER', () => {
+    const done = [GRAMMAR_ORDER[2], GRAMMAR_ORDER[0]]
+    expect(learnedItems({ completedGrammar: done })).toEqual([grammarKey(GRAMMAR_ORDER[0]), grammarKey(GRAMMAR_ORDER[2])])
+  })
+  it('unbekannte Themen-IDs wirken nicht', () => {
+    expect(learnedItems({ completedGrammar: ['ng99'] })).toEqual([])
+  })
+  // Keine Ausnahmeliste: jede Quelle hat ihren Namensraum (Zeichen: Text, Wörter: w:, Grammatik: g:).
+  it('alle Schlüssel aller Quellen eindeutig und NFC; Anzahl = Summe der Quellen', () => {
+    const all = learnedItems(ALL)
+    expect(new Set(all).size).toBe(all.length)
+    const words = WORD_BLOCKS.flatMap(b => b.words)
+    expect(all.length).toBe(Object.keys(SCRIPT_DATA).length + words.length + GRAMMAR.length)
+    for (const k of all) expect(isNfc(k), k).toBe(true)
+  })
+  it('itemInfo: kind grammar, Vorderseite = Zeichen des Themas, de = Titel, nichts undefined', () => {
+    for (const g of GRAMMAR) {
+      const i = itemInfo(grammarKey(g.id))
+      expect(i).toMatchObject({ key: grammarKey(g.id), kind: 'grammar', front: g.glyph, de: g.title, kindLabel: 'Grammatik' })
+      for (const v of Object.values(i)) expect(v, g.id).not.toBeUndefined()
+      for (const f of ['key', 'front', 'roman', 'de', 'kind', 'say']) expect(typeof i[f], `${g.id}.${f}`).toBe('string')
+    }
+  })
+  it('unbekannter g:-Schlüssel stürzt nicht ab und zeigt das Präfix nicht', () => {
+    const i = itemInfo('g:ng99')
+    expect(i.kind).toBe('grammar')
+    expect(i.front.startsWith('g:')).toBe(false)
+    expect(Object.values(i).includes(undefined)).toBe(false)
   })
 })
 

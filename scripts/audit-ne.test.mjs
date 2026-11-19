@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { auditPath, FUNCTION_WORDS, functionWordSet, FUNCTION_WORD_LIMIT } from './audit-ne.mjs'
+import { FUNCTION_WORDS as FW_SOURCE } from '../src/ne/lib/functionWords.js'
 
 const tok = (t, de = 'x') => ({ t, r: 'x', de })
 const word = (dev, ...tokens) => ({ dev, roman: 'x', de: 'x', ex: { dev: tokens.map(t => t.t).join(' '), roman: 'x', de: 'x', tokens } })
@@ -35,12 +36,49 @@ describe('auditPath', () => {
   })
 })
 
+describe('auditPath – Grammatik-Stationen', () => {
+  const x = (dev, ...tokens) => ({ dev, roman: 'x', de: 'x', tokens })
+  const e = (q, a) => ({ q, a, options: [a, 'y', 'z'], hint: '', de: '', roman: '' })
+  const grammar = {
+    topics: [
+      { id: 'ng1', examples: [x('पानी छ।', tok('पानी'), tok('छ'), { t: '।' })], exercises: [e('पानी ＿＿।', 'छ')] },
+      // ng2 lehrt हुँ (Form) und जर्मन (neues Wort); benutzt चिया, das erst nw2 bringt.
+      { id: 'ng2', examples: [x('म जर्मन हुँ।', tok('म'), tok('जर्मन'), tok('हुँ'), { t: '।' }), x('चिया छ।', tok('चिया'), tok('छ'))],
+        exercises: [e('म जर्मन ＿＿।', 'हुँ'), e('पानी＿＿ छ।', 'मा'), e('दुई＿＿ चिया।', 'वटा')] },
+      // ng3 kommt nach nw2: चिया ist jetzt bekannt; वटा lehrt es selbst.
+      { id: 'ng3', examples: [x('चिया छ।', tok('चिया'), tok('छ'))], exercises: [e('दुई＿＿ पानी।', 'वटा')] },
+    ],
+    newWords: { ng2: [{ dev: 'जर्मन' }] },
+    forms: { ng2: ['हुँ', 'म'], ng3: ['वटा', 'दुई'] },
+  }
+  const gpath = [{ type: 'word', id: 'nw1' }, { type: 'grammar', id: 'ng1' }, { type: 'grammar', id: 'ng2' }, { type: 'word', id: 'nw2' }, { type: 'grammar', id: 'ng3' }, { type: 'chapter', id: 'nc1' }]
+  const known = new Set(['छ', 'मा'])
+  const found = auditPath(gpath, blocks, known, grammar)
+
+  it('Beispiele: jedes antippbare Token muss bis zu dieser Station eingeführt sein', () => {
+    expect(found).toContainEqual({ block: 'ng2', word: 'चिया छ।', token: 'चिया' })
+    expect(found.some(f => f.block === 'ng3' && f.token === 'चिया')).toBe(false)
+  })
+  it('Formen und neue Wörter eines Themas gelten ab diesem Thema (nicht davor)', () => {
+    expect(found.some(f => ['जर्मन', 'हुँ', 'म'].includes(f.token))).toBe(false)
+    expect(found.some(f => f.block === 'ng1')).toBe(false)
+  })
+  it('gelöste Übungen: Wörter (auch Stamm + angehängtes Wort) müssen eingeführt sein', () => {
+    // पानीमा: पानी (nw1) + मा (bekannt) → ok. दुईवटा in ng2: वटा/दुई kommen erst mit ng3.
+    expect(found.some(f => f.token === 'पानीमा')).toBe(false)
+    expect(found).toContainEqual({ block: 'ng2', word: 'दुईवटा चिया।', token: 'दुईवटा' })
+    expect(found).toContainEqual({ block: 'ng2', word: 'दुईवटा चिया।', token: 'चिया' })
+    expect(found.some(f => f.block === 'ng3')).toBe(false)
+  })
+  it('ein Thema ohne Daten und Stationen anderer Typen werden übersprungen', () => {
+    expect(() => auditPath([{ type: 'grammar', id: 'ng9' }, { type: 'goal', id: 'goal' }], blocks, known, grammar)).not.toThrow()
+    expect(auditPath([{ type: 'grammar', id: 'ng1' }], blocks, known)).toEqual([])
+  })
+})
+
 describe('FUNCTION_WORDS', () => {
-  it('kurz, ohne Doppel, NFC', () => {
-    const all = Object.values(FUNCTION_WORDS).flat()
-    expect(all.length).toBeLessThanOrEqual(FUNCTION_WORD_LIMIT)
-    expect(new Set(all).size).toBe(all.length)
-    for (const w of all) expect(w).toBe(w.normalize('NFC'))
-    expect(functionWordSet().size).toBe(all.length)
+  it('kommt aus src/ne/lib/functionWords.js (eine Quelle für Audit und Daten-Tests)', () => {
+    expect(FUNCTION_WORDS).toBe(FW_SOURCE)
+    expect(functionWordSet().size).toBeLessThanOrEqual(FUNCTION_WORD_LIMIT)
   })
 })

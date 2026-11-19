@@ -2,10 +2,12 @@
 // Funktion auf Daten (kein Dateizugriff), damit sie ohne Dateisystem testbar ist.
 // Gegenstück zu collectTexts() in scripts/generate-audio.mjs.
 //
-// sources = { script?, words?, grammar?, chapters?, dialogs? }
-// Bisher behandelt: `script` (SCRIPT_DATA) und `words` (WORD_BLOCKS). Spätere Tasks
-// ergänzen hier ihre Sprechstellen; nicht behandelte Schlüssel werden ignoriert.
+// sources = { script?, words?, grammar?, grammarNewWords?, chapters?, dialogs? }
+// Bisher behandelt: `script` (SCRIPT_DATA), `words` (WORD_BLOCKS), `grammar` (GRAMMAR)
+// und `grammarNewWords` (GRAMMAR_NEW_WORDS). Spätere Tasks ergänzen hier ihre
+// Sprechstellen; nicht behandelte Schlüssel werden ignoriert.
 import { nfc } from '../../src/ne/lib/deva.js'
+import { solved } from '../../src/ne/data/grammar.js'
 
 // Sprechraten wie im japanischen Skript: Zitierformen (Zeichen, Einzelwörter)
 // verlangsamt, Sätze natürlich. Teil des Datei-Hashs.
@@ -42,6 +44,21 @@ export function collectNeTexts(sources = {}) {
       for (const tok of w.ex?.tokens || []) if (tok.de) addWord(tok.t)
     }
   }
+
+  // Grammatik: Beispielsätze (Satz-Anhören) und ihre antippbaren Stücke; je Lückensatz
+  // der GELÖSTE Satz (nach dem Antippen anhörbar – die Lücke wird nie gesprochen) und
+  // jede Antwort-Option (Zitierform). Dazu die neuen Wörter der Themen.
+  for (const topic of sources.grammar || []) {
+    for (const x of topic.examples || []) {
+      addSentence(x.dev)
+      for (const tok of x.tokens || []) if (tok.de) addWord(tok.t)
+    }
+    for (const e of topic.exercises || []) {
+      addSentence(solved(e))
+      for (const o of e.options || []) addWord(o)
+    }
+  }
+  for (const list of Object.values(sources.grammarNewWords || {})) for (const w of list) addWord(w.dev)
 
   return [...texts.entries()]
 }

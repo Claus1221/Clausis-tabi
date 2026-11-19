@@ -1,13 +1,15 @@
 import { SCRIPT_DATA, SCRIPT_LESSONS } from '../data/script.js'
 import { WORD_BLOCKS, learnedWords } from '../data/words.js'
+import { GRAMMAR_ORDER, grammarKey } from '../data/grammar.js'
 import { isDue } from '../../useProgress.js'
 import { nfc } from './deva.js'
+import { isGrammarKey, topicForKey } from './grammarSrs.js'
 
 // ─── Was im Yatra-Wiederholungs-Umlauf ist ───────────────────────────────────
 // Gegenstück zu src/lib/learned.js + srsItemInfo. Eine Quelle für alle Stapel und
 // Zähler (Üben, Fortschritt, Einplanen in NepaliApp) – sonst zeigt die App an zwei
-// Stellen verschiedene „fällig“-Zahlen. Heute Schriftzeichen und Wörter; spätere Tasks
-// hängen Grammatik und Kapitel-Wörter an learnedItems und itemInfo an.
+// Stellen verschiedene „fällig“-Zahlen. Heute Schriftzeichen, Wörter und Grammatik;
+// spätere Tasks hängen Kapitel-Wörter an learnedItems und itemInfo an.
 //
 // Jeder Schlüssel geht durch nfc: dieselbe Silbe kann zerlegt oder zusammengesetzt
 // ankommen (Tastatur, Kopieren, Datenpflege) – ohne NFC wären das zwei Karten bzw. ein
@@ -27,7 +29,7 @@ export const alone = ch => (/^[ऀ-ःऺ-ॏ॑-ॗॢॣ]/.test(ch) ? '◌' + 
 const SCRIPT_BY_KEY = Object.fromEntries(Object.entries(SCRIPT_DATA).map(([k, d]) => [nfc(k), d]))
 
 // Namensräume der Karten-Schlüssel: Zeichen = der Text selbst, Wörter = 'w:' + Text,
-// (später Grammatik = 'g:' + id). Grund: ein Wort kann sich schreiben wie ein Zeichen
+// Grammatik = 'g:' + id (grammarKey in data/grammar.js). Grund: ein Wort kann sich schreiben wie ein Zeichen
 // (छ = Konsonant „cha“ UND Zahlwort „sechs“) – ohne Präfix teilten sich beide eine Karte.
 export const WORD_PREFIX = 'w:'
 export const wordKey = dev => WORD_PREFIX + nfc(dev)
@@ -40,9 +42,12 @@ const WORD_BY_KEY = Object.fromEntries(WORD_BLOCKS.flatMap(b => b.words).map(w =
 // Lektionsreihenfolge, dann Wörter (w:-Schlüssel) in Blockreihenfolge.
 export function learnedItems(progress) {
   const done = progress?.completedLessons || []
+  const grammar = progress?.completedGrammar || []
   return [...new Set([
     ...SCRIPT_LESSONS.filter(l => done.includes(l.id)).flatMap(l => l.chars.map(nfc)),
     ...learnedWords(progress?.completedWordBlocks).map(wordKey),
+    // Grammatik: eine Karte je abgeschlossenem Thema, in Pfad-Reihenfolge (GRAMMAR_ORDER).
+    ...GRAMMAR_ORDER.filter(id => grammar.includes(id)).map(grammarKey),
   ])]
 }
 
@@ -55,8 +60,16 @@ export function learnedItems(progress) {
 //   say   – Text für die Sprachausgabe
 //   kindLabel – Zeichenart auf Deutsch („Konsonant“, „Wort“); leer, wenn unbekannt
 //   ex    – nur bei Wörtern: der Beispielsatz { dev, roman, de, tokens } (null, wenn unbekannt)
+//   (Grammatik: front = Zeichen des Themas, de = Titel, summary = Kurzbeschreibung;
+//   geübt wird sie nicht über diese Felder, sondern als Lückensatz – s. lib/grammarSrs.js)
 export function itemInfo(key) {
   const k = nfc(key)
+  if (isGrammarKey(k)) {
+    const g = topicForKey(k)
+    const id = k.slice(grammarKey('').length)
+    if (!g) return { key: k, front: id, roman: '', de: 'Grammatik', kind: 'grammar', say: '', kindLabel: 'Grammatik', ex: null, summary: '' }
+    return { key: k, front: g.glyph, roman: '', de: g.title, kind: 'grammar', say: '', kindLabel: 'Grammatik', ex: null, summary: g.summary }
+  }
   if (k.startsWith(WORD_PREFIX)) {
     const w = WORD_BY_KEY[k]
     // Unbekanntes Wort (neuere Version): das Präfix nie anzeigen oder sprechen.

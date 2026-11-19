@@ -7,14 +7,17 @@ import { WORD_BLOCKS } from '../data/words.js'
 import { KIND_LABEL, alone } from '../lib/learned.js'
 import { useSound, ListenButton, NO_SOUND_HINT } from '../components/sound.jsx'
 import { TappableSentence, useShowRoman } from '../components/text.jsx'
+import { GrammarHead, GrammarExplain, GrammarExamples } from '../components/grammar.jsx'
+import { GRAMMAR_ORDER, GRAMMAR_BY_ID } from '../data/grammar.js'
 import { stopSpeaking } from '../lib/speech.js'
 
 // ─── Lernen (Yatra): Bibliothek zum Nachschlagen ──────────────────────────────
-// Gegenstück zu src/screens/lernen.jsx (Kana-Tafel, WordLibrary): umschaltbar zwischen
-// Zeichen und Wörtern, alles frei einsehbar (keine Sperren, kein XP – gelernt wird auf der
-// Reise; erledigte Lektionen/Blöcke tragen ein ✓). Zeichen antippen öffnet ein Blatt mit
-// großer Form, Umschrift, Merkhilfe, Ton (falls vorhanden) und den Laut-Hinweisen, in
-// denen das Zeichen vorkommt; ein Wort öffnet Bedeutung, Umschrift und Beispielsatz.
+// Gegenstück zu src/screens/lernen.jsx (Kana-Tafel, WordLibrary, GrammarLibrary):
+// umschaltbar zwischen Zeichen, Wörtern und Grammatik, alles frei einsehbar (keine
+// Sperren, kein XP – gelernt wird auf der Reise; erledigte Lektionen/Blöcke/Themen tragen
+// ein ✓). Zeichen antippen öffnet ein Blatt mit großer Form, Umschrift, Merkhilfe, Ton
+// (falls vorhanden) und den Laut-Hinweisen, in denen das Zeichen vorkommt; ein Wort öffnet
+// Bedeutung, Umschrift und Beispielsatz; ein Thema Erklärung und Beispiele.
 
 const sectionLabel = { fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, margin: '18px 0 8px' }
 
@@ -152,6 +155,53 @@ function WordList({ done, onPick }) {
   ))
 }
 
+// Ein Grammatik-Thema zum Nachlesen: Erklärung, neue Wörter, Beispiele zum Antippen –
+// ohne Übungen und ohne XP (geübt wird auf der Reise und im Wiederholen).
+function GrammarSheet({ topic, sound, onClose }) {
+  useEffect(() => () => stopSpeaking(), [])
+  return (
+    <LibSheet title={topic.title} onClose={onClose}>
+      <GrammarHead topic={topic} />
+      <GrammarExplain topic={topic} />
+      <div style={{ ...sectionLabel, marginTop: 20 }}>BEISPIELE</div>
+      <GrammarExamples topic={topic} sound={sound} />
+      <Btn onClick={onClose} variant="ghost" style={{ width: '100%', minHeight: 48, marginTop: 18 }}>Schließen</Btn>
+    </LibSheet>
+  )
+}
+
+// Alle Themen in Pfad-Reihenfolge (GRAMMAR_ORDER). Wie die japanische GrammarLibrary eine
+// Liste mit Zeichen, Titel und Kurzbeschreibung. Noch nicht auf der Reise erreichte Themen
+// stehen blass da („kommt auf der Reise“), lassen sich aber trotzdem aufschlagen – die
+// Bibliothek hat keine Sperren; erledigte tragen ein ✓.
+function GrammarList({ done, onPick }) {
+  return GRAMMAR_ORDER.map(id => GRAMMAR_BY_ID[id]).filter(Boolean).map(t => {
+    const isDone = done.includes(t.id)
+    return (
+      <button key={t.id} onClick={() => onPick(t)} aria-label={`${t.title}${isDone ? ' (gelernt)' : ' (noch nicht auf der Reise)'} – öffnen`}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 12, width: '100%', minHeight: 56, textAlign: 'left',
+          background: '#fff', border: '1px solid rgba(33,31,27,0.05)', borderRadius: 12,
+          boxShadow: 'var(--shadow-card)', padding: '10px 14px', marginBottom: 8, cursor: 'pointer',
+          opacity: isDone ? 1 : 0.55,
+        }}>
+        <span style={{
+          width: 44, height: 44, flexShrink: 0, borderRadius: 10, background: isDone ? `${C.shu}12` : C.washiDark,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 20, fontFamily: NE, color: isDone ? C.shu : C.textMuted, lineHeight: 1,
+        }}>{t.glyph}</span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: C.sumi }}>
+            {t.title}{isDone && <span style={{ color: C.matcha, marginLeft: 6 }}>✓</span>}
+          </span>
+          <span style={{ display: 'block', fontSize: 12, color: C.textMuted, lineHeight: 1.4 }}>{isDone ? t.summary : `Kommt noch auf der Reise · ${t.summary}`}</span>
+        </span>
+        <span style={{ fontSize: 16, color: C.textMuted }}>›</span>
+      </button>
+    )
+  })
+}
+
 // Zeichentafel nach Lektion samt Eintrag „Laut-Hinweise“ (Ansicht „Zeichen“).
 function CharTable({ done, onPick, onNotes }) {
   return (
@@ -202,12 +252,14 @@ function CharTable({ done, onPick, onNotes }) {
 export default function LernenScreen() {
   const { progress } = useContext(ProgressCtx)
   const sound = useSound()
-  const [view, setView] = useState('zeichen') // 'zeichen' | 'woerter'
+  const [view, setView] = useState('zeichen') // 'zeichen' | 'woerter' | 'grammatik'
   const [sel, setSel] = useState(null)        // Zeichen
   const [selWord, setSelWord] = useState(null) // { word, block }
+  const [selTopic, setSelTopic] = useState(null) // Grammatik-Thema
   const [notesOpen, setNotesOpen] = useState(false)
   const done = progress.completedLessons || []
   const doneBlocks = progress.completedWordBlocks || []
+  const doneGrammar = progress.completedGrammar || []
 
   // Die Blätter liegen als fixes Overlay ÜBER der Tafel, statt sie zu ersetzen: so bleibt
   // die Tafel gerendert und die Scroll-Position nach dem Schließen dieselbe.
@@ -216,12 +268,13 @@ export default function LernenScreen() {
       {sel && <CharSheet ch={sel} sound={sound} onClose={() => setSel(null)} />}
       {notesOpen && <NotesSheet onClose={() => setNotesOpen(false)} />}
       {selWord && <WordSheet word={selWord.word} block={selWord.block} sound={sound} onClose={() => setSelWord(null)} />}
+      {selTopic && <GrammarSheet topic={selTopic} sound={sound} onClose={() => setSelTopic(null)} />}
       <h2 style={{ fontSize: 20, color: C.indigo, marginBottom: 4 }}>
         Bibliothek <span style={{ fontFamily: NE }}>पढाइ</span>
       </h2>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 14, lineHeight: 1.5 }}>
-        Alle Zeichen und Wörter zum Nachschlagen – ohne Sperren, ohne Druck. Tippe etwas an für
-        Umschrift, Bedeutung{sound ? ' und Ton' : ''}. Gelernt wird auf der Reise.
+        Alle Zeichen, Wörter und Grammatik-Themen zum Nachschlagen – ohne Sperren, ohne Druck. Tippe
+        etwas an für Umschrift, Bedeutung{sound ? ' und Ton' : ''}. Gelernt wird auf der Reise.
       </p>
       {/* Ohne Ton steht der Hinweis hier einmal ausgeschrieben; im Blatt nur 🔇. */}
       {sound === false && (
@@ -232,7 +285,7 @@ export default function LernenScreen() {
 
       {/* Umschalter wie in der japanischen Bibliothek (dort Kana/Wörter/…). */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-        {[['zeichen', 'अ Zeichen'], ['woerter', 'Wörter']].map(([id, label]) => (
+        {[['zeichen', 'अ Zeichen'], ['woerter', 'Wörter'], ['grammatik', 'Grammatik']].map(([id, label]) => (
           <button key={id} onClick={() => setView(id)} aria-pressed={view === id}
             style={{
               flex: 1, minHeight: 44, borderRadius: 8, cursor: 'pointer',
@@ -245,6 +298,7 @@ export default function LernenScreen() {
 
       {view === 'woerter' && <WordList done={doneBlocks} onPick={(word, block) => setSelWord({ word, block })} />}
       {view === 'zeichen' && <CharTable done={done} onPick={setSel} onNotes={() => setNotesOpen(true)} />}
+      {view === 'grammatik' && <GrammarList done={doneGrammar} onPick={setSelTopic} />}
     </div>
   )
 }

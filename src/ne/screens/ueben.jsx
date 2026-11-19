@@ -6,8 +6,10 @@ import { Card, Btn } from '../../components/ui.jsx'
 import { UebenHead, UebenEmpty, UebenDone } from '../../components/ueben.jsx'
 import { startSession, rateCard, currentCard, isFinished } from '../lib/reviewQueue.js'
 import { SCRIPT_DATA } from '../data/script.js'
-import { learnedItems, itemInfo, dueItems, alone } from '../lib/learned.js'
+import { learnedItems, itemInfo, dueItems, alone, srsEntry } from '../lib/learned.js'
 import { SRS_RATINGS, feedbackColor } from '../lib/srs.js'
+import { pickDrill, topicForKey, GRAMMAR_QUALITY } from '../lib/grammarSrs.js'
+import { GapDrill } from '../components/GapDrill.jsx'
 import { buildScriptQuiz, isReadable, shuffle } from '../lib/scriptQuiz.js'
 import { speak, stopSpeaking } from '../lib/speech.js'
 import { useSound, ListenButton } from '../components/sound.jsx'
@@ -15,7 +17,8 @@ import { TappableSentence, useShowRoman } from '../components/text.jsx'
 
 // ─── Üben (Yatra) ─────────────────────────────────────────────────────────────
 // Gegenstück zu src/screens/ueben.jsx: Wiederholen fälliger Karten (SRS – Schriftzeichen
-// und Wörter), Fleiß-Runde über alles Gelernte und drei Erkennen-Arten (nur Zeichen).
+// und Wörter als Karteikarte, Grammatik als Lückensatz), Fleiß-Runde über alles Gelernte
+// und drei Erkennen-Arten (nur Zeichen).
 // Alles geht ohne Ton: Hören ist eine Zusatz-Art, nie die einzige, und auch dort lässt
 // sich das Geschriebene einblenden. Karten-Schlüssel kommen aus learned.js (NFC).
 
@@ -46,10 +49,13 @@ function SRSQuiz({ onClose, initialMode = 'due', sound }) {
   const [round, setRound] = useState(() => {
     const due = dueItems(progress)
     const deck = buildDeck(initialMode, due)
-    return { mode: initialMode, size: deck.length, s: startSession(deck, due) }
+    return { mode: initialMode, size: deck.length, s: startSession(deck, due), turn: 0 }
   })
   const [flipped, setFlipped] = useState(false)
-  const { mode, size, s: session } = round
+  // Grammatik: zuletzt gezeigte Frage je Karte – kommt die Karte nach „Nochmal“ wieder,
+  // zeigt pickDrill eine andere Übung desselben Themas.
+  const lastDrill = useRef({})
+  const { mode, size, s: session, turn } = round
   const item = currentCard(session)
   // Jüngster Rundenstand, schon bevor neu gerendert ist; folgt jedem neuen `round`.
   const liveRef = useRef(session)
@@ -63,7 +69,7 @@ function SRSQuiz({ onClose, initialMode = 'due', sound }) {
   // sind, zählen weiter als fällig – alle anderen verschieben den Plan nicht.
   const startFree = () => {
     const d = buildDeck('free')
-    setRound({ mode: 'free', size: d.length, s: startSession(d, session.pending) })
+    setRound(r => ({ mode: 'free', size: d.length, s: startSession(d, session.pending), turn: r.turn + 1 }))
     setFlipped(false)
   }
   const { passed, lapses, repeats } = session
@@ -114,13 +120,30 @@ function SRSQuiz({ onClose, initialMode = 'due', sound }) {
     liveRef.current = state
     if (review) reviewCard(review.key, review.quality)
     if (quality >= 3) awardXp(XP_PER_CARD)
-    setRound(r => ({ ...r, s: state }))
+    setRound(r => ({ ...r, s: state, turn: r.turn + 1 }))
     setFlipped(false)
+  }
+
+  const headTitle = `${mode === 'free' ? '🔥 Fleiß · ' : ''}${passed} / ${size} gekonnt · noch ${session.queue.length}`
+
+  // Grammatik-Karte: EIN Lückensatz statt Karteikarte; richtig beim ersten Versuch = Gut,
+  // falsch = Nochmal (kommt am Rundenende wieder, dann mit einer anderen Übung – avoid).
+  // key je Zug: auch dieselbe Karte im nächsten Zug ist eine neue, offene Aufgabe.
+  if (info.kind === 'grammar') {
+    return (
+      <div style={{ padding: '12px 20px 20px' }}>
+        <UebenHead title={headTitle} onClose={onClose} closeSize={HEAD_CLOSE} />
+        <GrammarReview key={`${item}|${turn}`} info={info} topic={topicForKey(item)} entry={srsEntry(progress, item)}
+          avoid={lastDrill.current[item] ?? null} sound={sound} again={repeats.includes(item)}
+          onShown={q => { lastDrill.current[item] = q }}
+          onDone={ok => rate(ok ? GRAMMAR_QUALITY.right : GRAMMAR_QUALITY.wrong)} />
+      </div>
+    )
   }
 
   return (
     <div style={{ padding: '12px 20px 20px' }}>
-      <UebenHead title={`${mode === 'free' ? '🔥 Fleiß · ' : ''}${passed} / ${size} gekonnt · noch ${session.queue.length}`} onClose={onClose} closeSize={HEAD_CLOSE} />
+      <UebenHead title={headTitle} onClose={onClose} closeSize={HEAD_CLOSE} />
 
       <Card style={{ textAlign: 'center', minHeight: 200, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 14, position: 'relative' }}>
         {repeats.includes(item) && (
@@ -192,6 +215,35 @@ function SRSQuiz({ onClose, initialMode = 'due', sound }) {
       )}
     </div>
   )
+}
+
+// Eine Grammatik-Karte im Wiederholen: Thema als Kopf, darunter EIN Lückensatz. Die
+// Übung wird einmal beim Erscheinen gewählt (useState-Startwert) – ein Neu-Rendern
+// (etwa wenn der Lernstand nach reviewCard nachlädt) wechselt sie nicht aus.
+// Thema ohne Übungen oder aus einer neueren Version: Weiter ohne Abfrage, nie hängen.
+function GrammarReview({ info, topic, entry, avoid, sound, again, onShown, onDone }) {
+  const [ex] = useState(() => pickDrill(topic, entry, Math.random, avoid))
+  useEffect(() => { if (ex) onShown(ex.q) }, []) // eslint-disable-line
+  const head = (
+    <div style={{ textAlign: 'center', marginBottom: 10, position: 'relative' }}>
+      {again && <div style={{ fontSize: 11, color: C.shu, fontWeight: 600, marginBottom: 2 }}>🔁 nochmal</div>}
+      {/* Nur der Titel: er nennt das Zeichen des Themas meist schon (हो – „ist“). */}
+      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.textMuted }}>GRAMMATIK · </span>
+      <span style={{ fontSize: 14, color: C.sumi }}>{info.de}</span>
+    </div>
+  )
+  if (!ex) {
+    return (
+      <>
+        {head}
+        <Card style={{ textAlign: 'center', padding: '18px 16px', marginBottom: 14 }}>
+          <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.5 }}>{info.summary || 'Zu diesem Thema gibt es hier noch keine Übung.'}</div>
+        </Card>
+        <Btn onClick={() => onDone(true)} style={{ width: '100%', minHeight: 48 }}>Weiter →</Btn>
+      </>
+    )
+  }
+  return <GapDrill ex={ex} sound={sound} head={head} onDone={onDone} />
 }
 
 // ─── Erkennen ─────────────────────────────────────────────────────────────────

@@ -43,7 +43,8 @@ export function NeText({ dev, roman, size = 28, color = C.sumi, align }) {
 // dem Rendern gemessen und je Zeile mit hitSegments verteilt wird: lückenlos, nie
 // überlappend, jede ≥ 44 px, an der Naht angeklebter Stücke geteilt (lib/sentence.js).
 //
-// Nachschlage-Kasten: liegt ÜBER dem Folgenden (kein Springen des Textes), schließt bei
+// Nachschlage-Kasten: liegt ÜBER dem Folgenden (kein Springen des Textes) – unter dem
+// Satz, oder darüber, wenn unten ein abschneidender Rand zu nah ist; schließt bei
 // Tipp außerhalb des Satzes, bei Escape und beim Antippen eines anderen Stücks (das dann
 // aufgeht). Der Tipp außerhalb wird nicht verschluckt: „Weiter“ o. Ä. wirkt sofort.
 // hint: Tipp-Hinweis „💡 Tippe …“ zeigen (nur beim ersten Satz einer Lektion).
@@ -52,7 +53,9 @@ export function TappableSentence({ dev, roman, tokens, size = 26, sound, hint = 
   const showRoman = useShowRoman()
   const [active, setActive] = useState(null)
   const [hits, setHits] = useState({}) // Token-Index → { dx, w } der unsichtbaren Fläche
+  const [above, setAbove] = useState(false) // Nachschlage-Kasten über statt unter dem Satz
   const rootRef = useRef(null)
+  const popRef = useRef(null)
   const lineRef = useRef(null)
   const btnRefs = useRef({})
   useEffect(() => () => stopSpeaking(), []) // Satz verschwindet → nicht weiterreden
@@ -84,11 +87,43 @@ export function TappableSentence({ dev, roman, tokens, size = 26, sound, hint = 
       setHits(prev => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
     }
     measure()
-    if (typeof ResizeObserver === 'undefined') return
+    // Devanagari-Webfont kommt oft NACH dem ersten Rendern: die Stücke werden dann breiter,
+    // die Zeile aber nicht unbedingt (sie ist flex: 1) – also nach dem Laden neu messen und
+    // zusätzlich jeden Knopf selbst beobachten, nicht nur die Zeile.
+    let live = true
+    document.fonts?.ready?.then(() => { if (live) measure() })
+    if (typeof ResizeObserver === 'undefined') return () => { live = false }
     const ro = new ResizeObserver(measure)
     ro.observe(box)
-    return () => ro.disconnect()
+    for (const el of Object.values(btnRefs.current)) if (el) ro.observe(el)
+    return () => { live = false; ro.disconnect() }
   }, [dev, size, list.length])
+
+  // Kasten nicht abschneiden lassen: liegt unter dem Satz nicht genug Platz bis zum Rand
+  // des nächsten scrollenden/abschneidenden Vorfahren (Bibliotheks-Blatt, Lektionsinhalt)
+  // bzw. des Fensters, geht er über den Satz; passt er auch dort nicht, wird er ins Bild
+  // gescrollt. Gerechnet wird mit der Lage des Satzes, nicht des Kastens – so hängt das
+  // Ergebnis nicht davon ab, wo der Kasten gerade steht.
+  useLayoutEffect(() => {
+    if (active === null) return
+    const root = rootRef.current, pop = popRef.current
+    if (!root || !pop) return
+    let top = 0, bottom = window.innerHeight
+    for (let el = root.parentElement; el && el !== document.body; el = el.parentElement) {
+      const oy = getComputedStyle(el).overflowY
+      if (oy === 'visible') continue
+      const r = el.getBoundingClientRect()
+      top = Math.max(top, r.top)
+      bottom = Math.min(bottom, r.bottom)
+    }
+    const r = root.getBoundingClientRect()
+    const h = pop.getBoundingClientRect().height + 6
+    const up = bottom - r.bottom < h && r.top - top >= h
+    setAbove(up)
+    if (!up && bottom - r.bottom < h) {
+      try { pop.scrollIntoView({ block: 'nearest' }) } catch { /* alte Browser: egal */ }
+    }
+  }, [active])
 
   // Offener Kasten: Tipp außerhalb des Satzes oder Escape schließt ihn.
   useEffect(() => {
@@ -150,9 +185,10 @@ export function TappableSentence({ dev, roman, tokens, size = 26, sound, hint = 
       )}
 
       {tk && (
-        <div role="status" aria-live="polite"
+        <div ref={popRef} role="status" aria-live="polite"
           style={{
-            position: 'absolute', left: 0, right: 0, top: '100%', marginTop: 6, zIndex: 3,
+            position: 'absolute', left: 0, right: 0, zIndex: 3,
+            ...(above ? { bottom: '100%', marginBottom: 6 } : { top: '100%', marginTop: 6 }),
             background: '#fff', border: `1px solid ${C.indigo}40`, borderRadius: 8, padding: '8px 10px',
             boxShadow: '0 8px 20px -10px rgba(33,31,27,0.45)', display: 'flex', alignItems: 'center', gap: 10,
           }}>
