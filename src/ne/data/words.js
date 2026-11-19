@@ -56,7 +56,7 @@ const YAHAN = ['यहाँ', 'yahāṃ', 'hier']
 const LAI = ['लाई', 'lāī', 'für, an (nachgestellt) – म/तपाईं + लाई: „mir“/„Ihnen“']
 const KO = ['को', 'ko', 'von (nachgestellt, Besitz – wie „-s“ in „Peters“)']
 const MAA = ['मा', 'mā', 'in, auf (nachgestellt)']
-const BAT = ['बाट', 'bāṭ', 'von, ab (nachgestellt)']
+const BAT = ['बाट', 'bāṭa', 'von, ab (nachgestellt)']
 const CAHINCHA = ['चाहिन्छ', 'cāhincha', 'wird gebraucht (→ ich brauche / möchte)']
 const DINUHOS = ['दिनुहोस्', 'dinuhos', 'geben Sie (höfliche Bitte)']
 const JANUHOS = ['जानुहोस्', 'jānuhos', 'gehen / fahren Sie (höfliche Bitte)']
@@ -234,7 +234,7 @@ export const WORD_BLOCKS = [
         X('यहाँ ठीक छ।', 'yahāṃ ṭhīk cha.', 'Hier ist gut. (zum Aussteigen)',
           YAHAN, THIK, CHA, DANDA)),
       W('दायाँ', 'dāyāṃ', 'rechts',
-        X('यहाँबाट दायाँ जानुहोस्।', 'yahāṃbāṭ dāyāṃ jānuhos.', 'Fahren Sie hier rechts. (wörtl. „von hier rechts“)',
+        X('यहाँबाट दायाँ जानुहोस्।', 'yahāṃbāṭa dāyāṃ jānuhos.', 'Fahren Sie hier rechts. (wörtl. „von hier rechts“)',
           YAHAN, BAT, ['दायाँ', 'dāyāṃ', 'rechts'], JANUHOS, DANDA)),
       W('बायाँ', 'bāyāṃ', 'links',
         X('बायाँ होइन, दायाँ।', 'bāyāṃ hoina, dāyāṃ.', 'Nicht links, rechts.',
@@ -296,7 +296,7 @@ export const WORD_BLOCKS = [
         X('गाउँ कति टाढा छ?', 'gāuṃ kati ṭāḍhā cha?', 'Wie weit ist das Dorf?',
           ['गाउँ', 'gāuṃ', 'Dorf'], KATI, ['टाढा', 'ṭāḍhā', 'weit, fern'], CHA, Q)),
       W('टाढा', 'ṭāḍhā', 'weit, fern',
-        X('यहाँबाट टाढा छ?', 'yahāṃbāṭ ṭāḍhā cha?', 'Ist es weit von hier?',
+        X('यहाँबाट टाढा छ?', 'yahāṃbāṭa ṭāḍhā cha?', 'Ist es weit von hier?',
           YAHAN, BAT, ['टाढा', 'ṭāḍhā', 'weit, fern'], CHA, Q)),
       W('पानी पर्छ', 'pānī parcha', 'es regnet (allgemein) / es wird regnen (wörtl. „Wasser fällt“)',
         X('आज पानी पर्छ?', 'āj pānī parcha?', 'Regnet es heute?',

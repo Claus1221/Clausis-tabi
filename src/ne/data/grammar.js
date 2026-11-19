@@ -55,11 +55,11 @@ const KAHAN = ['कहाँ', 'kahāṃ', 'wo, wohin']
 const KASARI = ['कसरी', 'kasarī', 'wie (auf welche Weise)']
 const KASTO = ['कस्तो', 'kasto', 'wie (beschaffen)']
 const KAHILE = ['कहिले', 'kahile', 'wann']
-const SANG = ['सँग', 'saṃg', 'bei, mit (nachgestellt) – मसँग … छ: „ich habe“']
+const SANG = ['सँग', 'saṃga', 'bei, mit (nachgestellt) – मसँग … छ: „ich habe“']
 const LAI = ['लाई', 'lāī', 'für, an (nachgestellt) – म/तपाईं + लाई: „mir“/„Ihnen“']
 const KO = ['को', 'ko', 'von (nachgestellt, Besitz – wie „-s“ in „Peters“)']
 const MAA = ['मा', 'mā', 'in, auf (nachgestellt)']
-const BAT = ['बाट', 'bāṭ', 'von, ab (nachgestellt)']
+const BAT = ['बाट', 'bāṭa', 'von, ab (nachgestellt)']
 const LE = ['ले', 'le', '(Handelnder, nachgestellt – Verben mit Objekt in der Vergangenheit)']
 const WATA = ['वटा', 'waṭā', 'Stück (Zählwort für Dinge)']
 const JANA = ['जना', 'janā', 'Person(en) (Zählwort für Menschen)']
@@ -131,7 +131,7 @@ export const GRAMMAR = [
     id: 'ng1', glyph: 'छु', title: 'Satzbau: das Verb steht am Ende',
     summary: 'Wer – was – Verb: wie im deutschen Nebensatz',
     body: [
-      { text: 'Im Nepali steht das Verb am Satzende – fast immer (im Gespräch rutscht manchmal etwas nach hinten: के हो यो?). Das kennen Sie aus dem deutschen Nebensatz: „…, weil es mir gut geht“. म सन्चै छु heißt wörtlich „ich wohlauf bin“. Meist kommt zuerst, wer oder was (म „ich“), dann der Rest, zuletzt das Verb.' },
+      { text: 'Im Nepali steht das Verb am Satzende – fast immer (im Gespräch rutscht manchmal etwas nach hinten: के हो यो? – „Was ist das?“, statt यो के हो?). Das kennen Sie aus dem deutschen Nebensatz: „…, weil es mir gut geht“. म सन्चै छु heißt wörtlich „ich wohlauf bin“. Meist kommt zuerst, wer oder was (म „ich“), dann der Rest, zuletzt das Verb.' },
       { h: 'Kein „der“, kein „ein“', text: 'Artikel gibt es nicht. यो मेरो हो – „das meins ist“, also „Das gehört mir“. Was aus dem Zusammenhang klar ist, lässt man oft weg, auch „ich“: सन्चै छु allein genügt.' },
       { h: 'Kleine Wörter hinten', text: 'Was im Deutschen VOR dem Nomen steht („in“, „von“, „für“), steht im Nepali dahinter und wird angehängt: तपाईंलाई = तपाईं + लाई, „Ihnen“. Dazu gibt es eigene Lektionen.' },
       { h: 'Fragen', text: 'Eine Frage hat dieselbe Wortfolge wie die Aussage – nur die Stimme geht am Ende hoch, geschrieben steht ein Fragezeichen. Das Verb richtet sich nach der Person: zu म gehört छु, sonst steht hier छ. Mehr dazu in den nächsten Lektionen.' },
@@ -181,7 +181,7 @@ export const GRAMMAR = [
     summary: 'Wo etwas ist, ob es da ist, wie es ist – im Unterschied zu हो',
     body: [
       { text: 'छ sagt, dass etwas DA ist oder WO es ist: झोलामा पासपोर्ट छ – „In der Tasche ist der Pass“ (oder: „gibt es einen Pass“). मेरो झोला कहाँ छ? – „Wo ist meine Tasche?“ Auch Zustände und Eigenschaften drückt छ aus: मेरो झोला ठूलो छ – „Meine Tasche ist groß“.' },
-      { h: 'छ oder हो? – der wichtigste Unterschied', text: 'Deutsch hat ein „ist“, Nepali zwei. Sagt der Satz, WAS etwas ist (danach kommt ein Nomen: „meine Tasche“, „ein Pass“), steht हो: यो मेरो झोला हो. Geht es darum, WO etwas ist, OB es das gibt oder WIE etwas ist (groß, teuer, gut), steht छ. Probe: Könnte statt „ist“ ein Gleichheitszeichen stehen (das = meine Tasche)? Dann हो, sonst छ. (हो mit einer Eigenschaft gibt es auch – dann betont oder bestätigt es: „Das IST teuer“, „Das ist die Große“. Was immer gilt, sagt man mit हुन्छ: एक र एक दुई हुन्छ – „Eins und eins macht zwei“. Für den Anfang: Eigenschaft → छ.)' },
+      { h: 'छ oder हो? – der wichtigste Unterschied', text: 'Deutsch hat ein „ist“, Nepali zwei. Sagt der Satz, WAS etwas ist (danach kommt ein Nomen: „meine Tasche“, „ein Pass“), steht हो: यो मेरो झोला हो. Geht es darum, WO etwas ist, OB es das gibt oder WIE etwas ist (groß, teuer, gut), steht छ. Probe: Könnte statt „ist“ ein Gleichheitszeichen stehen (das = meine Tasche)? Dann हो, sonst छ. (हो mit einer Eigenschaft gibt es auch – dann betont es („Das IST teuer“) oder zeigt auf eines von mehreren („Das ist die Große“). Was immer gilt, sagt man mit हुन्छ: एक र एक दुई हुन्छ – „Eins und eins macht zwei“. Für den Anfang: Eigenschaft → छ.)' },
       { h: 'Mit „ich“ und „Sie“', text: 'Mit म heißt es छु: म सन्चै छु. Zu तपाईं sagt man wieder हुनुहुन्छ – dieselbe höfliche Form wie bei हो: तपाईं सन्चै हुनुहुन्छ? Statt „ja“ wiederholt man oft einfach das Verb: छ? – छ।' },
       { h: 'Neue Wörter', text: 'झोला „Tasche, Beutel“ · पासपोर्ट „Reisepass“ · ठूलो „groß“.' },
     ],
@@ -260,17 +260,17 @@ export const GRAMMAR = [
     examples: [
       X('मेरो पासपोर्ट झोलामा छ।', 'mero pāsporṭ jholāmā cha.', 'Mein Pass ist in der Tasche.', MERO, PASPORT, JHOLA, MAA, CHA, DANDA),
       X('मेरो झोला ट्याक्सीमा छ।', 'mero jholā ṭyāksīmā cha.', 'Meine Tasche ist im Taxi.', MERO, JHOLA, TAXI, MAA, CHA, DANDA),
-      X('यहाँबाट सिधा जानुहोस्।', 'yahāṃbāṭ sidhā jānuhos.', 'Fahren Sie von hier geradeaus.', YAHAN, BAT, SIDHA, JANUHOS, DANDA),
-      X('बस कहाँबाट जान्छ?', 'bas kahāṃbāṭ jāncha?', 'Wo fährt der Bus ab? (wörtl. „Von wo fährt der Bus?“)', BAS, KAHAN, BAT, JANCHA, Q),
+      X('यहाँबाट सिधा जानुहोस्।', 'yahāṃbāṭa sidhā jānuhos.', 'Fahren Sie von hier geradeaus.', YAHAN, BAT, SIDHA, JANUHOS, DANDA),
+      X('बस कहाँबाट जान्छ?', 'bas kahāṃbāṭa jāncha?', 'Wo fährt der Bus ab? (wörtl. „Von wo fährt der Bus?“)', BAS, KAHAN, BAT, JANCHA, Q),
       X('दाइ, थमेलमा रोक्नुहोस्।', 'dāi, thamelmā roknuhos.', 'Halten Sie bitte in Thamel. (zum Fahrer)', DAI, COMMA, THAMEL, MAA, ROKNUHOS, DANDA),
       X('दाइ, थमेल जानुहोस्।', 'dāi, thamel jānuhos.', 'Fahren Sie bitte nach Thamel. (zum Fahrer; Ziel ohne ‑मा)', DAI, COMMA, THAMEL, JANUHOS, DANDA),
     ],
     exercises: [
       E('पासपोर्ट झोला＿＿ छ।', 'मा', ['मा', 'बाट', 'लाई'], 'Wo etwas ist → ‑मा „in“.', 'Der Pass ist in der Tasche.', 'pāsporṭ jholāmā cha.'),
-      E('यहाँ＿＿ सिधा जानुहोस्।', 'बाट', ['बाट', 'मा', 'को'], '„von hier“ → यहाँबाट.', 'Fahren Sie von hier geradeaus.', 'yahāṃbāṭ sidhā jānuhos.'),
+      E('यहाँ＿＿ सिधा जानुहोस्।', 'बाट', ['बाट', 'मा', 'को'], '„von hier“ → यहाँबाट.', 'Fahren Sie von hier geradeaus.', 'yahāṃbāṭa sidhā jānuhos.'),
       E('मेरो झोला ट्याक्सी＿＿ छ।', 'मा', ['मा', 'बाट', 'को'], 'Wo die Tasche ist → ‑मा.', 'Meine Tasche ist im Taxi.', 'mero jholā ṭyāksīmā cha.'),
       E('दाइ, थमेल＿＿ रोक्नुहोस्।', 'मा', ['मा', 'बाट', 'लाई'], 'Wo angehalten wird → ‑मा.', 'Halten Sie bitte in Thamel.', 'dāi, thamelmā roknuhos.'),
-      E('बस कहाँ＿＿ जान्छ?', 'बाट', ['बाट', 'मा', 'को'], '„von wo“ → कहाँबाट.', 'Wo fährt der Bus ab?', 'bas kahāṃbāṭ jāncha?'),
+      E('बस कहाँ＿＿ जान्छ?', 'बाट', ['बाट', 'मा', 'को'], '„von wo“ → कहाँबाट.', 'Wo fährt der Bus ab?', 'bas kahāṃbāṭa jāncha?'),
     ],
   },
   {
@@ -303,7 +303,7 @@ export const GRAMMAR = [
       { text: 'Nepali sagt nicht „ich brauche Wasser“, sondern „mir wird Wasser gebraucht“: मलाई पानी चाहिन्छ. Wer etwas braucht, bekommt ‑लाई – wie das deutsche „mir“, „Ihnen“: म + लाई = मलाई, तपाईं + लाई = तपाईंलाई. चाहिन्छ selbst bleibt für jede Person gleich.' },
       { h: 'Brauchen, möchten, ablehnen', text: 'चाहिन्छ ist zugleich die übliche Art zu bestellen: मलाई दाल भात चाहिन्छ – „Ich hätte gern Dal Bhat“. Beim Bestellen hört man auch चाहियो – gleiche Bedeutung. Verneint: चाहिँदैन – „brauche ich nicht“, das höfliche „Nein danke“ für Händler.' },
       { h: 'Fragen und mehr', text: 'तपाईंलाई के चाहिन्छ? – „Was brauchen / möchten Sie?“ hören Sie in jedem Laden. ‑लाई hat noch weitere Aufgaben („an“, „für“: तपाईंलाई धन्यवाद – „Ihnen Dank“); für den Anfang reicht: Wer braucht, bekommt ‑लाई.' },
-      { h: 'Haben: मसँग … छ', text: 'Ein Verb „haben“ gibt es nicht. Man sagt „bei mir ist …“: म + सँग („bei, mit“) = मसँग, dazu छ oder छैन: मसँग पैसा छैन – „Ich habe kein Geld“. Nicht verwechseln: मलाई … चाहिन्छ heißt „ich brauche“; „मलाई … छ“ für „ich habe“ ist falsch. Neues Wort: पैसा „Geld“.' },
+      { h: 'Haben: मसँग … छ', text: 'Ein Verb „haben“ gibt es nicht. Man sagt „bei mir ist …“: म + सँग („bei, mit“) = मसँग, dazu छ oder छैन: मसँग पैसा छैन – „Ich habe kein Geld“. Nicht verwechseln: मलाई … चाहिन्छ heißt „ich brauche“. Für Dinge, die man hat oder bei sich trägt (Geld, Pass, Wasser), heißt es मसँग, nicht मलाई. Neues Wort: पैसा „Geld“.' },
     ],
     examples: [
       X('मलाई तातो पानी चाहिन्छ।', 'malāī tāto pānī cāhincha.', 'Ich brauche heißes Wasser.', MA, LAI, TATO, PANI, CAHINCHA, DANDA),
@@ -311,8 +311,8 @@ export const GRAMMAR = [
       X('दिदी, मलाई एउटा चिया चाहिन्छ।', 'didī, malāī euṭā ciyā cāhincha.', 'Didi, ich hätte gern einen Tee.', DIDI, COMMA, MA, LAI, EUTA, CIYA, CAHINCHA, DANDA),
       X('मलाई चिया चाहिँदैन, पानी चाहिन्छ।', 'malāī ciyā cāhiṃdaina, pānī cāhincha.', 'Ich möchte keinen Tee, sondern Wasser.', MA, LAI, CIYA, CAHINDAINA, COMMA, PANI, CAHINCHA, DANDA),
       X('मलाई पिरो चाहिँदैन।', 'malāī piro cāhiṃdaina.', 'Ich möchte es nicht scharf.', MA, LAI, PIRO, CAHINDAINA, DANDA),
-      X('मसँग पैसा छैन।', 'masaṃg paisā chaina.', 'Ich habe kein Geld. (wörtl. „Bei mir ist kein Geld.“)', MA, SANG, PAISA, CHAINA, DANDA),
-      X('तपाईंसँग तातो पानी छ?', 'tapāīṃsaṃg tāto pānī cha?', 'Haben Sie heißes Wasser?', TAPAIN, SANG, TATO, PANI, CHA, Q),
+      X('मसँग पैसा छैन।', 'masaṃga paisā chaina.', 'Ich habe kein Geld. (wörtl. „Bei mir ist kein Geld.“)', MA, SANG, PAISA, CHAINA, DANDA),
+      X('तपाईंसँग तातो पानी छ?', 'tapāīṃsaṃga tāto pānī cha?', 'Haben Sie heißes Wasser?', TAPAIN, SANG, TATO, PANI, CHA, Q),
     ],
     exercises: [
       E('म＿＿ पानी चाहिन्छ।', 'लाई', ['लाई', 'को', 'मा'], 'Wer etwas braucht, bekommt ‑लाई: मलाई „mir“.', 'Ich brauche Wasser.', 'malāī pānī cāhincha.'),
@@ -320,7 +320,7 @@ export const GRAMMAR = [
       E('＿＿ चिया चाहिँदैन।', 'मलाई', ['मलाई', 'म', 'मैले'], 'Bei चाहिन्छ / चाहिँदैन steht nie म, sondern मलाई.', 'Ich möchte keinen Tee.', 'malāī ciyā cāhiṃdaina.'),
       E('तपाईं＿＿ के चाहिन्छ?', 'लाई', ['लाई', 'को', 'मा'], 'तपाईं + लाई = „Ihnen“.', 'Was brauchen Sie?', 'tapāīṃlāī ke cāhincha?'),
       E('धन्यवाद, मलाई पिरो ＿＿।', 'चाहिँदैन', ['चाहिँदैन', 'होइन', 'हुँ'], 'Höflich ablehnen: चाहिँदैन – „wird nicht gebraucht“.', 'Danke, ich möchte es nicht scharf.', 'dhanyabād, malāī piro cāhiṃdaina.'),
-      E('म＿＿ पैसा छैन।', 'सँग', ['सँग', 'लाई', 'बाट'], '„haben“ = „bei mir ist“: मसँग … छ / छैन. मलाई gehört zu चाहिन्छ.', 'Ich habe kein Geld.', 'masaṃg paisā chaina.'),
+      E('म＿＿ पैसा छैन।', 'सँग', ['सँग', 'लाई', 'बाट'], '„haben“ = „bei mir ist“: मसँग … छ / छैन. मलाई gehört zu चाहिन्छ.', 'Ich habe kein Geld.', 'masaṃga paisā chaina.'),
     ],
   },
   {
