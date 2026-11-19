@@ -45,6 +45,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `AuthGate.jsx` | Google-Login, Freigabe-Prüfung (Admin aus `ADMIN_EMAILS`, sonst Dokument `allowed/<e-mail>` in Firestore; Zustände prüfen/Kein Zugang/Offline), `useAuth()`-Context mit `user`, `logout`, `isAdmin`, `recheckAccess`. |
 | `firebase.js` | Firebase-Init; exportiert `auth`, `db`, `ADMIN_EMAILS`, `isConfigured`. `db` läuft mit persistentem Offline-Cache (IndexedDB, mehrere Tabs geteilt) – lesen/schreiben funktioniert auch offline, Sync folgt automatisch. |
 | `useProgress.js` | **Firestore-Hook + Fortschritts-Domäne**: `useProgress(uid)` (live-Daten + Schreib-Funktionen + `saveError`), `computeStats`, `dueKana`, `sm2`, `getSettings`, `localDate`, `addDays`, `SETTINGS_DEFAULTS`, `SRS_STAGE_BOUNDS`. Fortschritts-Felder u. a. `completedTalks` (gemeisterte freie Gespräche) und `extraPhrases` (aus Gesprächen übernommene Wendungen; `addPhrase` legt sie an UND plant sie als SRS-Karte ein). Schreibvorgänge laufen über das interne `safeWrite` (try/catch → `saveError`), damit ein echter Schreibfehler (Firestore-Regel, Quota) sichtbar wird statt den Fortschritt still zu verlieren. Unit-Tests: `useProgress.test.js`. |
+| `accessStore.js` | Freigabeliste in Firestore (`allowed/<e-mail>`): `watchAllowed` (Live-Liste, nach E-Mail sortiert), `addAllowed`, `removeAllowed`. Nur der Admin darf schreiben (Firestore-Regeln). |
 | `kanaStrokes.js` | Generierte KanjiVG-Strichpfade: `HIRAGANA`, `KATAKANA`, `KANA_STROKES`, `STROKE_VIEWBOX`. (Generator: `scripts/gen-kana-strokes.mjs`.) |
 | `theme.js` | `C` (Farb-Token) · `JP` (japanische Font-Stack). |
 | `TabiApp.jsx` | Root-Orchestrator (≈120 Z.). Hält Tab-State, lädt Screens via `React.lazy`, stellt `ProgressCtx` bereit. |
@@ -117,6 +118,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `ueben.jsx` | `UebenScreen` | `SRSQuiz`, `PracticeQuiz`, `TypeQuiz`, `SentenceQuiz`, `MixQuiz`, `MixStep`, `DialogHub` |
 | `fortschritt.jsx` | `FortschrittScreen` | – |
 | `settings.jsx` | `SettingsScreen` | `NumberSetting` |
+| `adminUsers.jsx` | `AdminUsers` (Abschnitt „Nutzer verwalten“, nur für Admins in den Einstellungen) | – |
 | `players.jsx` | *(keine)* — exportiert `LessonPlayer`, `BlockCourse`, `GrammarLesson`, `DialogPlay` | lokal: `QuizStep`, `BlockQuiz`, `GrammarExercise`. Lektions-Overlays der Pfad-Stationen (`reise.jsx`); `DialogPlay` nutzt zusätzlich der `DialogHub` in `ueben.jsx`. |
 | `talk.jsx` | `TalkPlay` | Freies KI-Gespräch (Zustandsmaschine + Avatar-Bühne + Nachbesprechung). Wird wie `players.jsx` vom `DialogHub` in `ueben.jsx` eingebunden — dieselbe dokumentierte Ausnahme (Overlay-Screen, kein Tab). |
 

@@ -91,17 +91,18 @@ export function Card({ children, style }) {
   )
 }
 
-export function Btn({ children, onClick, variant = 'primary', style }) {
+export function Btn({ children, onClick, variant = 'primary', style, disabled }) {
   const bg = variant === 'primary' ? C.shu : variant === 'secondary' ? C.indigo : C.washiDark
   const color = variant === 'ghost' ? C.sumi : '#fff'
   const shadow = variant === 'primary' ? '0 2px 5px rgba(218,74,56,0.30), 0 8px 18px -10px rgba(218,74,56,0.5)'
     : variant === 'secondary' ? '0 2px 5px rgba(30,67,104,0.26), 0 8px 18px -10px rgba(30,67,104,0.45)'
     : 'none'
   return (
-    <button onClick={onClick} className="tabi-press" style={{
+    <button onClick={onClick} disabled={disabled} className="tabi-press" style={{
+      opacity: disabled ? 0.5 : 1,
       background: bg, color, border: 'none', borderRadius: 10,
       padding: '12px 24px', fontSize: 15, fontWeight: 600,
-      fontFamily: 'inherit', cursor: 'pointer', boxShadow: shadow,
+      fontFamily: 'inherit', cursor: disabled ? 'default' : 'pointer', boxShadow: shadow,
       transition: 'transform 0.12s ease, filter 0.12s ease', ...style,
     }}>{children}</button>
   )

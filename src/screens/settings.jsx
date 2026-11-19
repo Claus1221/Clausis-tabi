@@ -6,6 +6,8 @@ import { getApiKey, setApiKey, getTtsKey, setTtsKey } from '../lib/apiKey.js'
 import { pingApiKey } from '../lib/claude.js'
 import { pingTtsKey } from '../lib/ttsCloud.js'
 import { Card, Btn } from '../components/ui.jsx'
+import { useAuth } from '../AuthGate.jsx'
+import AdminUsers from './adminUsers.jsx'
 
 // ─── Einstellungen ───────────────────────────────────────────────────────────
 
@@ -97,6 +99,7 @@ function KeySetting({ intro, placeholder, read, write, ping, okHint }) {
 export default function SettingsScreen({ onClose }) {
   const { settings, saveSettings } = useContext(ProgressCtx)
   const set = (patch) => saveSettings(patch)
+  const { isAdmin } = useAuth()
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
@@ -257,6 +260,9 @@ export default function SettingsScreen({ onClose }) {
       <p style={{ fontSize: 12, color: C.textMuted, marginTop: 16, lineHeight: 1.5 }}>
         Änderungen werden sofort gespeichert und gelten beim nächsten Start einer Übung.
       </p>
+
+      {/* Freigabeliste – nur Admin; für andere startet auch kein Listener */}
+      {isAdmin && <AdminUsers />}
 
       {/* Versionsanzeige — hilft zu erkennen, ob die neueste Version geladen ist. */}
       <div style={{ marginTop: 24, paddingTop: 16, borderTop: `1px solid ${C.washiDark}`, textAlign: 'center' }}>
