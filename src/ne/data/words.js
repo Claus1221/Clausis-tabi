@@ -1,5 +1,5 @@
 // ─── Yatra: Wortblöcke ────────────────────────────────────────────────────────
-// Gegenstück zu src/data/words.js: sechs thematische Blöcke nw1…nw6 mit je 8–10 Wörtern,
+// Gegenstück zu src/data/words.js: sieben thematische Blöcke nw1…nw7 mit je 8–10 Wörtern,
 // jedes mit einem kurzen Beispielsatz. Der erste echte Wortschatz des Kurses – wer hier
 // ankommt, kann schon alle Zeichen lesen (s1…s14), deshalb darf jedes Zeichen vorkommen.
 //
@@ -17,13 +17,13 @@
 //           man „in“/„von“ einzeln antippen.
 //
 // Sätze: gesprochenes Standard-Nepali (Kathmandu), höflich (तपाईं, Bitten auf -नुहोस्),
-// 3–6 Wörter, möglichst nur aus Wörtern dieses und früherer Blöcke plus einer Handvoll
-// Funktionswörter (हो, छ, छैन, होइन, म, यो, त्यो, के, कति, -मा, -को, -लाई, -बाट, चाहिन्छ,
-// दिनुहोस्, जानुहोस्, जान्छ …). Der Wort-Audit (scripts/audit-ne.mjs) meldet den Rest.
+// 3–6 Wörter, nur aus Wörtern dieses und früherer Blöcke plus einer Handvoll
+// Funktionswörter (हो, छ, छैन, होइन, म, मेरो, यो, त्यो, के, कति, र, -मा, -को, -लाई, -बाट,
+// चाहिन्छ, दिनुहोस्, जानुहोस्, जान्छ, हुन्छ …). Der Wort-Audit (scripts/audit-ne.mjs) meldet den Rest.
 //
-// Zahlen: 1–5, 10 und 100 stehen bei „Zahlen und Geld“; 6, 7, 9 bei den Uhrzeiten
-// (Unterkunft und Zeit), 8 und 1000 bei den Bergen – sonst würde ein Block zu voll.
-// Achtung: छ ist zugleich „sechs“ (Wort in nw5) und die Kopula „ist“ (Funktionswort) –
+// Die Zahlen 1–10 sind ein Block für sich (nw2): man lernt sie zusammen, wie die Ziffern
+// in s14. Ihre Sätze kommen deshalb ohne Geldwörter aus (Ziffern lesen, kleine Summen).
+// Achtung: छ ist zugleich „sechs“ (Wort in nw2) und die Kopula „ist“ (Funktionswort) –
 // gleich geschrieben, gleich gesprochen.
 
 import { nfc } from '../lib/deva.js'
@@ -48,6 +48,8 @@ const TAPAIN = ['तपाईं', 'tapāīṃ', 'Sie (höflich)']
 const YO = ['यो', 'yo', 'das, dies(e)']
 const TYO = ['त्यो', 'tyo', 'das dort, jene(r)']
 const KE = ['के', 'ke', 'was']
+const RA = ['र', 'ra', 'und']
+const HUNCHA = ['हुन्छ', 'huncha', 'wird, ergibt']
 const KATI = ['कति', 'kati', 'wie viel']
 const KAHAN = ['कहाँ', 'kahāṃ', 'wo, wohin']
 const YAHAN = ['यहाँ', 'yahāṃ', 'hier']
@@ -59,10 +61,19 @@ const CAHINCHA = ['चाहिन्छ', 'cāhincha', 'wird gebraucht (→ ich
 const DINUHOS = ['दिनुहोस्', 'dinuhos', 'geben Sie (höfliche Bitte)']
 const JANUHOS = ['जानुहोस्', 'jānuhos', 'gehen / fahren Sie (höfliche Bitte)']
 const JANCHA = ['जान्छ', 'jāncha', 'geht, fährt']
+const GARNUHOS = ['गर्नुहोस्', 'garnuhos', 'machen Sie (höfliche Bitte)']
 const DHANYABAD = ['धन्यवाद', 'dhanyabād', 'danke']
 const THIK = ['ठीक', 'ṭhīk', 'in Ordnung, richtig']
 const RUPAIYAN = ['रुपैयाँ', 'rupaiyāṃ', 'Rupien']
 const SAY = ['सय', 'say', 'hundert']
+const DHERAI = ['धेरै', 'dherai', 'sehr, viel']
+const MAHANGO = ['महँगो', 'mahaṃgo', 'teuer']
+// Zahlen (nw2)
+const N = {
+  1: ['एक', 'ek', 'eins'], 2: ['दुई', 'duī', 'zwei'], 3: ['तीन', 'tīn', 'drei'], 4: ['चार', 'cār', 'vier'],
+  5: ['पाँच', 'pāṃc', 'fünf'], 6: ['छ', 'cha', 'sechs'], 7: ['सात', 'sāt', 'sieben'], 8: ['आठ', 'āṭh', 'acht'],
+  9: ['नौ', 'nau', 'neun'], 10: ['दस', 'das', 'zehn'],
+}
 
 export const WORD_BLOCKS = [
   {
@@ -71,7 +82,7 @@ export const WORD_BLOCKS = [
         X('नमस्ते, तपाईंलाई सन्चै छ?', 'namaste, tapāīṃlāī sancai cha?', 'Hallo, geht es Ihnen gut?',
           ['नमस्ते', 'namaste', 'Hallo'], COMMA, TAPAIN, LAI, ['सन्चै', 'sancai', 'wohlauf, gut'], CHA, Q)),
       W('तपाईं', 'tapāīṃ', 'Sie (höfliche Anrede)',
-        X('तपाईंलाई ठीक छ?', 'tapāīṃlāī ṭhīk cha?', 'Passt es Ihnen? (wörtl. „Ist es für Sie in Ordnung?“)',
+        X('तपाईंलाई ठीक छ?', 'tapāīṃlāī ṭhīk cha?', 'Ist es Ihnen recht? / Geht es Ihnen gut?',
           TAPAIN, LAI, THIK, CHA, Q)),
       W('सन्चै', 'sancai', 'wohlauf, gut (Befinden)',
         X('म सन्चै छु, धन्यवाद।', 'ma sancai chu, dhanyabād.', 'Mir geht es gut, danke.',
@@ -79,62 +90,97 @@ export const WORD_BLOCKS = [
       W('धन्यवाद', 'dhanyabād', 'danke',
         X('ठीक छ, धन्यवाद।', 'ṭhīk cha, dhanyabād.', 'In Ordnung, danke.',
           THIK, CHA, COMMA, DHANYABAD, DANDA)),
+      W('हजुर', 'hajur', 'ja (höflich) / Wie bitte? (höfliche Antwort und Rückfrage)',
+        X('हजुर, ठीक छ।', 'hajur, ṭhīk cha.', 'Ja, in Ordnung. (höflich)',
+          ['हजुर', 'hajur', 'ja (höflich)'], COMMA, THIK, CHA, DANDA)),
       W('हो', 'ho', 'ja (wörtl. „ist so“) / ist',
-        X('हो, यो राम्रो छ।', 'ho, yo rāmro cha.', 'Ja, das ist gut.',
-          HO_JA, COMMA, YO, ['राम्रो', 'rāmro', 'gut, schön'], CHA, DANDA)),
+        X('हो, यो तपाईंको हो।', 'ho, yo tapāīṃko ho.', 'Ja, das gehört Ihnen. (wörtl. „ist Ihres“)',
+          HO_JA, COMMA, YO, TAPAIN, KO, HO, DANDA)),
       W('होइन', 'hoina', 'nein (wörtl. „ist nicht so“) / ist nicht',
-        X('होइन, त्यो मेरो नाम होइन।', 'hoina, tyo mero nām hoina.', 'Nein, das ist nicht mein Name.',
-          ['होइन', 'hoina', 'nein (wörtl. „ist nicht so“)'], COMMA, TYO, MERO, ['नाम', 'nām', 'Name'], HOINA, DANDA)),
+        X('होइन, यो मेरो होइन।', 'hoina, yo mero hoina.', 'Nein, das gehört mir nicht. (wörtl. „ist nicht meins“)',
+          ['होइन', 'hoina', 'nein (wörtl. „ist nicht so“)'], COMMA, YO, MERO, HOINA, DANDA)),
       W('ठीक छ', 'ṭhīk cha', 'in Ordnung, okay',
         X('हो, ठीक छ।', 'ho, ṭhīk cha.', 'Ja, in Ordnung.',
           HO_JA, COMMA, THIK, CHA, DANDA)),
-      W('नाम', 'nām', 'Name',
-        X('तपाईंको नाम के हो?', 'tapāīṃko nām ke ho?', 'Wie heißen Sie? (wörtl. „Ihr Name ist was?“)',
-          TAPAIN, KO, ['नाम', 'nām', 'Name'], KE, HO, Q)),
-      W('राम्रो', 'rāmro', 'gut, schön',
-        X('तपाईंको नाम राम्रो छ।', 'tapāīṃko nām rāmro cha.', 'Sie haben einen schönen Namen.',
-          TAPAIN, KO, ['नाम', 'nām', 'Name'], ['राम्रो', 'rāmro', 'gut, schön'], CHA, DANDA)),
+      W('बुझिनँ', 'bujhinaṃ', 'ich habe nicht verstanden',
+        X('माफ गर्नुहोस्, म बुझिनँ।', 'māph garnuhos, ma bujhinaṃ.', 'Entschuldigung, ich habe nicht verstanden.',
+          ['माफ', 'māph', 'Verzeihung'], GARNUHOS, COMMA, MA, ['बुझिनँ', 'bujhinaṃ', 'habe nicht verstanden'], DANDA)),
       W('माफ गर्नुहोस्', 'māph garnuhos', 'Entschuldigung (wörtl. „machen Sie Verzeihung“)',
         X('माफ गर्नुहोस्, यो के हो?', 'māph garnuhos, yo ke ho?', 'Entschuldigung, was ist das?',
-          ['माफ', 'māph', 'Verzeihung'], ['गर्नुहोस्', 'garnuhos', 'machen Sie (höfliche Bitte)'], COMMA, YO, KE, HO, Q)),
+          ['माफ', 'māph', 'Verzeihung'], GARNUHOS, COMMA, YO, KE, HO, Q)),
     ],
   },
   {
-    id: 'nw2', theme: '💰', title: 'Zahlen und Geld', words: [
+    // Nur die zehn Zahlen. Sätze: Ziffern lesen (१/७, ६/९ sehen sich ähnlich) und kleine Summen.
+    id: 'nw2', theme: '🔢', title: 'Zahlen 1–10', words: [
       W('एक', 'ek', 'eins',
-        X('एक सय रुपैयाँ, ठीक छ?', 'ek say rupaiyāṃ, ṭhīk cha?', 'Hundert Rupien, in Ordnung?',
-          ['एक', 'ek', 'eins'], SAY, RUPAIYAN, COMMA, THIK, CHA, Q)),
+        X('यो एक हो, सात होइन।', 'yo ek ho, sāt hoina.', 'Das ist eine Eins, keine Sieben.',
+          YO, N[1], HO, COMMA, N[7], HOINA, DANDA)),
       W('दुई', 'duī', 'zwei',
-        X('यो दुई सय रुपैयाँ हो।', 'yo duī say rupaiyāṃ ho.', 'Das kostet zweihundert Rupien. (wörtl. „Das ist …“)',
-          YO, ['दुई', 'duī', 'zwei'], SAY, RUPAIYAN, HO, DANDA)),
+        X('एक र एक दुई हुन्छ।', 'ek ra ek duī huncha.', 'Eins und eins macht zwei.',
+          N[1], RA, N[1], N[2], HUNCHA, DANDA)),
       W('तीन', 'tīn', 'drei',
-        X('तीन सय रुपैयाँ महँगो छ।', 'tīn say rupaiyāṃ mahaṃgo cha.', 'Dreihundert Rupien sind teuer.',
-          ['तीन', 'tīn', 'drei'], SAY, RUPAIYAN, ['महँगो', 'mahaṃgo', 'teuer'], CHA, DANDA)),
+        X('यो तीन हो?', 'yo tīn ho?', 'Ist das eine Drei?',
+          YO, N[3], HO, Q)),
       W('चार', 'cār', 'vier',
-        X('चार सय होइन, तीन सय।', 'cār say hoina, tīn say.', 'Nicht vierhundert, dreihundert.',
-          ['चार', 'cār', 'vier'], SAY, HOINA, COMMA, ['तीन', 'tīn', 'drei'], SAY, DANDA)),
+        X('दुई र दुई चार हुन्छ।', 'duī ra duī cār huncha.', 'Zwei und zwei macht vier.',
+          N[2], RA, N[2], N[4], HUNCHA, DANDA)),
       W('पाँच', 'pāṃc', 'fünf',
-        X('यो पाँच सय रुपैयाँ हो?', 'yo pāṃc say rupaiyāṃ ho?', 'Kostet das fünfhundert Rupien?',
-          YO, ['पाँच', 'pāṃc', 'fünf'], SAY, RUPAIYAN, HO, Q)),
+        X('यो पाँच होइन, चार हो।', 'yo pāṃc hoina, cār ho.', 'Das ist keine Fünf, das ist eine Vier.',
+          YO, N[5], HOINA, COMMA, N[4], HO, DANDA)),
+      W('छ', 'cha', 'sechs (gleich geschrieben wie छ „ist“)',
+        X('तीन र तीन छ हुन्छ।', 'tīn ra tīn cha huncha.', 'Drei und drei macht sechs.',
+          N[3], RA, N[3], N[6], HUNCHA, DANDA)),
+      W('सात', 'sāt', 'sieben',
+        X('पाँच र दुई सात हुन्छ।', 'pāṃc ra duī sāt huncha.', 'Fünf und zwei macht sieben.',
+          N[5], RA, N[2], N[7], HUNCHA, DANDA)),
+      W('आठ', 'āṭh', 'acht',
+        X('यो आठ हो, तीन होइन।', 'yo āṭh ho, tīn hoina.', 'Das ist eine Acht, keine Drei.',
+          YO, N[8], HO, COMMA, N[3], HOINA, DANDA)),
+      W('नौ', 'nau', 'neun',
+        X('यो नौ होइन, छ हो।', 'yo nau hoina, cha ho.', 'Das ist keine Neun, das ist eine Sechs.',
+          YO, N[9], HOINA, COMMA, N[6], HO, DANDA)),
       W('दस', 'das', 'zehn',
-        X('दस रुपैयाँ ठीक छ।', 'das rupaiyāṃ ṭhīk cha.', 'Zehn Rupien sind in Ordnung.',
-          ['दस', 'das', 'zehn'], RUPAIYAN, THIK, CHA, DANDA)),
-      W('सय', 'say', 'hundert',
-        X('सय रुपैयाँ महँगो छैन।', 'say rupaiyāṃ mahaṃgo chaina.', 'Hundert Rupien sind nicht teuer.',
-          SAY, RUPAIYAN, ['महँगो', 'mahaṃgo', 'teuer'], CHAINA, DANDA)),
+        X('पाँच र पाँच दस हुन्छ।', 'pāṃc ra pāṃc das huncha.', 'Fünf und fünf macht zehn.',
+          N[5], RA, N[5], N[10], HUNCHA, DANDA)),
+    ],
+  },
+  {
+    id: 'nw3', theme: '💰', title: 'Geld und Preise', words: [
       W('कति', 'kati', 'wie viel',
         X('यो कति हो?', 'yo kati ho?', 'Was kostet das? (wörtl. „Wie viel ist das?“)',
           YO, KATI, HO, Q)),
       W('रुपैयाँ', 'rupaiyāṃ', 'Rupie(n) (Währung)',
         X('कति रुपैयाँ हो?', 'kati rupaiyāṃ ho?', 'Wie viele Rupien sind es?',
           KATI, RUPAIYAN, HO, Q)),
+      W('सय', 'say', 'hundert',
+        X('यो दुई सय रुपैयाँ हो।', 'yo duī say rupaiyāṃ ho.', 'Das kostet zweihundert Rupien. (wörtl. „Das ist …“)',
+          YO, N[2], SAY, RUPAIYAN, HO, DANDA)),
+      W('हजार', 'hajār', 'tausend',
+        X('यो एक हजार रुपैयाँ हो?', 'yo ek hajār rupaiyāṃ ho?', 'Kostet das tausend Rupien?',
+          YO, N[1], ['हजार', 'hajār', 'tausend'], RUPAIYAN, HO, Q)),
+      W('धेरै', 'dherai', 'sehr, viel',
+        X('तपाईंलाई धेरै धन्यवाद।', 'tapāīṃlāī dherai dhanyabād.', 'Vielen Dank. (wörtl. „Ihnen viel Dank“)',
+          TAPAIN, LAI, DHERAI, DHANYABAD, DANDA)),
       W('महँगो', 'mahaṃgo', 'teuer',
-        X('यो महँगो छ।', 'yo mahaṃgo cha.', 'Das ist teuer.',
-          YO, ['महँगो', 'mahaṃgo', 'teuer'], CHA, DANDA)),
+        X('यो धेरै महँगो छ।', 'yo dherai mahaṃgo cha.', 'Das ist sehr teuer.',
+          YO, DHERAI, MAHANGO, CHA, DANDA)),
+      W('सस्तो', 'sasto', 'billig, günstig',
+        X('पाँच सय रुपैयाँ सस्तो छ।', 'pāṃc say rupaiyāṃ sasto cha.', 'Fünfhundert Rupien sind billig.',
+          N[5], SAY, RUPAIYAN, ['सस्तो', 'sasto', 'billig'], CHA, DANDA)),
+      W('कम गर्नुहोस्', 'kam garnuhos', 'machen Sie es billiger (wörtl. „machen Sie weniger“)',
+        X('धेरै महँगो छ, कम गर्नुहोस्।', 'dherai mahaṃgo cha, kam garnuhos.', 'Das ist zu teuer, machen Sie es billiger.',
+          DHERAI, MAHANGO, CHA, COMMA, ['कम', 'kam', 'weniger'], GARNUHOS, DANDA)),
+      W('एउटा', 'euṭā', 'ein(s) – beim Zählen von Dingen (एउटा चिया = ein Tee)',
+        X('एउटा कति हो?', 'euṭā kati ho?', 'Was kostet eins? (ein Stück)',
+          ['एउटा', 'euṭā', 'ein(s), ein Stück'], KATI, HO, Q)),
+      W('चाहिँदैन', 'cāhiṃdaina', 'brauche ich nicht / nein danke (wörtl. „wird nicht gebraucht“)',
+        X('धन्यवाद, मलाई चाहिँदैन।', 'dhanyabād, malāī cāhiṃdaina.', 'Danke, ich brauche das nicht.',
+          DHANYABAD, COMMA, MA, LAI, ['चाहिँदैन', 'cāhiṃdaina', 'wird nicht gebraucht'], DANDA)),
     ],
   },
   {
-    id: 'nw3', theme: '🍛', title: 'Essen und Trinken', words: [
+    id: 'nw4', theme: '🍛', title: 'Essen und Trinken', words: [
       W('पानी', 'pānī', 'Wasser',
         X('मलाई पानी चाहिन्छ।', 'malāī pānī cāhincha.', 'Ich brauche Wasser.',
           MA, LAI, ['पानी', 'pānī', 'Wasser'], CAHINCHA, DANDA)),
@@ -159,16 +205,16 @@ export const WORD_BLOCKS = [
       W('पिरो', 'piro', 'scharf (gewürzt)',
         X('यो खाना पिरो छ?', 'yo khānā piro cha?', 'Ist dieses Essen scharf?',
           YO, ['खाना', 'khānā', 'Essen'], ['पिरो', 'piro', 'scharf'], CHA, Q)),
-      W('मीठो', 'mīṭho', 'lecker, süß',
+      W('मीठो', 'mīṭho', 'lecker, schmackhaft',
         X('चिया मीठो छ, धन्यवाद।', 'ciyā mīṭho cha, dhanyabād.', 'Der Tee ist lecker, danke.',
           ['चिया', 'ciyā', 'Tee'], ['मीठो', 'mīṭho', 'lecker'], CHA, COMMA, DHANYABAD, DANDA)),
       W('दिदी', 'didī', 'ältere Schwester – höfliche Anrede für Frauen (z. B. Bedienung)',
-        X('दिदी, चिया दिनुहोस्।', 'didī, ciyā dinuhos.', 'Didi, einen Tee bitte.',
-          ['दिदी', 'didī', 'ältere Schwester (Anrede)'], COMMA, ['चिया', 'ciyā', 'Tee'], DINUHOS, DANDA)),
+        X('दिदी, एउटा चिया दिनुहोस्।', 'didī, euṭā ciyā dinuhos.', 'Didi, einen Tee bitte.',
+          ['दिदी', 'didī', 'ältere Schwester (Anrede)'], COMMA, ['एउटा', 'euṭā', 'ein(s), ein Stück'], ['चिया', 'ciyā', 'Tee'], DINUHOS, DANDA)),
     ],
   },
   {
-    id: 'nw4', theme: '🚕', title: 'Unterwegs', words: [
+    id: 'nw5', theme: '🚕', title: 'Unterwegs', words: [
       W('दाइ', 'dāi', 'älterer Bruder – höfliche Anrede für Männer (z. B. Fahrer)',
         X('दाइ, यहाँ रोक्नुहोस्।', 'dāi, yahāṃ roknuhos.', 'Halten Sie bitte hier. (zum Fahrer)',
           ['दाइ', 'dāi', 'älterer Bruder (Anrede)'], COMMA, YAHAN, ['रोक्नुहोस्', 'roknuhos', 'halten Sie (höfliche Bitte)'], DANDA)),
@@ -202,16 +248,25 @@ export const WORD_BLOCKS = [
     ],
   },
   {
-    id: 'nw5', theme: '🏨', title: 'Unterkunft und Zeit', words: [
+    id: 'nw6', theme: '🏨', title: 'Unterkunft und Zeit', words: [
       W('कोठा', 'koṭhā', 'Zimmer',
         X('यहाँ कोठा छ?', 'yahāṃ koṭhā cha?', 'Gibt es hier ein Zimmer?',
           YAHAN, ['कोठा', 'koṭhā', 'Zimmer'], CHA, Q)),
       W('होटल', 'hoṭal', 'Hotel, Gasthaus (auch einfaches Lokal)',
         X('यो होटल राम्रो छ।', 'yo hoṭal rāmro cha.', 'Dieses Hotel ist gut.',
           YO, ['होटल', 'hoṭal', 'Hotel'], ['राम्रो', 'rāmro', 'gut, schön'], CHA, DANDA)),
-      W('शौचालय', 'shaucālay', 'Toilette',
-        X('शौचालय कहाँ छ?', 'shaucālay kahāṃ cha?', 'Wo ist die Toilette?',
-          ['शौचालय', 'shaucālay', 'Toilette'], KAHAN, CHA, Q)),
+      W('नाम', 'nām', 'Name',
+        X('होटलको नाम के हो?', 'hoṭalko nām ke ho?', 'Wie heißt das Hotel? (wörtl. „des Hotels Name ist was?“)',
+          ['होटल', 'hoṭal', 'Hotel'], KO, ['नाम', 'nām', 'Name'], KE, HO, Q)),
+      W('राम्रो', 'rāmro', 'gut, schön',
+        X('कोठा राम्रो छ, धन्यवाद।', 'koṭhā rāmro cha, dhanyabād.', 'Das Zimmer ist schön, danke.',
+          ['कोठा', 'koṭhā', 'Zimmer'], ['राम्रो', 'rāmro', 'gut, schön'], CHA, COMMA, DHANYABAD, DANDA)),
+      W('ट्वाइलेट', 'ṭwāileṭ', 'Toilette (auf Schildern: शौचालय „shaucālay“)',
+        X('ट्वाइलेट कहाँ छ?', 'ṭwāileṭ kahāṃ cha?', 'Wo ist die Toilette?',
+          ['ट्वाइलेट', 'ṭwāileṭ', 'Toilette'], KAHAN, CHA, Q)),
+      W('रात', 'rāt', 'Nacht',
+        X('एक रातको कति हो?', 'ek rātko kati ho?', 'Was kostet eine Nacht? (wörtl. „einer Nacht wie viel ist?“)',
+          N[1], ['रात', 'rāt', 'Nacht'], KO, KATI, HO, Q)),
       W('आज', 'āj', 'heute',
         X('आज तातो पानी छैन।', 'āj tāto pānī chaina.', 'Heute gibt es kein warmes Wasser.',
           ['आज', 'āj', 'heute'], ['तातो', 'tāto', 'heiß, warm'], ['पानी', 'pānī', 'Wasser'], CHAINA, DANDA)),
@@ -222,34 +277,28 @@ export const WORD_BLOCKS = [
         X('बिहान तातो पानी छ?', 'bihān tāto pānī cha?', 'Gibt es morgens warmes Wasser?',
           ['बिहान', 'bihān', 'morgens'], ['तातो', 'tāto', 'heiß, warm'], ['पानी', 'pānī', 'Wasser'], CHA, Q)),
       W('बजे', 'baje', 'Uhr (bei Uhrzeiten: „um … Uhr“)',
-        X('बस कति बजे जान्छ?', 'bas kati baje jāncha?', 'Um wie viel Uhr fährt der Bus?',
-          ['बस', 'bas', 'Bus'], KATI, ['बजे', 'baje', 'Uhr (um … Uhr)'], JANCHA, Q)),
-      W('छ', 'cha', 'sechs (gleich geschrieben wie छ „ist“)',
-        X('कोठा छ सय रुपैयाँ हो।', 'koṭhā cha say rupaiyāṃ ho.', 'Das Zimmer kostet sechshundert Rupien.',
-          ['कोठा', 'koṭhā', 'Zimmer'], ['छ', 'cha', 'sechs'], SAY, RUPAIYAN, HO, DANDA)),
-      W('सात', 'sāt', 'sieben',
         X('बस सात बजे जान्छ।', 'bas sāt baje jāncha.', 'Der Bus fährt um sieben Uhr.',
-          ['बस', 'bas', 'Bus'], ['सात', 'sāt', 'sieben'], ['बजे', 'baje', 'Uhr (um … Uhr)'], JANCHA, DANDA)),
-      W('नौ', 'nau', 'neun',
-        X('नौ सय रुपैयाँ महँगो छ।', 'nau say rupaiyāṃ mahaṃgo cha.', 'Neunhundert Rupien sind teuer.',
-          ['नौ', 'nau', 'neun'], SAY, RUPAIYAN, ['महँगो', 'mahaṃgo', 'teuer'], CHA, DANDA)),
+          ['बस', 'bas', 'Bus'], N[7], ['बजे', 'baje', 'Uhr (um … Uhr)'], JANCHA, DANDA)),
     ],
   },
   {
-    id: 'nw6', theme: '🏔️', title: 'Berge und Wetter', words: [
+    id: 'nw7', theme: '🏔️', title: 'Berge und Wetter', words: [
       W('हिमाल', 'himāl', 'Schneeberg, Himalaya-Gipfel',
         X('त्यो हिमालको नाम के हो?', 'tyo himālko nām ke ho?', 'Wie heißt der Schneeberg dort?',
           TYO, ['हिमाल', 'himāl', 'Schneeberg'], KO, ['नाम', 'nām', 'Name'], KE, HO, Q)),
       W('बाटो', 'bāṭo', 'Weg, Straße',
         X('गाउँको बाटो कहाँ छ?', 'gāuṃko bāṭo kahāṃ cha?', 'Wo ist der Weg zum Dorf? (wörtl. „des Dorfes Weg“)',
           ['गाउँ', 'gāuṃ', 'Dorf'], KO, ['बाटो', 'bāṭo', 'Weg'], KAHAN, CHA, Q)),
+      W('उकालो', 'ukālo', 'bergauf; Anstieg',
+        X('यो बाटो उकालो छ।', 'yo bāṭo ukālo cha.', 'Dieser Weg geht bergauf.',
+          YO, ['बाटो', 'bāṭo', 'Weg'], ['उकालो', 'ukālo', 'bergauf'], CHA, DANDA)),
       W('गाउँ', 'gāuṃ', 'Dorf',
         X('गाउँ कति टाढा छ?', 'gāuṃ kati ṭāḍhā cha?', 'Wie weit ist das Dorf?',
           ['गाउँ', 'gāuṃ', 'Dorf'], KATI, ['टाढा', 'ṭāḍhā', 'weit, fern'], CHA, Q)),
       W('टाढा', 'ṭāḍhā', 'weit, fern',
         X('यहाँबाट टाढा छ?', 'yahāṃbāṭ ṭāḍhā cha?', 'Ist es weit von hier?',
           YAHAN, BAT, ['टाढा', 'ṭāḍhā', 'weit, fern'], CHA, Q)),
-      W('पानी पर्छ', 'pānī parcha', 'es regnet (wörtl. „Wasser fällt“)',
+      W('पानी पर्छ', 'pānī parcha', 'es regnet (allgemein) / es wird regnen (wörtl. „Wasser fällt“)',
         X('आज पानी पर्छ?', 'āj pānī parcha?', 'Regnet es heute?',
           ['आज', 'āj', 'heute'], ['पानी', 'pānī', 'Wasser (hier: Regen)'], ['पर्छ', 'parcha', 'fällt'], Q)),
       W('हिउँ', 'hiuṃ', 'Schnee',
@@ -261,12 +310,6 @@ export const WORD_BLOCKS = [
       W('जाडो', 'jāḍo', 'kalt (Wetter), Kälte; auch: Winter',
         X('आज जाडो छ।', 'āj jāḍo cha.', 'Heute ist es kalt.',
           ['आज', 'āj', 'heute'], ['जाडो', 'jāḍo', 'kalt (Wetter)'], CHA, DANDA)),
-      W('आठ', 'āṭh', 'acht',
-        X('बस आठ बजे जान्छ?', 'bas āṭh baje jāncha?', 'Fährt der Bus um acht Uhr?',
-          ['बस', 'bas', 'Bus'], ['आठ', 'āṭh', 'acht'], ['बजे', 'baje', 'Uhr (um … Uhr)'], JANCHA, Q)),
-      W('हजार', 'hajār', 'tausend',
-        X('कोठा एक हजार रुपैयाँ हो।', 'koṭhā ek hajār rupaiyāṃ ho.', 'Das Zimmer kostet tausend Rupien.',
-          ['कोठा', 'koṭhā', 'Zimmer'], ['एक', 'ek', 'eins'], ['हजार', 'hajār', 'tausend'], RUPAIYAN, HO, DANDA)),
     ],
   },
 ]

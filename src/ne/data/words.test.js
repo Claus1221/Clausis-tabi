@@ -18,12 +18,15 @@ const letters = s => s.toLowerCase().normalize('NFC').replace(/[^\p{L}\p{M}]/gu,
 const hasLetter = s => /[\p{L}\p{M}]/u.test(s)
 
 describe('WORD_BLOCKS', () => {
-  it('genau sechs Blöcke nw1…nw6 in Reihenfolge, je mit Thema und Titel', () => {
-    expect(WORD_BLOCKS.map(b => b.id)).toEqual(['nw1', 'nw2', 'nw3', 'nw4', 'nw5', 'nw6'])
+  it('genau sieben Blöcke nw1…nw7 in Reihenfolge, je mit Thema und Titel', () => {
+    expect(WORD_BLOCKS.map(b => b.id)).toEqual(['nw1', 'nw2', 'nw3', 'nw4', 'nw5', 'nw6', 'nw7'])
     for (const b of WORD_BLOCKS) {
       expect(nonEmpty(b.theme), b.id).toBe(true)
       expect(nonEmpty(b.title), b.id).toBe(true)
     }
+  })
+  it('nw2 sind genau die Zahlen 1–10, in Reihenfolge – sie werden zusammen gelernt', () => {
+    expect(WORD_BLOCKS[1].words.map(w => w.dev)).toEqual(['एक', 'दुई', 'तीन', 'चार', 'पाँच', 'छ', 'सात', 'आठ', 'नौ', 'दस'])
   })
   it('je Block 8–10 Wörter', () => {
     for (const b of WORD_BLOCKS) {
@@ -98,6 +101,21 @@ describe('Beispielsätze und Tokens', () => {
       // Eine angehängte Klammer („(wörtl. …)“, „(zum Fahrer)“) zählt nicht zum Satz.
       expect(w.ex.de.replace(/\s*\([^)]*\)\s*$/, '').endsWith('?'), w.ex.de).toBe(q)
     }
+  })
+  it('kein Satz greift einem späteren Block vor', () => {
+    // Block-Index je Eintrag und je Teil eines Mehrwort-Eintrags (माफ, गर्नुहोस् …). Der
+    // erste Fund gilt, damit ein früherer Eintrag nicht von einem späteren Teil überschrieben wird.
+    const at = {}
+    WORD_BLOCKS.forEach((b, i) => b.words.forEach(w => {
+      for (const p of [w.dev, ...w.dev.split(' ')]) if (!(p in at)) at[p] = i
+    }))
+    WORD_BLOCKS.forEach((b, i) => b.words.forEach(w => {
+      for (const t of w.ex.tokens) {
+        // छ ist auch die Kopula „ist“ (Funktionswort) – nur छ „sechs“ zählt als Wort.
+        if (t.t === 'छ' && t.de !== 'sechs') continue
+        if (t.t in at) expect(at[t.t] <= i, `${b.id} ${w.dev}: ${t.t} kommt erst in nw${at[t.t] + 1}`).toBe(true)
+      }
+    }))
   })
   it('Sätze sind kurz: 3–6 Wörter', () => {
     for (const w of words) {
