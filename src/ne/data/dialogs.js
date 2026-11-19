@@ -217,7 +217,7 @@ export const DIALOGS = [
         ['हजुर, ठीक छ।', 'hajur, ṭhīk cha.', 'Ja, einverstanden. (höflich)'],
         ['यो मेरो होइन।', 'yo mero hoina.', 'Das gehört mir nicht.'],
       ], 1),
-      T(['यो थमेल हो।', 'yo thamel ho.', 'Das hier ist Thamel. (Ihr seid angekommen.)'], [
+      T(['यो थमेल हो।', 'yo thamel ho.', 'Das hier ist Thamel. (Du bist angekommen.)'], [
         ['थमेल कहाँ छ?', 'thamel kahāṃ cha?', 'Wo ist Thamel?'],
         ['तपाईं जर्मन हुनुहुन्छ?', 'tapāīṃ jarman hunuhuncha?', 'Sind Sie Deutsche(r)?'],
         ['धेरै धन्यवाद, नमस्ते।', 'dherai dhanyabād, namaste.', 'Vielen Dank, auf Wiedersehen.'],
@@ -293,12 +293,12 @@ export const DIALOGS = [
         ['धेरै महँगो छ, कम गर्नुहोस्।', 'dherai mahaṃgo cha, kam garnuhos.', 'Das ist zu teuer, machen Sie es billiger.'],
         ['म सन्चै छु, धन्यवाद।', 'ma sancai chu, dhanyabād.', 'Mir geht es gut, danke.'],
       ], 1),
-      T(['हुन्छ, एक हजार आठ सय।', 'huncha, ek hajār āṭh say.', 'Na gut, tausendachthundert.'], [
+      T(['हुन्छ, एक हजार आठ सय।', 'huncha, ek hajār āṭh say.', 'Na gut, tausendachthundert. (gesprochen meist अठार सय)'], [
         ['खाना कस्तो छ?', 'khānā kasto cha?', 'Wie ist das Essen?'],
         ['कति जना हुनुहुन्छ?', 'kati janā hunuhuncha?', 'Wie viele Personen sind Sie?'],
         ['एक हजारमा हुन्छ?', 'ek hajārmā huncha?', 'Geht es für tausend?'],
       ], 2),
-      T(['एक हजार दुई सय, ठीक छ?', 'ek hajār duī say, ṭhīk cha?', 'Tausendzweihundert, einverstanden?'], [
+      T(['एक हजार दुई सय, ठीक छ?', 'ek hajār duī say, ṭhīk cha?', 'Tausendzweihundert, einverstanden? (gesprochen meist बाह्र सय)'], [
         ['मलाई चिया मन पर्छ।', 'malāī ciyā man parcha.', 'Ich mag Tee.'],
         ['हुन्छ, यो दिनुहोस्।', 'huncha, yo dinuhos.', 'Gut, ich nehme sie. (wörtl. „geben Sie mir die“)'],
         ['यो मेरो पासपोर्ट हो।', 'yo mero pāsporṭ ho.', 'Das ist mein Pass.'],
