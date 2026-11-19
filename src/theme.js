@@ -12,3 +12,6 @@ export const C = {
 
 // Japanische Display-Schrift — zentral, statt dutzendfach inline wiederholt.
 export const JP = "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif"
+
+// Devanagari-Schrift für Nepali (Yatra).
+export const NE = "'Noto Sans Devanagari', 'Kohinoor Devanagari', 'Nirmala UI', sans-serif"

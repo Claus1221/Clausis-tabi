@@ -20,8 +20,10 @@ hinweg. So bleibt der Graph zyklenfrei und jede Datei ist isoliert verständlich
 ```
 main.jsx
   └─ AuthGate.jsx            (Login-Wand, Auth-Context)
-       └─ TabiApp.jsx        (Orchestrator: Header, TabBar, ProgressCtx-Provider,
-                              lazy-geladene Screens)
+       └─ LangGate.jsx       (Sprachwahl nach dem Login, Sprach-Context; lädt lazy)
+            ├─ TabiApp.jsx   (Japanisch. Orchestrator: Header, TabBar, ProgressCtx-Provider,
+            │                 lazy-geladene Screens)
+            └─ ne/NepaliApp.jsx  (Nepali, s. „Zweig ne/" in §2)
             └─ screens/      (ein Vollbild je Tab; default-Export, lazy)
                  └─ components/   (geteilte UI-Bausteine)
                       └─ lib/     (reine Logik: SRS, Dialog-Gating, Szene-SVG …)
@@ -31,7 +33,9 @@ main.jsx
 
 Faustregel beim Importieren aus `src/<schicht>/datei`:
 `screens → components → lib → data`, dazu quer erlaubt: `theme`, `state/ProgressContext`,
-`useProgress`, `kanaStrokes`. Eine Datei darf **nie** aus ihrer eigenen oder einer
+`useProgress`, `kanaStrokes`, außerdem `useAuth` (aus `AuthGate.jsx`) und `useLang`
+(aus `LangGate.jsx`) für Screens und Apps. Die Wurzel-Stores `accessStore.js` und
+`useProfile.js` hängen nur an `firebase` und `lib/`. Eine Datei darf **nie** aus ihrer eigenen oder einer
 höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, s. u.).
 
 ---
@@ -41,14 +45,26 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 ### Wurzel `src/`
 | Datei | Rolle |
 |---|---|
-| `main.jsx` | Mount-Punkt: `<AuthGate><TabiApp/></AuthGate>`. |
+| `main.jsx` | Mount-Punkt: `<AuthGate><LangGate/></AuthGate>`. |
 | `AuthGate.jsx` | Google-Login, Freigabe-Prüfung (Admin aus `ADMIN_EMAILS`, sonst Dokument `allowed/<e-mail>` in Firestore; Zustände prüfen/Kein Zugang/Offline), `useAuth()`-Context mit `user`, `logout`, `isAdmin`, `recheckAccess`. |
 | `firebase.js` | Firebase-Init; exportiert `auth`, `db`, `ADMIN_EMAILS`, `isConfigured`. `db` läuft mit persistentem Offline-Cache (IndexedDB, mehrere Tabs geteilt) – lesen/schreiben funktioniert auch offline, Sync folgt automatisch. |
 | `useProgress.js` | **Firestore-Hook + Fortschritts-Domäne**: `useProgress(uid, lang = 'ja', opts)` (live-Daten der gewählten Sprache + Schreib-Funktionen + `saveError`; Dokumentpfad über `progressPath` aus `lib/lang.js`), `DEFAULT_PROGRESS`, `emptyProgress` (was `reset()` schreibt), `progressView` (zeigt beim Sprachwechsel nie den Stand der anderen Sprache), `computeStats`, `dueKana`, `sm2`, `getSettings`, `localDate`, `addDays`, `SETTINGS_DEFAULTS`, `SRS_STAGE_BOUNDS`. Fortschritts-Felder u. a. `completedTalks` (gemeisterte freie Gespräche) und `extraPhrases` (aus Gesprächen übernommene Wendungen; `addPhrase` legt sie an UND plant sie als SRS-Karte ein). Schreibvorgänge laufen über das interne `safeWrite` (try/catch → `saveError`), damit ein echter Schreibfehler (Firestore-Regel, Quota) sichtbar wird statt den Fortschritt still zu verlieren. Unit-Tests: `useProgress.test.js`. |
+| `LangGate.jsx` | Nach dem Login: entscheidet per `useProfile`, welche App läuft. Neue Person ohne Lernstand → Auswahlbildschirm („Was möchtest du lernen?“, nur `selectableLangs(isAdmin)`); sonst `TabiApp` bzw. `ne/NepaliApp` (beide `React.lazy`, `key={lang}`). Stellt `useLang()` = `{ lang, setLang, langs, error }` bereit. |
+| `useProfile.js` | `useProfile(uid, isAdmin, onDenied)` → `{ lang, loading, setLang, error }`. Liest `users/{uid}/meta/profile` per `onSnapshot`, prüft einmalig per `getDoc`, ob `users/{uid}` existiert, und wendet `lib/lang.js: initialLang` an. Zeigt nie wegen eines langsamen oder fehlgeschlagenen Lesens die Auswahl. Nur `setLang` (ausdrückliche Wahl) schreibt `{ lang }`; der stille Standard nicht. Dev-Bypass: Sprache aus `?lang=`, nur im Speicher. |
 | `accessStore.js` | Freigabeliste in Firestore (`allowed/<e-mail>`): `watchAllowed` (Live-Liste, nach E-Mail sortiert), `addAllowed`, `removeAllowed`. Nur der Admin darf schreiben (Firestore-Regeln). |
 | `kanaStrokes.js` | Generierte KanjiVG-Strichpfade: `HIRAGANA`, `KATAKANA`, `KANA_STROKES`, `STROKE_VIEWBOX`. (Generator: `scripts/gen-kana-strokes.mjs`.) |
-| `theme.js` | `C` (Farb-Token) · `JP` (japanische Font-Stack). |
+| `theme.js` | `C` (Farb-Token) · `JP` (japanischer Font-Stack) · `NE` (Devanagari-Font-Stack). |
 | `TabiApp.jsx` | Root-Orchestrator (≈120 Z.). Hält Tab-State, lädt Screens via `React.lazy`, stellt `ProgressCtx` bereit. |
+
+### `ne/` — Zweig für Nepali (Yatra)
+Alles Nepalische liegt unter `src/ne/` mit denselben Schichten wie oben (derzeit nur
+`NepaliApp.jsx`, eine leere Hülle mit Kopfzeile und `ProgressCtx` für Sprache `ne`).
+**Importregel:** `src/ne/**` darf nur den sprachneutralen Kern importieren: `theme.js`,
+`useProgress.js`, `state/ProgressContext.js`, `AuthGate.jsx`, `LangGate.jsx`,
+`components/ui.jsx`, `components/ueben.jsx`, `screens/adminUsers.jsx`, `lib/xp.js`,
+`lib/progress.js`, `lib/apiKey.js`, `lib/lang.js` und aus `lib/claude.js` nur `chatTurn`,
+`parseJson`, `hasApiKey`. Japanische Dateien importieren nie aus `src/ne/`; nur
+`LangGate.jsx` lädt `ne/NepaliApp.jsx` – lazy.
 
 ### `state/`
 | Datei | Exporte | Zweck |
@@ -130,7 +146,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
   liefert Schreib-Funktionen. Beides geht via `ProgressCtx` an alle Screens.
   Datenmodell: `users/{uid}` = japanischer Lernstand (unverändert, nie migriert),
   `users/{uid}/langs/ne` = Nepali-Lernstand, `users/{uid}/meta/profile` = `{ lang }`
-  (zuletzt gewählte Sprache; wird erst von einer späteren Aufgabe gelesen/geschrieben).
+  (zuletzt gewählte Sprache; gelesen/geschrieben von `useProfile`).
   Beim Wechsel von Nutzer oder Sprache liefert der Hook sofort `DEFAULT_PROGRESS` mit
   `loading: true`; Schreib-Funktionen, die aus `progress` rechnen, schreiben nicht,
   solange `loading` gilt.
