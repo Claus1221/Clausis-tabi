@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pickSource, pickVoice, isNepaliLang, watchdogMs } from './speechPick.js'
+import { pickSource, pickVoice, deviceMode, isNepaliLang, watchdogMs } from './speechPick.js'
 
 describe('pickSource', () => {
   it('fehlendes Manifest (null/undefined/leer) zählt als leer, ohne Wurf', () => {
@@ -63,5 +63,19 @@ describe('watchdogMs', () => {
   it('mindestens 4 s, sonst 400 ms je Zeichen', () => {
     expect(watchdogMs('नमस्ते')).toBe(4000)
     expect(watchdogMs('x'.repeat(20))).toBe(8000)
+  })
+})
+
+describe('deviceMode', () => {
+  const v = lang => ({ lang, name: lang, localService: true })
+  it('leere Liste → lang-only (Android meldet sie oft leer)', () => {
+    expect(deviceMode([])).toBe('lang-only')
+    expect(deviceMode(null)).toBe('lang-only')
+  })
+  it('Liste mit Nepali-Stimme → voice', () => {
+    expect(deviceMode([v('en-US'), v('ne-NP')])).toBe('voice')
+  })
+  it('Liste nur mit fremden Stimmen → none', () => {
+    expect(deviceMode([v('hi-IN'), v('en-US')])).toBe('none')
   })
 })

@@ -28,6 +28,15 @@ export function pickVoice(voices) {
     ne.find(v => v.localService) || ne[0] || null
 }
 
+// Wie spricht das Gerät? 'voice' = Nepali-Stimme in der Liste; 'lang-only' = Liste leer
+// (Chrome auf Android meldet sie oft leer, obwohl die Systemstimme Nepali kann → trotzdem
+// versuchen, nur mit lang='ne-NP', ohne Stimme); 'none' = Liste hat Stimmen, aber keine
+// nepalische – dann gibt es sicher keine, und eine andere würde falsch aussprechen.
+export function deviceMode(voices) {
+  if (!voices || voices.length === 0) return 'lang-only'
+  return pickVoice(voices) ? 'voice' : 'none'
+}
+
 // Chrome auf Android feuert `end` manchmal nie: nach dieser Zeit gilt der Satz als
 // zu Ende. Reichlich bemessen (400 ms je Zeichen), damit nichts abgeschnitten wird.
 export const watchdogMs = text => Math.max(4000, 400 * [...String(text ?? '')].length)

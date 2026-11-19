@@ -1,8 +1,8 @@
-import { pickSource, pickVoice, watchdogMs } from './speechPick.js'
+import { pickSource, pickVoice, deviceMode, watchdogMs } from './speechPick.js'
 
 // ─── Sprachausgabe Nepali (ne-NP) ───────────────────────────────────────────
 // Drei Stufen: Studio-MP3 (Azure, vorgeneriert, Manifest) → Nepali-Stimme des
-// Geräts → still. Wie das japanische Gegenstück gilt: JEDER Fehlerpfad löst das
+// Geräts (bei leerer Stimmenliste nur per lang) → still. Wie das japanische Gegenstück gilt: JEDER Fehlerpfad löst das
 // Versprechen von speak() auf – nie hängt ein Aufrufer an „NPC redet noch".
 // Solange es keine MP3s gibt (kein Azure-Key), spricht in der Praxis die
 // Gerätestimme oder es bleibt still; der Kurs ist auch ohne Ton benutzbar.
@@ -160,10 +160,10 @@ async function deviceSpeak(text, seq) {
   try {
     const voice = await waitForVoice()
     if (seq !== speakSeq) return
-    if (!voice || !hasSynth()) { finish(seq); return }   // keine Nepali-Stimme: still
+    if (!hasSynth() || (!voice && !voiceListEmpty)) { finish(seq); return }   // sicher keine Nepali-Stimme: still
     const u = new SpeechSynthesisUtterance(text)
     u.lang = 'ne-NP'
-    u.voice = voice
+    if (voice) u.voice = voice   // leere Liste: nur über lang routen lassen
     u.rate = 0.85
     u.onstart = () => emit('start', seq)
     u.onend = () => finish(seq)
@@ -188,7 +188,9 @@ async function run(text, seq) {
     // Die Gerätestimme nur abwarten, wenn sie gebraucht wird (kein MP3-Treffer) –
     // und bei MP3-Treffer nur nachsehen, ob sie als Ersatz bereitstünde.
     const hit = pickSource({ text, manifest: m, hasDeviceVoice: false })
-    const hasVoice = hit.kind === 'mp3' ? !!refreshVoice() : !!(await waitForVoice())
+    if (hit.kind !== 'mp3') await waitForVoice()
+    else refreshVoice()
+    const hasVoice = !!deviceVoice || voiceListEmpty
     if (seq !== speakSeq) return
     const src = pickSource({ text, manifest: m, hasDeviceVoice: hasVoice })
     if (src.kind === 'mp3') playMp3(src.file, seq, text)
