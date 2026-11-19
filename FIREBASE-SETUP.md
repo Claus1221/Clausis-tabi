@@ -50,20 +50,16 @@ Dauer: ~10 Minuten.
 2. Den kompletten Inhalt der Datei **`firestore.rules`** (im Projekt) dort
    einfügen → **Veröffentlichen**.
 
-Damit kann jeder nur seine **eigenen** Daten lesen/schreiben.
+Damit kann jeder nur seine **eigenen** Daten lesen/schreiben – und nur, wenn
+seine Adresse freigegeben ist (siehe Abschnitt „Umstellung auf die Freigabeliste"
+weiter unten). Wenn du die Regeln schon einmal von Hand gesetzt hast und jetzt
+auf die neue Fassung umstellst, folge dort der Reihenfolge, nicht diesem Abschnitt.
 
-## 7. (Optional, empfohlen) Nur dein Konto zulassen
+## 7. Weitere Personen freischalten
 
-In **`src/firebase.js`** beim Feld `ALLOWED_EMAILS` deine Gmail-Adresse eintragen:
-
-```js
-export const ALLOWED_EMAILS = [
-  'deine-email@gmail.com',
-]
-```
-
-Dann dürfen andere Google-Konten sich zwar einloggen, sehen aber nur
-„Kein Zugang". Leer lassen = jedes Google-Konto darf rein (jeder mit eigenen Daten).
+Das geschieht **in der App** unter **Einstellungen → Nutzer verwalten**.
+Dort trägst du die Google-Adresse der Person ein. In `src/firebase.js` musst du
+dafür nichts mehr ändern.
 
 ## 8. Deployen & testen
 
@@ -79,6 +75,68 @@ Nach ~1–2 Min auf https://claus1221.github.io/Clausis-tabi/ :
 Du solltest jetzt den **„Mit Google anmelden"**-Bildschirm sehen. Nach der
 Anmeldung erscheint die App; abgeschlossene Lektionen werden gespeichert und
 tauchen auf jedem Gerät wieder auf.
+
+## Umstellung auf die Freigabeliste
+
+Die neuen Regeln lassen nur noch Konten herein, die in der Sammlung `allowed`
+stehen (außer dir als Admin). Weil du die Regeln von Hand in der Console setzt,
+kommt es auf die **Reihenfolge** an.
+
+> **Reihenfolge einhalten, sonst wird die zweite Person ausgesperrt.**
+
+**Schritt 0 – Prüfen, was in der Console steht.**
+Öffne Firestore → **Regeln** und vergleiche den Text dort mit der bisherigen
+Fassung von `firestore.rules`:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Jeder eingeloggte Nutzer darf NUR sein eigenes Dokument lesen/schreiben.
+    // users/{uid} ist an die Google-Konto-ID gebunden — niemand sieht fremde Daten.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+```
+
+Weicht der Text in der Console ab (andere Regeln, zusätzliche Zeilen), **hör hier
+auf** und frag nach, bevor du etwas änderst.
+
+**Schritt 1 – Freigabeliste anlegen.**
+1. Firestore → Tab **„Daten"** → **„Sammlung starten"**.
+2. Sammlungs-ID: `allowed`.
+3. Dokument-ID: `balkonien4ever@web.de` (alles klein geschrieben).
+4. Feld: Name `addedAt`, Typ **string**, Wert = das heutige Datum (z. B. `2026-11-19`).
+5. **Speichern.**
+
+**Schritt 2 – Neue Regeln prüfen, noch nicht veröffentlichen.**
+1. Tab **„Regeln"** → den kompletten neuen Inhalt von `firestore.rules` einfügen.
+2. **Nicht** auf „Veröffentlichen" klicken, sondern auf **„Regel-Playground"**.
+3. Anmeldung simulieren: **Authentifiziert** einschalten, Anbieter `google.com`,
+   die E-Mail der jeweiligen Zeile eintragen und die UID der Person.
+4. Alle Zeilen der Tabelle durchgehen:
+
+| Wer | Vorgang | Pfad | Erwartet |
+|---|---|---|---|
+| Admin | get, update | `users/<Admin-UID>` | erlaubt |
+| balkonien4ever@web.de | get, update | `users/<ihre UID>` | erlaubt |
+| balkonien4ever@web.de | get | `users/<Admin-UID>` | verweigert |
+| fremd@gmail.com | get, create | `users/<eigene UID>` | verweigert |
+| Admin | create | `users/<Admin-UID>/langs/ne` | erlaubt |
+| Admin | create | `users/<Admin-UID>/meta/profile` | erlaubt |
+| Admin | list, create, delete | `allowed/...` | erlaubt |
+| balkonien4ever@web.de | get | `allowed/balkonien4ever@web.de` | erlaubt |
+| balkonien4ever@web.de | list, create | `allowed/...` | verweigert |
+| fremd@gmail.com | get | `allowed/fremd@gmail.com` | erlaubt (leer) |
+
+Stimmt auch nur eine Zeile nicht, **nicht veröffentlichen** und nachfragen.
+
+**Schritt 3 – Veröffentlichen.**
+Tab **„Regeln"** → **Veröffentlichen**.
+
+**Schritt 4 – Erst danach die neue App deployen** (wie in Abschnitt 8).
 
 ---
 
