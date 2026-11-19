@@ -1,18 +1,22 @@
 import { describe, it, expect } from 'vitest'
 import { NE_PATH } from '../data/path.js'
 import { SCRIPT_LESSONS } from '../data/script.js'
+import { WORD_BLOCKS } from '../data/words.js'
 import { isNodeDone, nodeMeta, nextOpenIndex, stationStates } from './path.js'
 
 const stations = NE_PATH.filter(n => !n.world)
 const EMPTY = { completedLessons: [] }
-const ALL_DONE = { completedLessons: SCRIPT_LESSONS.map(l => l.id) }
+const ALL_DONE = { completedLessons: SCRIPT_LESSONS.map(l => l.id), completedWordBlocks: WORD_BLOCKS.map(b => b.id) }
+const wordIds = new Set(WORD_BLOCKS.map(b => b.id))
 
 describe('NE_PATH', () => {
   it('beginnt mit einer Welt-Überschrift', () => {
     expect(NE_PATH[0].world).toBeTruthy()
   })
-  it('jede Station hat nodeMeta ≠ null (Titel + Zeichen)', () => {
-    for (const n of stations) {
+  // Ausnahme: Wort-Stationen, deren Block es in words.js (noch) nicht gibt – die Karte
+  // lässt sie still aus, bis die Daten da sind.
+  it('jede Station mit Daten hat nodeMeta ≠ null (Titel + Zeichen)', () => {
+    for (const n of stations.filter(x => x.type !== 'word' || wordIds.has(x.id))) {
       const m = nodeMeta(n)
       expect(m, `${n.type}:${n.id}`).not.toBeNull()
       expect(m.title).toBeTruthy()
@@ -21,6 +25,15 @@ describe('NE_PATH', () => {
   })
   it('jede Schrift-Lektion genau einmal, in Reihenfolge', () => {
     expect(stations.filter(n => n.type === 'script').map(n => n.id)).toEqual(SCRIPT_LESSONS.map(l => l.id))
+  })
+  it('jeder Wortblock hat genau eine Station; jede Wort-Station heißt nw + Zahl', () => {
+    const words = stations.filter(n => n.type === 'word')
+    for (const b of WORD_BLOCKS) expect(words.filter(n => n.id === b.id), b.id).toHaveLength(1)
+    for (const n of words) expect(n.id).toMatch(/^nw\d+$/)
+  })
+  it('Wortblöcke erst nach der letzten Schrift-Lektion (Wörter setzen alle Zeichen voraus)', () => {
+    const lastScript = NE_PATH.findLastIndex(n => n.type === 'script')
+    NE_PATH.forEach((n, i) => { if (n.type === 'word') expect(i, n.id).toBeGreaterThan(lastScript) })
   })
 })
 
@@ -42,6 +55,10 @@ describe('isNodeDone / nodeMeta', () => {
     }
     expect(nodeMeta({ type: 'script', id: 's99' })).toBeNull()
     expect(nodeMeta({ world: 'Welt', sub: '' })).toBeNull()
+  })
+  it('Wort-Station: Titel und Thema-Zeichen aus dem Block', () => {
+    const b = WORD_BLOCKS[0]
+    expect(nodeMeta({ type: 'word', id: b.id })).toEqual({ title: b.title, glyph: b.theme })
   })
   it('spätere Typen zählen über ihre eigenen Fortschritts-Felder', () => {
     expect(isNodeDone({ type: 'word', id: 'nw1' }, { completedWordBlocks: ['nw1'] })).toBe(true)

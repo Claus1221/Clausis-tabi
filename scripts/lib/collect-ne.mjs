@@ -3,8 +3,8 @@
 // Gegenstück zu collectTexts() in scripts/generate-audio.mjs.
 //
 // sources = { script?, words?, grammar?, chapters?, dialogs? }
-// Bisher behandelt: nur `script` (SCRIPT_DATA). Spätere Tasks ergänzen hier ihre
-// Sprechstellen; nicht behandelte Schlüssel werden ignoriert.
+// Bisher behandelt: `script` (SCRIPT_DATA) und `words` (WORD_BLOCKS). Spätere Tasks
+// ergänzen hier ihre Sprechstellen; nicht behandelte Schlüssel werden ignoriert.
 import { nfc } from '../../src/ne/lib/deva.js'
 
 // Sprechraten wie im japanischen Skript: Zitierformen (Zeichen, Einzelwörter)
@@ -26,10 +26,22 @@ export function collectNeTexts(sources = {}) {
     texts.set(t, prev === undefined ? rate : Math.min(prev, rate))
   }
   const addWord = (t) => addAt(t, RATE_WORD)
+  const addSentence = (t) => addAt(t, RATE_SENTENCE)
 
   // Schriftzeichen: gesprochen wird `say` (Vokalzeichen hängen an क, sonst gäbe
   // es keine Silbe), nicht der Schlüssel.
   if (sources.script) for (const d of Object.values(sources.script)) addWord(d.say)
+
+  // Wortblöcke: das Wort (Anhören in Lektion, Bibliothek, Karte), der Beispielsatz
+  // (Satz-Anhören) und jedes antippbare Stück (Anhören im Nachschlage-Kasten).
+  // Satzzeichen-Tokens (ohne de) werden nie gesprochen.
+  for (const block of sources.words || []) {
+    for (const w of block.words || []) {
+      addWord(w.dev)
+      addSentence(w.ex?.dev)
+      for (const tok of w.ex?.tokens || []) if (tok.de) addWord(tok.t)
+    }
+  }
 
   return [...texts.entries()]
 }

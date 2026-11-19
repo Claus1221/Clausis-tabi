@@ -5,13 +5,14 @@ import { computeStats } from '../../useProgress.js'
 import { periodBuckets, weekSummary } from '../../lib/progress.js'
 import { Card } from '../../components/ui.jsx'
 import { SCRIPT_DATA, SCRIPT_LESSONS } from '../data/script.js'
+import { WORD_BLOCKS, learnedWords } from '../data/words.js'
 import { learnedItems, dueItems, srsEntry } from '../lib/learned.js'
 import { SRS_STAGES } from '../lib/srs.js'
 
 // ─── Fortschritt (Yatra) ──────────────────────────────────────────────────────
 // Gegenstück zu src/screens/fortschritt.jsx mit dem, was es im Nepali-Kurs heute gibt:
 // XP/Level/Streak, Woche, Level-Balken, XP-Verlauf, Kenntnisstufen der Karten mit
-// „fällig“-Sprung und der Stand der Schrift. Kapitel-Sterne und Abzeichen folgen, wenn
+// „fällig“-Sprung und der Stand von Schrift und Wörtern. Kapitel-Sterne und Abzeichen folgen, wenn
 // es Kapitel gibt. Zurücksetzen liegt in den Einstellungen (nur dort, eindeutig Nepali).
 
 const label = { fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1 }
@@ -39,9 +40,15 @@ export default function FortschrittScreen({ onReview }) {
   const cardTotal = srsVals.length
   const due = dueItems(progress).length
 
+  // learned enthält auch Wörter – für „Devanagari lesen“ zählen nur Schriftzeichen.
   const charsTotal = Object.keys(SCRIPT_DATA).length
+  const charsLearned = learned.filter(k => k in SCRIPT_DATA).length
   const lessonsDone = SCRIPT_LESSONS.filter(l => (progress.completedLessons || []).includes(l.id)).length
-  const pct = Math.round(learned.length / charsTotal * 100)
+  const pct = Math.round(charsLearned / charsTotal * 100)
+  const wordsTotal = WORD_BLOCKS.reduce((n, b) => n + b.words.length, 0)
+  const wordsLearned = learnedWords(progress.completedWordBlocks).length
+  const blocksDone = WORD_BLOCKS.filter(b => (progress.completedWordBlocks || []).includes(b.id)).length
+  const wordPct = Math.round(wordsLearned / Math.max(1, wordsTotal) * 100)
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
@@ -131,7 +138,7 @@ export default function FortschrittScreen({ onReview }) {
         <div style={{ ...label, marginBottom: 12 }}>KARTEN NACH KENNTNISSTAND · {cardTotal} gesamt</div>
         {cardTotal === 0 ? (
           <p style={{ fontSize: 13, color: C.textMuted, margin: 0, lineHeight: 1.5 }}>
-            Noch keine Karten im Wiederholungsplan. Jede Schrift-Station auf der Reise bringt neue.
+            Noch keine Karten im Wiederholungsplan. Jede Station auf der Reise bringt neue.
           </p>
         ) : (
           <>
@@ -161,7 +168,7 @@ export default function FortschrittScreen({ onReview }) {
 
       {/* Schrift */}
       <Card style={{ marginBottom: 16 }}>
-        <div style={{ ...label, marginBottom: 12 }}>SCHRIFT</div>
+        <div style={{ ...label, marginBottom: 12 }}>SCHRIFT UND WÖRTER</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
           <span style={{ fontSize: 13, fontWeight: 500 }}>Devanagari lesen</span>
           <span style={{ fontSize: 12, color: C.textMuted }}>{pct}%</span>
@@ -170,7 +177,17 @@ export default function FortschrittScreen({ onReview }) {
           <div style={{ height: '100%', width: `${pct}%`, background: C.shu, borderRadius: 3 }} />
         </div>
         <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>
-          {learned.length} / {charsTotal} Zeichen gelernt · {lessonsDone} / {SCRIPT_LESSONS.length} Stationen
+          {charsLearned} / {charsTotal} Zeichen gelernt · {lessonsDone} / {SCRIPT_LESSONS.length} Stationen
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', margin: '12px 0 4px' }}>
+          <span style={{ fontSize: 13, fontWeight: 500 }}>Wörter</span>
+          <span style={{ fontSize: 12, color: C.textMuted }}>{wordPct}%</span>
+        </div>
+        <div style={{ height: 6, background: C.washiDark, borderRadius: 3, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${wordPct}%`, background: C.matcha, borderRadius: 3 }} />
+        </div>
+        <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>
+          {wordsLearned} / {wordsTotal} Wörter gelernt · {blocksDone} / {WORD_BLOCKS.length} Wortblöcke
         </div>
       </Card>
     </div>

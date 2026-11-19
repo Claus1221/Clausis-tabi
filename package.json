@@ -10,6 +10,7 @@
     "audit": "node scripts/audit-examples.mjs",
     "audio": "node scripts/generate-audio.mjs",
     "audio:ne": "node scripts/generate-audio-ne.mjs",
+    "audit:ne": "node scripts/audit-ne.mjs",
     "test": "vitest run"
   },
   "dependencies": {

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { SCRIPT_LESSONS, SCRIPT_DATA } from '../data/script.js'
-import { learnedItems, itemInfo, dueItems, srsEntry } from './learned.js'
+import { WORD_BLOCKS } from '../data/words.js'
+import { learnedItems, itemInfo, dueItems, srsEntry, KEY_COLLISIONS } from './learned.js'
 import { NE_SETTINGS_DEFAULTS, neSettings } from './settings.js'
 import { SETTINGS_DEFAULTS, addDays } from '../../useProgress.js'
 
@@ -34,6 +35,57 @@ describe('learnedItems', () => {
   it('doppelt abgeschlossene Lektion erzeugt keine Doppel', () => {
     const k = learnedItems({ completedLessons: ['s3', 's3'] })
     expect(new Set(k).size).toBe(k.length)
+  })
+})
+
+describe('learnedItems – Wörter', () => {
+  const ALL_WORD_BLOCKS = WORD_BLOCKS.map(b => b.id)
+  it('Wörter abgeschlossener Blöcke kommen dazu (NFC, in Blockreihenfolge)', () => {
+    const b = WORD_BLOCKS[0]
+    const got = learnedItems({ completedWordBlocks: [b.id] })
+    expect(got).toEqual(b.words.map(w => w.dev.normalize('NFC')))
+  })
+  it('Schrift und Wörter zusammen: kein Schlüssel doppelt', () => {
+    const all = learnedItems({ completedLessons: SCRIPT_LESSONS.map(l => l.id), completedWordBlocks: ALL_WORD_BLOCKS })
+    expect(new Set(all).size).toBe(all.length)
+    for (const k of all) expect(isNfc(k), k).toBe(true)
+  })
+  it('ohne Schrift-Lektionen nur die Wörter; unbekannte Block-IDs wirken nicht', () => {
+    const got = learnedItems({ completedWordBlocks: [WORD_BLOCKS[0].id, 'nw99'] })
+    expect(got).toHaveLength(WORD_BLOCKS[0].words.length)
+  })
+})
+
+// Ein Karten-Schlüssel ist der Devanagari-Text. Schreibt sich ein Wort genau wie ein
+// Schriftzeichen, landen beide auf EINER Karte – das soll nicht still passieren. Jede
+// solche Doppelung muss in KEY_COLLISIONS (learned.js) stehen, mit Entscheidung, welche
+// Quelle die Karte zeigt. Eine neue Doppelung lässt diesen Test scheitern.
+describe('Karten-Schlüssel aus zwei Quellen', () => {
+  const scriptKeys = new Set(SCRIPT_LESSONS.flatMap(l => l.chars).map(k => k.normalize('NFC')))
+  const wordKeys = WORD_BLOCKS.flatMap(b => b.words).map(w => w.dev.normalize('NFC'))
+  const clashes = wordKeys.filter(k => scriptKeys.has(k))
+  it('jede Doppelung Schrift/Wort ist ausdrücklich verzeichnet', () => {
+    for (const k of clashes) expect(KEY_COLLISIONS, `${k} ist Zeichen UND Wort`).toHaveProperty(k)
+  })
+  it('verzeichnete Doppelungen zeigen die dort festgelegte Quelle', () => {
+    for (const k of clashes) expect(itemInfo(k).kind).toBe(KEY_COLLISIONS[k])
+  })
+})
+
+describe('itemInfo – Wörter', () => {
+  const words = WORD_BLOCKS.flatMap(b => b.words)
+  it('jedes Wort: kind word, Vorderseite = dev, Umschrift, Bedeutung, Beispielsatz', () => {
+    for (const w of words) {
+      const k = w.dev.normalize('NFC')
+      if (KEY_COLLISIONS[k] && KEY_COLLISIONS[k] !== 'word') continue
+      const i = itemInfo(k)
+      expect(i).toMatchObject({ key: k, kind: 'word', front: w.dev, roman: w.roman, de: w.de, say: w.dev, kindLabel: 'Wort' })
+      expect(i.ex).toBe(w.ex)
+      expect(Object.values(i).includes(undefined), k).toBe(false)
+    }
+  })
+  it('NFD-Form eines Worts findet dieselbe Karte', () => {
+    for (const w of words) expect(itemInfo(w.dev.normalize('NFD'))).toEqual(itemInfo(w.dev))
   })
 })
 

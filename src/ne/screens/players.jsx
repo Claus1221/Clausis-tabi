@@ -1,17 +1,23 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { C, NE } from '../../theme.js'
-import { Btn } from '../../components/ui.jsx'
-import { XP_PER_KANA } from '../../lib/xp.js'
+import { Btn, Card } from '../../components/ui.jsx'
+import { XP_PER_KANA, XP_PER_WORD } from '../../lib/xp.js'
 import { SCRIPT_DATA } from '../data/script.js'
-import { stopSpeaking } from '../lib/speech.js'
+import { WORD_BLOCKS } from '../data/words.js'
+import { speak, stopSpeaking } from '../lib/speech.js'
 import { buildScriptQuiz, notesForLesson } from '../lib/scriptQuiz.js'
+import { buildWordQuiz } from '../lib/wordQuiz.js'
+import { feedbackColor } from '../lib/srs.js'
 import { KIND_LABEL, alone } from '../lib/learned.js'
 import TraceCanvas from '../components/TraceCanvas.jsx'
 import { useSound, usePlayback, ListenButton, NoSoundMark, NO_SOUND_HINT } from '../components/sound.jsx'
+import { NeText, TappableSentence, useShowRoman } from '../components/text.jsx'
 
 // ─── Spieler für Yatra-Lektionen ──────────────────────────────────────────────
 // Gegenstück zu src/screens/players.jsx. Grundsatz: alles geht ohne Ton (Ton-Bausteine
 // in components/sound.jsx). Gelesen wird über die Umschrift.
+// ScriptLesson (Schrift) und WordBlock (Wörter) teilen Rahmen und Abschluss-Muster
+// (LessonFrame, useFinishOnce).
 
 // Ein Zeichen vorstellen: groß, Art, Umschrift, Anhören, Merkhilfe.
 // Die Umschrift (roman) steht hier IMMER, unabhängig von settings.showRoman: die Lesung
@@ -155,6 +161,64 @@ function QuizStep({ quiz, onFinish }) {
   )
 }
 
+// ─── Gemeinsamer Rahmen aller Yatra-Lektionen ────────────────────────────────
+
+// Abschluss-Muster für jede Lektion (Schrift, Wörter, später Grammatik …):
+// „… abschließen“ liegt genau dort, wo nach dem Schließen die TabBar erscheint. Ein
+// Doppeltipp träfe mit dem zweiten Tipp einen Tab. Daher: erster Tipp sperrt den Knopf,
+// geschlossen wird erst nach einer Doppeltipp-Spanne (~350 ms) – bis dahin fängt das noch
+// stehende Overlay den zweiten Tipp ab.
+// Gebucht wird dagegen SOFORT beim ersten Tipp (onComplete), verzögert ist nur das
+// Schließen (onClose): verschwindet die Lektion in der Spanne (Abmelden, Sprachwechsel,
+// ✕), geht kein Abschluss verloren – der Timer wird dann nur verworfen.
+// → [finishing (für disabled), finish]
+function useFinishOnce(onComplete, onClose) {
+  const [finishing, setFinishing] = useState(false)
+  const finishTimer = useRef(null)
+  useEffect(() => () => clearTimeout(finishTimer.current), [])
+  // Sperre über die Ref, nicht über den State: zwei Klicks im selben Render-Durchgang
+  // sähen beide noch finishing = false und riefen onComplete (XP!) doppelt.
+  const locked = useRef(false)
+  const finish = () => {
+    if (locked.current) return
+    locked.current = true
+    setFinishing(true)
+    onComplete()
+    finishTimer.current = setTimeout(onClose, 350)
+  }
+  return [finishing, finish]
+}
+
+// Vollbild-Overlay: Kopf (✕ mit 44 px, Fortschrittsbalken, Schrittzähler, Titel),
+// scrollbarer Inhalt, Fußleiste (footer = null → keine, z. B. beim Quiz).
+function LessonFrame({ title, step, total, onClose, footer, children }) {
+  const pct = Math.round((step / Math.max(1, total - 1)) * 100)
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
+      <div style={{ padding: '8px 16px 10px', background: '#fff', borderBottom: `1px solid ${C.washiDark}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button onClick={onClose} aria-label="Lektion schließen" style={{
+            width: 44, height: 44, marginLeft: -10, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted,
+          }}>✕</button>
+          <div style={{ flex: 1, height: 6, background: C.washiDark, borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${pct}%`, background: C.shu, borderRadius: 3, transition: 'width 0.3s' }} />
+          </div>
+          <span style={{ fontSize: 12, color: C.textMuted, minWidth: 40, textAlign: 'right' }}>{step + 1}/{total}</span>
+        </div>
+        <h3 style={{ fontSize: 14, color: C.indigo, margin: 0 }}>{title}</h3>
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>{children}</div>
+
+      {footer && (
+        <div style={{ padding: '14px 20px', paddingBottom: 'max(14px, env(safe-area-inset-bottom))', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
+          {footer}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Schrift-Lektion: Einleitung → je Zeichen (zeigen + anhören + Merkhilfe → nachmalen)
 // → passende Laut-Hinweise → Quiz → Abschluss mit XP. Vergibt selbst nichts:
 // onComplete (Reise-Screen) bucht XP und plant die Zeichen zur Wiederholung ein.
@@ -177,30 +241,10 @@ export function ScriptLesson({ lesson, alreadyDone = false, onComplete, onClose 
   // Beim Schritt-Wechsel und beim Schließen nichts weiterreden lassen.
   useEffect(() => () => stopSpeaking(), [step])
 
-  // „Lektion abschließen“ liegt genau dort, wo nach dem Schließen die TabBar erscheint.
-  // Ein Doppeltipp träfe mit dem zweiten Tipp einen Tab. Daher: erster Tipp sperrt den
-  // Knopf, geschlossen wird erst nach einer Doppeltipp-Spanne (~350 ms) – bis dahin
-  // fängt das noch stehende Overlay den zweiten Tipp ab.
-  // Gebucht wird dagegen SOFORT beim ersten Tipp (onComplete), verzögert ist nur das
-  // Schließen (onClose): verschwindet die Lektion in der Spanne (Abmelden,
-  // Sprachwechsel, ✕), geht kein Abschluss verloren – der Timer wird dann nur verworfen.
-  const [finishing, setFinishing] = useState(false)
-  const finishTimer = useRef(null)
-  useEffect(() => () => clearTimeout(finishTimer.current), [])
-  // Sperre über die Ref, nicht über den State: zwei Klicks im selben Render-Durchgang
-  // sähen beide noch finishing = false und riefen onComplete (XP!) doppelt.
-  const finishing0 = useRef(false)
-  const finish = () => {
-    if (finishing0.current) return
-    finishing0.current = true
-    setFinishing(true)
-    onComplete()
-    finishTimer.current = setTimeout(onClose, 350)
-  }
+  const [finishing, finish] = useFinishOnce(onComplete, onClose)
 
   const cur = steps[step]
   const xp = chars.length * XP_PER_KANA
-  const pct = Math.round((step / (steps.length - 1)) * 100)
   const next = () => setStep(s => Math.min(s + 1, steps.length - 1))
 
   let content
@@ -259,33 +303,232 @@ export function ScriptLesson({ lesson, alreadyDone = false, onComplete, onClose 
     )
   }
 
+  // Fußleiste beim Quiz ausgeblendet: QuizStep hat eigene Knöpfe.
   return (
-    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
-      <div style={{ padding: '8px 16px 10px', background: '#fff', borderBottom: `1px solid ${C.washiDark}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button onClick={onClose} aria-label="Lektion schließen" style={{
-            width: 44, height: 44, marginLeft: -10, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted,
-          }}>✕</button>
-          <div style={{ flex: 1, height: 6, background: C.washiDark, borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${pct}%`, background: C.shu, borderRadius: 3, transition: 'width 0.3s' }} />
-          </div>
-          <span style={{ fontSize: 12, color: C.textMuted, minWidth: 40, textAlign: 'right' }}>{step + 1}/{steps.length}</span>
-        </div>
-        <h3 style={{ fontSize: 14, color: C.indigo, margin: 0 }}>{lesson.title}</h3>
+    <LessonFrame title={lesson.title} step={step} total={steps.length} onClose={onClose}
+      footer={cur.kind === 'quiz' ? null : cur.kind === 'done' ? (
+        <Btn onClick={finish} disabled={finishing} style={{ width: '100%', minHeight: 48 }}>Lektion abschließen ✓</Btn>
+      ) : (
+        <Btn onClick={next} style={{ width: '100%', minHeight: 48 }}>{cur.kind === 'intro' ? 'Los geht’s →' : 'Weiter →'}</Btn>
+      )}>
+      {content}
+    </LessonFrame>
+  )
+}
+
+// ─── Wortblock ────────────────────────────────────────────────────────────────
+
+// Ein Wort vorstellen: groß in Devanagari (Umschrift nach Schalter), Bedeutung, Anhören
+// (nur mit Ton), Beispielsatz zum Antippen mit Übersetzung.
+function WordStep({ word, idx, total, sound }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.indigo, textAlign: 'center', marginBottom: 4 }}>
+        WORT {idx + 1} / {total}
+      </div>
+      <NeText dev={word.dev} roman={word.roman} size={52} align="center" />
+      <div style={{ fontSize: 18, color: C.sumi, textAlign: 'center', margin: '8px 0 12px', lineHeight: 1.45 }}>{word.de}</div>
+      {sound !== false && <div style={{ textAlign: 'center', marginBottom: 14 }}><ListenButton text={word.dev} sound={sound} /></div>}
+      <Card>
+        <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>BEISPIELSATZ</div>
+        <TappableSentence dev={word.ex.dev} roman={word.ex.roman} tokens={word.ex.tokens} sound={sound} />
+        <div style={{ fontSize: 15, color: C.indigo, marginTop: 8, lineHeight: 1.45 }}>„{word.ex.de}“</div>
+      </Card>
+    </div>
+  )
+}
+
+const WORD_PROMPT = {
+  meaning: 'Was bedeutet das?',
+  word: 'Wie heißt das auf Nepali?',
+  listen: 'Welches Wort hast du gehört?',
+}
+
+// Quiz am Blockende (Fragen aus lib/wordQuiz.js). Einmal beim Betreten gebaut – mit dem
+// Ton-Stand von diesem Moment: Hörfragen gibt es nur, wenn Ton sicher da ist (true, nicht
+// „wird geprüft“), und auch dann lässt sich statt des Tons die Bedeutung einblenden.
+// Nepali-Optionen zeigen immer Devanagari, die Umschrift nur nach Schalter.
+function WordQuizStep({ block, earlier, sound, onFinish }) {
+  const showRoman = useShowRoman()
+  const [quiz] = useState(() => buildWordQuiz(block, { earlier, sound: sound === true }))
+  const [qi, setQi] = useState(0)
+  const [answer, setAnswer] = useState(null) // gewählter Index
+  const [right, setRight] = useState(0)
+  const [showMeaning, setShowMeaning] = useState(false) // Hörfrage: Bedeutung eingeblendet
+  const cur = quiz[qi]
+  const revealed = answer !== null
+  const isLast = qi === quiz.length - 1
+
+  // Hörfrage: einmal vorlesen; beim Wechsel/Schließen verstummen.
+  useEffect(() => {
+    if (cur?.kind === 'listen') speak(cur.word.dev)
+    return () => stopSpeaking()
+  }, [qi]) // eslint-disable-line
+
+  const choose = i => {
+    if (revealed) return
+    setAnswer(i)
+    if (i === cur.correct) setRight(r => r + 1)
+  }
+  const next = () => {
+    if (isLast) { onFinish(right, quiz.length); return }
+    setQi(qi + 1)
+    setAnswer(null)
+    setShowMeaning(false)
+  }
+  const nepaliOptions = cur.kind !== 'meaning'
+
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <p style={{ color: C.textMuted, fontSize: 13, marginBottom: 8 }}>Kurzer Check · {qi + 1} / {quiz.length}</p>
+      <Card style={{ minHeight: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 12 }}>
+        {cur.kind === 'meaning' && <NeText dev={cur.word.dev} roman={cur.word.roman} size={44} align="center" />}
+        {cur.kind === 'word' && <div style={{ fontSize: 20, fontWeight: 600, color: C.sumi, lineHeight: 1.4 }}>{cur.word.de}</div>}
+        {cur.kind === 'listen' && (
+          <>
+            <button onClick={() => speak(cur.word.dev)} aria-label="Nochmal anhören"
+              style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 36, width: 72, height: 72, fontSize: 30, cursor: 'pointer', margin: '0 auto 6px' }}>🔊</button>
+            {/* Ausweg, falls der Ton doch nicht kommt: die Bedeutung, nie die Umschrift –
+                sonst wäre die Frage nur über die Umschrift lösbar. */}
+            {showMeaning ? (
+              <div style={{ fontSize: 17, fontWeight: 600, color: C.sumi }}>{cur.word.de}</div>
+            ) : !revealed && (
+              <button onClick={() => setShowMeaning(true)}
+                style={{ minHeight: 44, background: 'none', border: 'none', color: C.indigo, fontSize: 13, textDecoration: 'underline', cursor: 'pointer' }}>
+                Nichts gehört? Bedeutung zeigen
+              </button>
+            )}
+          </>
+        )}
+      </Card>
+      <p style={{ marginBottom: 12, fontWeight: 500 }}>{WORD_PROMPT[cur.kind]}</p>
+
+      {/* Bedeutungen (oft lang) einspaltig, Nepali-Wörter zweispaltig. */}
+      <div style={{ display: 'grid', gridTemplateColumns: nepaliOptions ? '1fr 1fr' : '1fr', gap: 8 }}>
+        {cur.options.map((o, i) => {
+          const fb = feedbackColor(!revealed ? 'neutral' : i === cur.correct ? 'correct' : i === answer ? 'wrong' : 'neutral')
+          return (
+            <button key={o.dev} onClick={() => choose(i)} disabled={revealed}
+              style={{
+                minHeight: 52, padding: '8px 10px', borderRadius: 10, border: `2px solid ${fb.border}`, background: fb.bg,
+                color: C.sumi, cursor: revealed ? 'default' : 'pointer', textAlign: 'center',
+              }}>
+              {nepaliOptions ? (
+                <>
+                  <span style={{ display: 'block', fontFamily: NE, fontSize: 24, lineHeight: 1.3 }}>{o.dev}</span>
+                  {showRoman && <span style={{ display: 'block', fontSize: 12, color: C.indigo }}>{o.roman}</span>}
+                </>
+              ) : (
+                <span style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.35 }}>{o.de}</span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
-      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>{content}</div>
-
-      {/* Beim Quiz ausgeblendet: QuizStep hat eigene Knöpfe. */}
-      {cur.kind !== 'quiz' && (
-        <div style={{ padding: '14px 20px', paddingBottom: 'max(14px, env(safe-area-inset-bottom))', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
-          {cur.kind === 'done' ? (
-            <Btn onClick={finish} disabled={finishing} style={{ width: '100%', minHeight: 48 }}>Lektion abschließen ✓</Btn>
-          ) : (
-            <Btn onClick={next} style={{ width: '100%', minHeight: 48 }}>{cur.kind === 'intro' ? 'Los geht’s →' : 'Weiter →'}</Btn>
-          )}
-        </div>
+      {revealed && (
+        <>
+          <div style={{ marginTop: 14, color: answer === cur.correct ? C.matcha : C.shu, fontWeight: 600 }}>
+            {answer === cur.correct ? '✓ Richtig!' : '✗ Richtig wäre:'}
+          </div>
+          {/* Nach der Antwort: das Wort ganz – Schrift, Umschrift (nach Schalter), Bedeutung. */}
+          <div style={{ marginTop: 6 }}>
+            <NeText dev={cur.word.dev} roman={cur.word.roman} size={26} align="center" />
+            <div style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.45 }}>{cur.word.de}</div>
+          </div>
+          <Btn onClick={next} style={{ marginTop: 12, width: '100%', minHeight: 48 }}>
+            {isLast ? 'Check abschließen →' : 'Nächste Frage →'}
+          </Btn>
+        </>
       )}
     </div>
+  )
+}
+
+// Wortblock: Einleitung → je Wort vorstellen (mit Beispielsatz) → Quiz → Abschluss mit
+// XP. Vergibt selbst nichts: onComplete (Reise-Screen) bucht XP und plant die Wörter
+// ein – Abschluss-Muster wie ScriptLesson (useFinishOnce). alreadyDone: Wiederholung
+// eines erledigten Blocks – dann ohne XP-Versprechen.
+export function WordBlock({ block, alreadyDone = false, onComplete, onClose }) {
+  const sound = useSound()
+  const words = block.words
+  // Ablenker-Vorrat fürs Quiz: Wörter der Blöcke davor (kleine Blöcke füllen auf).
+  const earlier = useMemo(() => {
+    const i = WORD_BLOCKS.findIndex(b => b.id === block.id)
+    return WORD_BLOCKS.slice(0, Math.max(0, i)).flatMap(b => b.words)
+  }, [block.id])
+  // Ein leerer Block (Datenfehler) hätte kein Quiz – dann springt der Ablauf direkt zum Ende.
+  const steps = useMemo(() => [
+    { kind: 'intro' },
+    ...words.map((w, i) => ({ kind: 'word', w, i })),
+    ...(words.length ? [{ kind: 'quiz' }] : []),
+    { kind: 'done' },
+  ], [words])
+  const [step, setStep] = useState(0)
+  const [score, setScore] = useState(null) // [richtig, gesamt]
+  useEffect(() => () => stopSpeaking(), [step])
+  const [finishing, finish] = useFinishOnce(onComplete, onClose)
+
+  const cur = steps[step]
+  const xp = words.length * XP_PER_WORD
+  const next = () => setStep(s => Math.min(s + 1, steps.length - 1))
+  const chips = bg => (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+      {words.map(w => (
+        <span key={w.dev} style={{ fontSize: 20, fontFamily: NE, background: bg, border: `1px solid ${C.washiDark}`, borderRadius: 10, padding: '2px 10px', lineHeight: 1.5 }}>{w.dev}</span>
+      ))}
+    </div>
+  )
+
+  let content
+  if (cur.kind === 'intro') {
+    content = (
+      <div style={{ textAlign: 'center', padding: '8px 0' }}>
+        <div style={{ fontSize: 52, marginBottom: 8 }}>{block.theme}</div>
+        <h2 style={{ fontSize: 22, color: C.indigo, marginBottom: 8 }}>{block.title}</h2>
+        <p style={{ lineHeight: 1.6, marginBottom: 16 }}>
+          {words.length} Wörter, jedes mit einem kurzen Beispielsatz. Tippe im Satz ein Wort an, um zu
+          sehen, was es heißt. Am Ende kommt ein kurzer Check.
+        </p>
+        {chips('#fff')}
+        {sound === false && (
+          <div style={{ background: `${C.indigo}12`, borderRadius: 10, padding: 12, fontSize: 13, color: C.indigo, lineHeight: 1.5, marginTop: 16 }}>
+            🔇 {NO_SOUND_HINT}
+          </div>
+        )}
+      </div>
+    )
+  } else if (cur.kind === 'word') {
+    content = <WordStep key={step} word={cur.w} idx={cur.i} total={words.length} sound={sound} />
+  } else if (cur.kind === 'quiz') {
+    content = <WordQuizStep block={block} earlier={earlier} sound={sound} onFinish={(r, n) => { setScore([r, n]); next() }} />
+  } else {
+    content = (
+      <div style={{ textAlign: 'center', padding: '8px 0' }}>
+        <div style={{ fontSize: 56, marginBottom: 8 }}>🎉</div>
+        <h2 style={{ fontSize: 26, fontFamily: NE, color: C.matcha, marginBottom: 4 }}>धेरै राम्रो!</h2>
+        <p style={{ color: C.textMuted, marginBottom: 12 }}>Sehr gut gemacht!</p>
+        {alreadyDone ? (
+          <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>Schon abgeschlossen – diese Runde bringt keine neuen XP.</p>
+        ) : (
+          <p style={{ fontSize: 22, fontWeight: 700, color: C.shu, marginBottom: 12 }}>+{xp} XP</p>
+        )}
+        {score && <p style={{ marginBottom: 8 }}>Check: <strong>{score[0]} / {score[1]}</strong> richtig</p>}
+        <p style={{ lineHeight: 1.6, marginBottom: 14 }}>Diese Wörter kommen in deinen Wiederholungen wieder:</p>
+        {chips(`${C.matcha}20`)}
+      </div>
+    )
+  }
+
+  // Fußleiste beim Quiz ausgeblendet: WordQuizStep hat eigene Knöpfe.
+  return (
+    <LessonFrame title={`${block.theme} ${block.title}`} step={step} total={steps.length} onClose={onClose}
+      footer={cur.kind === 'quiz' ? null : cur.kind === 'done' ? (
+        <Btn onClick={finish} disabled={finishing} style={{ width: '100%', minHeight: 48 }}>Block abschließen ✓</Btn>
+      ) : (
+        <Btn onClick={next} style={{ width: '100%', minHeight: 48 }}>{cur.kind === 'intro' ? 'Los geht’s →' : 'Weiter →'}</Btn>
+      )}>
+      {content}
+    </LessonFrame>
   )
 }

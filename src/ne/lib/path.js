@@ -1,4 +1,5 @@
 import { SCRIPT_LESSONS, SCRIPT_DATA } from '../data/script.js'
+import { WORD_BLOCKS } from '../data/words.js'
 
 // Reine Pfad-Logik der Yatra-Karte (kein React). Gegenstück zu src/lib/path.js.
 
@@ -20,7 +21,7 @@ export function isNodeDone(node, progress) {
 }
 
 // Titel + Stationszeichen. null für Überschriften und für Stationen, deren Daten es
-// heute nicht gibt (Wörter, Grammatik … kommen in späteren Tasks) – die Karte lässt
+// heute nicht gibt (Grammatik, Kapitel … kommen in späteren Tasks) – die Karte lässt
 // solche Stationen still aus, statt zu stürzen. Spätere Tasks ergänzen hier ihren Typ.
 export function nodeMeta(node) {
   if (node?.type === 'script') {
@@ -28,6 +29,12 @@ export function nodeMeta(node) {
     if (!l) return null
     // shown statt Zeichen: ein Vokalzeichen allein hängt in der Luft (ा → का).
     return { title: l.title, glyph: SCRIPT_DATA[l.chars[0]]?.shown || l.chars[0] }
+  }
+  if (node?.type === 'word') {
+    // Ein Block, den words.js (noch) nicht kennt (nw7, solange die Daten fehlen), fällt
+    // still weg wie jede Station ohne Daten.
+    const b = WORD_BLOCKS.find(x => x.id === node.id)
+    return b ? { title: b.title, glyph: b.theme } : null
   }
   return null
 }

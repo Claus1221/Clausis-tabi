@@ -11,17 +11,22 @@ import { SRS_RATINGS, feedbackColor } from '../lib/srs.js'
 import { buildScriptQuiz, isReadable, shuffle } from '../lib/scriptQuiz.js'
 import { speak, stopSpeaking } from '../lib/speech.js'
 import { useSound, ListenButton } from '../components/sound.jsx'
+import { TappableSentence, useShowRoman } from '../components/text.jsx'
 
 // ─── Üben (Yatra) ─────────────────────────────────────────────────────────────
-// Gegenstück zu src/screens/ueben.jsx, heute nur für Schriftzeichen: Wiederholen
-// fälliger Karten (SRS), Fleiß-Runde über alles Gelernte und drei Erkennen-Arten.
+// Gegenstück zu src/screens/ueben.jsx: Wiederholen fälliger Karten (SRS – Schriftzeichen
+// und Wörter), Fleiß-Runde über alles Gelernte und drei Erkennen-Arten (nur Zeichen).
 // Alles geht ohne Ton: Hören ist eine Zusatz-Art, nie die einzige, und auch dort lässt
 // sich das Geschriebene einblenden. Karten-Schlüssel kommen aus learned.js (NFC).
 
 const HEAD_CLOSE = 44 // Tippfläche des ✕ in UebenHead
 
-// Schriftgröße für die große Kartenfront: Verbindungen und Vokalzeichen am क sind breiter.
-const frontSize = s => ([...s].length > 3 ? 56 : 80)
+// Schriftgröße für die große Kartenfront: Verbindungen und Vokalzeichen am क sind breiter,
+// Wörter noch breiter (माफ गर्नुहोस् muss bei 360 px in eine Zeile passen).
+const frontSize = s => {
+  const n = [...s].length
+  return n <= 3 ? 80 : n <= 6 ? 56 : n <= 10 ? 44 : 34
+}
 
 // ─── Wiederholen (SRS) ────────────────────────────────────────────────────────
 // Modus 'due' = fällige Karten; 'free' = Fleiß über ALLE gelernten Karten (begrenzte
@@ -31,6 +36,7 @@ const frontSize = s => ([...s].length > 3 ? 56 : 80)
 // keinen Screen zeigt, solange der Lernstand noch lädt.
 function SRSQuiz({ onClose, initialMode = 'due', sound }) {
   const { progress, awardXp, reviewCard, settings } = useContext(ProgressCtx)
+  const showRoman = useShowRoman()
   const learned = learnedItems(progress)
 
   // Gemischt, damit nicht immer die Lektionsreihenfolge abgefragt wird.
@@ -71,7 +77,7 @@ function SRSQuiz({ onClose, initialMode = 'due', sound }) {
         <p style={{ color: C.textMuted, marginBottom: 16, lineHeight: 1.5 }}>
           {mode === 'free'
             ? 'Lerne erst ein paar Zeichen auf der Reise – dann kannst du sie hier nach Lust und Laune üben.'
-            : 'Gerade ist nichts zur Wiederholung fällig. Du kannst trotzdem alle gelernten Zeichen durchgehen.'}
+            : 'Gerade ist nichts zur Wiederholung fällig. Du kannst trotzdem alles Gelernte durchgehen.'}
         </p>
         {canFree && <Btn onClick={startFree} style={{ width: '100%', minHeight: 48, marginBottom: 8 }}>🔥 Trotzdem üben</Btn>}
         <Btn onClick={onClose} variant={canFree ? 'ghost' : 'primary'} style={{ width: '100%', minHeight: 48 }}>Zurück</Btn>
@@ -96,6 +102,7 @@ function SRSQuiz({ onClose, initialMode = 'due', sound }) {
   }
 
   const info = itemInfo(item)
+  const isWord = info.kind === 'word'
 
   const rate = quality => {
     // Schreiben (reviewCard) nur, wenn reviewQueue es verlangt: erste Bewertung einer
@@ -120,26 +127,44 @@ function SRSQuiz({ onClose, initialMode = 'due', sound }) {
           <div style={{ position: 'absolute', top: 10, left: 12, fontSize: 11, color: C.shu, fontWeight: 600 }}>🔁 nochmal</div>
         )}
         <div style={{ fontSize: frontSize(info.front), fontFamily: NE, color: C.sumi, lineHeight: 1.3 }}>{info.front}</div>
+        {/* Wörter: die Umschrift steht vorn nur mit Schalter (dann ist die Bedeutung gefragt,
+            nicht die Lesung). Zeichen: vorn nie – ihre Lesung IST die Frage. */}
+        {isWord && showRoman && !flipped && <div style={{ fontSize: 16, color: C.indigo, fontWeight: 600 }}>{info.roman}</div>}
         {flipped ? (
-          <div style={{ marginTop: 8 }}>
-            {info.front !== info.key && (
-              <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 4 }}>
-                allein: <span style={{ fontFamily: NE, fontSize: 20, color: C.sumi }}>{alone(info.key)}</span>
-              </div>
-            )}
-            <div style={{ fontSize: 26, fontWeight: 700, color: C.indigo }}>{info.roman}</div>
-            {info.kindLabel && (
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.textMuted, textTransform: 'uppercase', marginTop: 2 }}>{info.kindLabel}</div>
-            )}
-          </div>
+          isWord ? (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.indigo }}>{info.roman}</div>
+              <div style={{ fontSize: 18, color: C.sumi, marginTop: 4, lineHeight: 1.4 }}>{info.de}</div>
+            </div>
+          ) : (
+            <div style={{ marginTop: 8 }}>
+              {info.front !== info.key && (
+                <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 4 }}>
+                  allein: <span style={{ fontFamily: NE, fontSize: 20, color: C.sumi }}>{alone(info.key)}</span>
+                </div>
+              )}
+              <div style={{ fontSize: 26, fontWeight: 700, color: C.indigo }}>{info.roman}</div>
+              {info.kindLabel && (
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.textMuted, textTransform: 'uppercase', marginTop: 2 }}>{info.kindLabel}</div>
+              )}
+            </div>
+          )
         ) : (
-          <div style={{ color: C.textMuted, fontSize: 14, marginTop: 8 }}>Wie liest man das?</div>
+          <div style={{ color: C.textMuted, fontSize: 14, marginTop: 8 }}>{isWord ? 'Was bedeutet das?' : 'Wie liest man das?'}</div>
         )}
       </Card>
 
       {flipped && (
         <>
-          {info.de && (
+          {isWord ? (
+            info.ex && (
+              <Card style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>BEISPIELSATZ</div>
+                <TappableSentence dev={info.ex.dev} roman={info.ex.roman} tokens={info.ex.tokens} size={22} sound={sound} />
+                <div style={{ fontSize: 14, color: C.indigo, marginTop: 6, lineHeight: 1.45 }}>„{info.ex.de}“</div>
+              </Card>
+            )
+          ) : info.de && (
             <div style={{ background: `${C.shu}10`, borderRadius: 10, padding: 12, marginBottom: 12 }}>
               <p style={{ fontSize: 14, color: C.sumi, lineHeight: 1.55, margin: 0 }}>💡 {info.de}</p>
             </div>
@@ -348,7 +373,7 @@ export default function UebenScreen({ initialMode, onConsumeInitial }) {
       <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, marginBottom: 8 }}>WIEDERHOLEN</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
         {tile({ id: 'srs', icon: '🗂', title: 'Wiederholen', sub: dueCount > 0 ? `${dueCount} fällig` : 'Nichts fällig', color: C.shu })}
-        {tile({ id: 'fleiss', icon: '🔥', title: 'Fleiß-Übung', sub: 'Alle gelernten Zeichen, jederzeit', color: '#C2410C' })}
+        {tile({ id: 'fleiss', icon: '🔥', title: 'Fleiß-Übung', sub: 'Alles Gelernte, jederzeit', color: '#C2410C' })}
       </div>
 
       <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, marginBottom: 8 }}>ERKENNEN</div>

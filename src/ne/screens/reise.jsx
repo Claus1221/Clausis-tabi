@@ -2,13 +2,14 @@ import { useState, useRef, useEffect, useContext } from 'react'
 import { C, NE } from '../../theme.js'
 import { ProgressCtx } from '../../state/ProgressContext.js'
 import { Btn } from '../../components/ui.jsx'
-import { XP_PER_KANA } from '../../lib/xp.js'
+import { XP_PER_KANA, XP_PER_WORD } from '../../lib/xp.js'
 import { NE_PATH } from '../data/path.js'
 import { SCRIPT_LESSONS } from '../data/script.js'
+import { WORD_BLOCKS } from '../data/words.js'
 import { nfc } from '../lib/deva.js'
 import { isNodeDone, nodeMeta, stationStates } from '../lib/path.js'
 import { buildBackdrop, roadPath, startFlags, STATE_PALETTE } from '../lib/scene.jsx'
-import { ScriptLesson } from './players.jsx'
+import { ScriptLesson, WordBlock } from './players.jsx'
 
 // ─── Reise: die Yatra-Karte ───────────────────────────────────────────────────
 // Gegenstück zu src/screens/reise.jsx: Stationen entlang eines gewundenen Wegs, je
@@ -22,7 +23,7 @@ import { ScriptLesson } from './players.jsx'
 const BAND_THEMES = ['tal', 'huegel', 'see', 'berge']
 
 export default function ReiseScreen() {
-  const { progress, completeLesson, scheduleNew } = useContext(ProgressCtx)
+  const { progress, completeLesson, completeWordBlock, scheduleNew } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
   // Station öffnen und dabei merken, ob sie schon erledigt war (s. ScriptLesson unten).
   const open = node => setActive({ ...node, wasDone: isNodeDone(node, progress) })
@@ -58,6 +59,22 @@ export default function ReiseScreen() {
           // idempotent bzw. ein merge-sicherer Patch (arrayUnion/increment, nur fehlende Karten).
           scheduleNew(lesson.chars.map(nfc))
           if (!already) completeLesson(lesson.id, lesson.chars.length * XP_PER_KANA, { kana: lesson.chars.length })
+        }} />
+    )
+  }
+
+  if (active?.type === 'word') {
+    const block = WORD_BLOCKS.find(b => b.id === active.id)
+    const already = active.wasDone // Stand beim Öffnen, Begründung wie oben
+    const close = () => setActive(null)
+    const n = block.words.length
+    return (
+      <WordBlock block={block} alreadyDone={already} onClose={close}
+        onComplete={() => {
+          // Wie bei der Schrift: Einplanen idempotent und immer, XP und Zähler `words`
+          // (Wochenrückblick) nur beim ersten Abschluss.
+          scheduleNew(block.words.map(w => nfc(w.dev)))
+          if (!already) completeWordBlock(block.id, n * XP_PER_WORD, { words: n })
         }} />
     )
   }
@@ -107,7 +124,7 @@ export default function ReiseScreen() {
           Deine Reise <span style={{ fontFamily: NE }}>यात्रा</span>
         </h2>
         <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12, lineHeight: 1.5 }}>
-          Station für Station durch Nepal – zuerst die Schrift: Devanagari, Zeichen für Zeichen.
+          Station für Station durch Nepal – zuerst die Schrift (Devanagari, Zeichen für Zeichen), dann die ersten Wörter.
         </p>
         {current ? (
           <Btn onClick={() => open(current)} style={{ width: '100%', minHeight: 48, marginBottom: 12 }}>

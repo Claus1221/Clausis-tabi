@@ -1,17 +1,20 @@
 import { useState, useEffect, useContext } from 'react'
 import { C, NE } from '../../theme.js'
 import { ProgressCtx } from '../../state/ProgressContext.js'
-import { Btn, LibSheet } from '../../components/ui.jsx'
+import { Btn, Card, LibSheet } from '../../components/ui.jsx'
 import { SCRIPT_DATA, SCRIPT_LESSONS, SCRIPT_NOTES } from '../data/script.js'
+import { WORD_BLOCKS } from '../data/words.js'
 import { KIND_LABEL, alone } from '../lib/learned.js'
 import { useSound, ListenButton, NO_SOUND_HINT } from '../components/sound.jsx'
+import { TappableSentence, useShowRoman } from '../components/text.jsx'
 import { stopSpeaking } from '../lib/speech.js'
 
 // ─── Lernen (Yatra): Bibliothek zum Nachschlagen ──────────────────────────────
-// Gegenstück zur Kana-Tafel in src/screens/lernen.jsx: alle Devanagari-Zeichen nach
-// Lektion, frei einsehbar (keine Sperren, kein XP – gelernt wird auf der Reise). Antippen
-// öffnet ein Blatt mit großer Form, Umschrift, Merkhilfe, Ton (falls vorhanden) und den
-// Laut-Hinweisen, in denen das Zeichen vorkommt. Später kommen Wörter und Sätze dazu.
+// Gegenstück zu src/screens/lernen.jsx (Kana-Tafel, WordLibrary): umschaltbar zwischen
+// Zeichen und Wörtern, alles frei einsehbar (keine Sperren, kein XP – gelernt wird auf der
+// Reise; erledigte Lektionen/Blöcke tragen ein ✓). Zeichen antippen öffnet ein Blatt mit
+// großer Form, Umschrift, Merkhilfe, Ton (falls vorhanden) und den Laut-Hinweisen, in
+// denen das Zeichen vorkommt; ein Wort öffnet Bedeutung, Umschrift und Beispielsatz.
 
 const sectionLabel = { fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, margin: '18px 0 8px' }
 
@@ -73,8 +76,8 @@ function CharSheet({ ch, sound, onClose }) {
       </div>
       {notes.length > 0 && (
         <>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.shu, marginBottom: 8 }}>LAUT-HINWEIS</div>
-          {notes.map(n => <NoteBody key={n.id} note={n} only={ch} />)}
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.shu, marginBottom: 8 }}>LAUT-HINWEIS</div>
+            {notes.map(n => <NoteBody key={n.id} note={n} only={ch} />)}
         </>
       )}
       {/* Großer Schließen-Knopf zusätzlich zum kleinen ✕ der LibSheet-Kopfzeile. */}
@@ -95,12 +98,69 @@ function NotesSheet({ onClose }) {
   )
 }
 
+
+// Ein Wort im Detail. Die Umschrift steht hier immer (wer nachschlägt, will sie sehen –
+// wie beim Antippen im Satz); der Schalter gilt für die Liste.
+function WordSheet({ word, block, sound, onClose }) {
+  useEffect(() => () => stopSpeaking(), [])
+  return (
+    <LibSheet title={`${word.dev} · ${word.roman}`} onClose={onClose}>
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.indigo, textTransform: 'uppercase' }}>
+          Wort <span style={{ color: C.textMuted }}>· {block.theme} {block.title}</span>
+        </div>
+        <div style={{ fontSize: 52, fontFamily: NE, color: C.sumi, lineHeight: 1.35 }}>{word.dev}</div>
+        <div style={{ fontSize: 20, fontWeight: 700, color: C.indigo }}>{word.roman}</div>
+        <div style={{ fontSize: 18, color: C.sumi, margin: '6px 0 12px', lineHeight: 1.45 }}>{word.de}</div>
+        {sound !== false && <ListenButton text={word.dev} sound={sound} />}
+      </div>
+      <Card style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>BEISPIELSATZ</div>
+        <TappableSentence dev={word.ex.dev} roman={word.ex.roman} tokens={word.ex.tokens} sound={sound} />
+        <div style={{ fontSize: 15, color: C.indigo, marginTop: 8, lineHeight: 1.45 }}>„{word.ex.de}“</div>
+      </Card>
+      <Btn onClick={onClose} variant="ghost" style={{ width: '100%', minHeight: 48 }}>Schließen</Btn>
+    </LibSheet>
+  )
+}
+
+// Alle Wörter nach Block, wie die japanische WordLibrary frei einsehbar.
+function WordList({ done, onPick }) {
+  const showRoman = useShowRoman()
+  return WORD_BLOCKS.map(b => (
+    <div key={b.id}>
+      <div style={sectionLabel}>
+        {b.theme} {b.title.toUpperCase()}
+        {done.includes(b.id) && <span style={{ color: C.matcha, marginLeft: 6 }}>✓</span>}
+      </div>
+      {b.words.map(w => (
+        <button key={w.dev} onClick={() => onPick(w, b)} aria-label={`${w.dev}, ${w.de} – Details öffnen`}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12, width: '100%', minHeight: 56, textAlign: 'left',
+            background: '#fff', border: '1px solid rgba(33,31,27,0.05)', borderRadius: 12,
+            boxShadow: 'var(--shadow-card)', padding: '8px 14px', marginBottom: 8, cursor: 'pointer',
+          }}>
+          <span style={{ flexShrink: 0, maxWidth: '50%' }}>
+            <span style={{ display: 'block', fontSize: 24, fontFamily: NE, color: C.sumi, lineHeight: 1.35 }}>{w.dev}</span>
+            {showRoman && <span style={{ display: 'block', fontSize: 12, color: C.indigo }}>{w.roman}</span>}
+          </span>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: C.sumi, lineHeight: 1.4 }}>{w.de}</span>
+          <span style={{ fontSize: 16, color: C.textMuted }}>›</span>
+        </button>
+      ))}
+    </div>
+  ))
+}
+
 export default function LernenScreen() {
   const { progress } = useContext(ProgressCtx)
   const sound = useSound()
+  const [view, setView] = useState('zeichen') // 'zeichen' | 'woerter'
   const [sel, setSel] = useState(null)        // Zeichen
+  const [selWord, setSelWord] = useState(null) // { word, block }
   const [notesOpen, setNotesOpen] = useState(false)
   const done = progress.completedLessons || []
+  const doneBlocks = progress.completedWordBlocks || []
 
   // Die Blätter liegen als fixes Overlay ÜBER der Tafel, statt sie zu ersetzen: so bleibt
   // die Tafel gerendert und die Scroll-Position nach dem Schließen dieselbe.
@@ -108,12 +168,13 @@ export default function LernenScreen() {
     <div style={{ padding: '16px 16px 0' }}>
       {sel && <CharSheet ch={sel} sound={sound} onClose={() => setSel(null)} />}
       {notesOpen && <NotesSheet onClose={() => setNotesOpen(false)} />}
+      {selWord && <WordSheet word={selWord.word} block={selWord.block} sound={sound} onClose={() => setSelWord(null)} />}
       <h2 style={{ fontSize: 20, color: C.indigo, marginBottom: 4 }}>
         Bibliothek <span style={{ fontFamily: NE }}>पढाइ</span>
       </h2>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 14, lineHeight: 1.5 }}>
-        Alle Devanagari-Zeichen zum Nachschlagen – ohne Sperren, ohne Druck. Tippe ein Zeichen für
-        Umschrift, Merkhilfe{sound ? ' und Ton' : ''}. Gelernt wird auf der Reise.
+        Alle Zeichen und Wörter zum Nachschlagen – ohne Sperren, ohne Druck. Tippe etwas an für
+        Umschrift, Bedeutung{sound ? ' und Ton' : ''}. Gelernt wird auf der Reise.
       </p>
       {/* Ohne Ton steht der Hinweis hier einmal ausgeschrieben; im Blatt nur 🔇. */}
       {sound === false && (
@@ -122,45 +183,63 @@ export default function LernenScreen() {
         </div>
       )}
 
-      <button onClick={() => setNotesOpen(true)} style={{
-        width: '100%', minHeight: 56, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
-        background: '#fff', border: '1px solid rgba(33,31,27,0.05)', borderRadius: 12,
-        boxShadow: 'var(--shadow-card)', padding: '10px 14px', cursor: 'pointer',
-      }}>
-        <span style={{ fontSize: 22 }}>👄</span>
-        <span style={{ flex: 1 }}>
-          <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: C.sumi }}>Laut-Hinweise</span>
-          <span style={{ display: 'block', fontSize: 12, color: C.textMuted }}>{SCRIPT_NOTES.map(n => n.title).join(' · ')}</span>
-        </span>
-        <span style={{ fontSize: 16, color: C.textMuted }}>›</span>
-      </button>
+      {/* Umschalter wie in der japanischen Bibliothek (dort Kana/Wörter/…). */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+        {[['zeichen', 'अ Zeichen'], ['woerter', 'Wörter']].map(([id, label]) => (
+          <button key={id} onClick={() => setView(id)} aria-pressed={view === id}
+            style={{
+              flex: 1, minHeight: 44, borderRadius: 8, cursor: 'pointer',
+              border: `2px solid ${view === id ? C.shu : C.washiDark}`,
+              background: view === id ? `${C.shu}15` : '#fff',
+              color: view === id ? C.shu : C.textMuted, fontWeight: 600, fontSize: 13,
+            }}><span style={{ fontFamily: NE }}>{label}</span></button>
+        ))}
+      </div>
 
-      {SCRIPT_LESSONS.map(l => (
-        <div key={l.id}>
-          <div style={sectionLabel}>
-            {l.title.toUpperCase()}
-            {done.includes(l.id) && <span style={{ color: C.matcha, marginLeft: 6 }}>✓</span>}
-            <span style={{ color: C.textMuted, fontWeight: 500, letterSpacing: 0, marginLeft: 6 }}>{l.sub}</span>
+      {view === 'woerter' && <WordList done={doneBlocks} onPick={(word, block) => setSelWord({ word, block })} />}
+      {view === 'zeichen' && (
+        <>
+        <button onClick={() => setNotesOpen(true)} style={{
+          width: '100%', minHeight: 56, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+          background: '#fff', border: '1px solid rgba(33,31,27,0.05)', borderRadius: 12,
+          boxShadow: 'var(--shadow-card)', padding: '10px 14px', cursor: 'pointer',
+        }}>
+          <span style={{ fontSize: 22 }}>👄</span>
+          <span style={{ flex: 1 }}>
+            <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: C.sumi }}>Laut-Hinweise</span>
+            <span style={{ display: 'block', fontSize: 12, color: C.textMuted }}>{SCRIPT_NOTES.map(n => n.title).join(' · ')}</span>
+          </span>
+          <span style={{ fontSize: 16, color: C.textMuted }}>›</span>
+        </button>
+
+        {SCRIPT_LESSONS.map(l => (
+          <div key={l.id}>
+            <div style={sectionLabel}>
+              {l.title.toUpperCase()}
+              {done.includes(l.id) && <span style={{ color: C.matcha, marginLeft: 6 }}>✓</span>}
+              <span style={{ color: C.textMuted, fontWeight: 500, letterSpacing: 0, marginLeft: 6 }}>{l.sub}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(56px, 1fr))', gap: 6 }}>
+              {l.chars.map(ch => {
+                const d = SCRIPT_DATA[ch]
+                return (
+                  // Lesung steht immer da (unabhängig von showRoman): sie ist der Inhalt des
+                  // Schriftlernens, wie in Lektionen und auf der Kartenrückseite.
+                  <button key={ch} onClick={() => setSel(ch)} aria-label={`${alone(ch)}, Umschrift ${d.roman} – Details öffnen`}
+                    style={{
+                      minHeight: 60, minWidth: 0, background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 8,
+                      cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px 2px',
+                    }}>
+                    <span style={{ fontSize: 24, fontFamily: NE, color: C.sumi, lineHeight: 1.3 }}>{d.shown}</span>
+                    <span style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.2, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.roman}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(56px, 1fr))', gap: 6 }}>
-            {l.chars.map(ch => {
-              const d = SCRIPT_DATA[ch]
-              return (
-                // Lesung steht immer da (unabhängig von showRoman): sie ist der Inhalt des
-                // Schriftlernens, wie in Lektionen und auf der Kartenrückseite.
-                <button key={ch} onClick={() => setSel(ch)} aria-label={`${alone(ch)}, Umschrift ${d.roman} – Details öffnen`}
-                  style={{
-                    minHeight: 60, minWidth: 0, background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 8,
-                    cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px 2px',
-                  }}>
-                  <span style={{ fontSize: 24, fontFamily: NE, color: C.sumi, lineHeight: 1.3 }}>{d.shown}</span>
-                  <span style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.2, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.roman}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      ))}
+        ))}
+        </>
+      )}
     </div>
   )
 }
