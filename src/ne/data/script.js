@@ -74,7 +74,7 @@ const RAW = {
   व: E('wa', 'consonant', 'Ein Kästchen am Stab, innen LEER – meist wie b, auch im Wort (विदेश „bidesh“, धन्यवाद „dhanyabād“), in manchen Wörtern wie engl. w (स्वागत „swāgat“); mit Schrägstrich: ब'),
 
   // ── श bis ह (Zischlaute und h) ─────────────────────────────────────────
-  श: E('sha', 'consonant', 'Ein Kringel mit Querstrich am Stab, Dach unterbrochen – im Alltag meist wie s gesprochen: शान्ति „shānti“ (Frieden) klingt fast wie „sānti“, देश „desh“ fast wie „des“; „sch“ nur in sorgfältiger Rede (श्री „shrī“)'),
+  श: E('sha', 'consonant', 'Ein Kringel mit Querstrich am Stab, Dach unterbrochen – im Alltag meist wie s gesprochen: शान्ति „shānti“ (Frieden) klingt fast wie „sānti“, देश „desh“ fast wie „des“; „sch“ hört man nur in sorgfältiger Rede, etwa in श्री „shrī“ (oft auch „srī“)'),
   ष: E('sha', 'consonant', 'Wie प mit Schrägstrich durch das „U“ – wie श im Alltag meist wie s gesprochen: भाषा „bhāshā“ (Sprache) klingt fast wie „bhāsā“'),
   स: E('sa', 'consonant', 'Ein Haken mit Schlaufe und Querstrich am Stab – „sa“, scharfes s wie in „Bus“'),
   ह: E('ha', 'consonant', 'Ein Bogen mit Haken nach unten, kein Stab – „ha“ wie Haus'),
@@ -106,7 +106,7 @@ const RAW = {
   'न्य': E('nya', 'conjunct', 'Halbes न (der Stab fehlt) direkt vor य – „nya“ wie in धन्यवाद („dhanyabād“ = danke)'),
 
   // ── Verbindungen ────────────────────────────────────────────────────────
-  'क्ष': E('ksha', 'conjunct', 'क und ष zu einer eigenen Form verschmolzen – gesprochen „kchh“, oft nur „chh“: क्षेत्री „kshetrī“ klingt fast wie „chhetrī“'),
+  'क्ष': E('ksha', 'conjunct', 'क und ष zu einer eigenen Form verschmolzen – gesprochen „kch“, oft nur „ch“: क्षेत्री „kshetrī“ klingt fast wie „chetrī“ (der Name wird auf Englisch meist „Chhetri“ geschrieben)'),
   'ज्ञ': E('gya', 'conjunct', 'ज und ञ verschmolzen – im Nepali gesprochen „gya“, nicht „jña“'),
   'प्र': E('pra', 'conjunct', 'Ein Schrägstrich unten am Stab ist ein r NACH dem Konsonanten – „pra“ wie in प्रवेश („prabesh“ = Eingang), प्रहरी („praharī“ = Polizei)'),
   'त्र': E('tra', 'conjunct', 'Sonderform der r-Strich-Regel: त mit Schrägstrich unten – „tra“, das t ohne Luftstoß'),
@@ -128,7 +128,7 @@ const RAW = {
 
 // say = shown, solange es kein Audio gibt (s. Kopfkommentar).
 // Umschrift-Regel (roman UND Beispielwörter in tips): folgt der Schreibung – श/ष = sh, ā ī ū wie
-// geschrieben, stummes End-a fällt weg; einzige Ausnahme: व wie gesprochen (meist b, sonst w).
+// geschrieben, stummes End-a fällt weg; feste Ausnahmen: व wie gesprochen (meist b, sonst w), ज्ञ = gya, ऋ/ृ = ri.
 // Aussprache steht getrennt davon („klingt fast wie …“). Jedes Beispielwort trägt seine Umschrift.
 // Achtung: roman ist NICHT eindeutig (श/ष = „sha“, ं/ँ = „ṃ“) – ein Quiz darf nie zwei
 // Antwortoptionen mit gleichem roman anbieten.

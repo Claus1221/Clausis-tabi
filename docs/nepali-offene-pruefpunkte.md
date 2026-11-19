@@ -10,14 +10,11 @@ was daran zweifelhaft war. Fundstelle ist, wo nicht anders genannt, `src/ne/data
 
 - **Bewusst so entschieden, kein Fehler:** Jede Umschrift neben Devanagari (Feld `roman` und
   Beispielwörter in Merkhilfen) folgt der Schreibung nach dem Kurs-Schema: श/ष = `sh` (देश „desh“,
-  शान्ति „shānti“, शून्य „shūnya“), ā ī ū wie geschrieben, stummes End-a fällt weg. Einzige
-  Ausnahme, wie in jeder praktischen Nepali-Umschrift: व wie gesprochen – `b` in den meisten Wörtern
-  (विदेश „bidesh“, धन्यवाद „dhanyabād“, प्रवेश „prabesh“), `w`, wo w gesprochen wird (स्वागत „swāgat“);
-  der Einzelbuchstabe व behält `wa`. Die Aussprache steht getrennt davon, als ausdrückliche
+  शान्ति „shānti“, शून्य „shūnya“), ā ī ū wie geschrieben, stummes End-a fällt weg. Drei
+  feste Ausnahmen, wie in jeder praktischen Nepali-Umschrift: (1) व wie gesprochen – `b` in den meisten
+  Wörtern (विदेश „bidesh“, धन्यवाद „dhanyabād“, प्रवेश „prabesh“), `w`, wo w gesprochen wird (स्वागत „swāgat“);
+  der Einzelbuchstabe व behält `wa`; (2) ज्ञ = `gya` (ज्ञान „gyān“, nicht `jña`); (3) ऋ/ृ = `ri` (nicht `r̥`). Die Aussprache steht getrennt davon, als ausdrückliche
   Bemerkung („देश „desh“ – klingt fast wie „des““), nie als Umschrift ausgegeben.
-- **Offen dazu:** ज्ञ steht als `gya` (wie gesprochen, wie in praktisch jeder Nepali-Umschrift:
-  ज्ञान „gyān“), ऋ/ृ als `ri` – nach der Regel oben wären das eigentlich weitere Ausnahmen
-  (Schreibung wäre `jña` bzw. `r̥`). Zu entscheiden, ob sie als Ausnahmen gelten.
 
 ## Schrift (Task 1)
 
@@ -27,7 +24,7 @@ was daran zweifelhaft war. Fundstelle ist, wo nicht anders genannt, `src/ne/data
 - **च / ज, Untertitel s4** – Kurs: च „zwischen ts und tsch, meist näher an ts“, ज „zwischen ds
   und dsch, meist näher an ds“. Zweifel: vorher „wie tsch“ bzw. „dsch wie in Dschungel“; die
   Aussprache schwankt je nach Sprecher und Region.
-- **व** – Kurs: „meist wie b, auch im Wort (विदेश „bides“, धन्यवाद „dhanyabād“), in manchen Wörtern
+- **व** – Kurs: „meist wie b, auch im Wort (विदेश „bidesh“, धन्यवाद „dhanyabād“), in manchen Wörtern
   wie engl. w (स्वागत „swāgat“)“; Umschrift bleibt `wa`. Zweifel: zuerst „zwischen w und b“, dann
   „am Wortanfang b, sonst w“ – der zweite Prüfer widersprach: b gilt auch im Wortinneren.
 - **व im Wortinneren** – offen, in welchen Wörtern व als w gesprochen wird (स्वागत, Verbindungen mit
@@ -37,7 +34,7 @@ was daran zweifelhaft war. Fundstelle ist, wo nicht anders genannt, `src/ne/data
   über ख unterbrochen ist (gängige Hindi-Lehrlisten sagen ja, der erste Prüfer schrieb „unter
   EINEM Dach“). Der Kurs sagt dazu jetzt nichts mehr.
 - **शहर / सहर** – die Standardschreibung ist सहर; als Beispiel für „श klingt wie s“ taugt das Wort
-  daher nicht. Der Kurs nutzt jetzt शान्ति „sānti“ (Frieden) und देश „des“ und vermeidet शहर.
+  daher nicht. Der Kurs nutzt jetzt शान्ति (Umschrift „shānti“, klingt fast wie „sānti“) und देश (Umschrift „desh“, klingt fast wie „des“) und vermeidet शहर.
 - **य / थ** – Kurs: य „Dach durchgehend; mit Lücke im Dach: थ“, थ „wie य, aber mit Lücke im Dach“.
   Zweifel: vorher eine andere Formbeschreibung für थ; ob die Abgrenzung in gängigen Schriften
   sichtbar ist.
@@ -50,3 +47,7 @@ was daran zweifelhaft war. Fundstelle ist, wo nicht anders genannt, `src/ne/data
   in der Mitte“.
 - **झ** – Kurs: „in Druck und auf Schildern oft in einer zweiten, traditionellen Form“. Zweifel:
   ob Lernende die zweite Form auch gezeigt bekommen sollten (bisher nur erwähnt).
+- **Offene bzw. unterbrochene Kopflinie bei ग, श und ण** – Kurs: die Tipps nennen „Dach links offen“
+  (ग), „Dach unterbrochen“ (श) und „Dach links unterbrochen“ (ण). Zweifel: in gängigen Schriften
+  sieht die Kopflinie von ग und श meist durchgehend aus. Gegen die tatsächlich verwendete Schrift
+  (Noto Sans Devanagari) prüfen; die Bemerkung dort streichen, wo keine Lücke sichtbar ist.
