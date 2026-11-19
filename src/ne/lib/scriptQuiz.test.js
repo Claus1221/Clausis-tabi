@@ -52,6 +52,27 @@ describe('buildScriptQuiz', () => {
   it('nur unlesbare Zeichen → leeres Quiz', () => {
     expect(buildScriptQuiz(['्', '।'], seeded(1))).toEqual([])
   })
+  it('optionCount: so viele Optionen wie verlangt, weiter ohne gleiche Lesung', () => {
+    for (const n of [4, 6, 8]) {
+      for (let s = 1; s <= 20; s++) {
+        for (const q of buildScriptQuiz(lesson('s9').chars, seeded(s), n)) {
+          expect(q.options).toHaveLength(n)
+          expect(new Set(q.options).size).toBe(n)
+          expect(q.options).toContain(q.correct)
+        }
+      }
+    }
+  })
+  it('optionChars: je Option ein Zeichen mit genau dieser Lesung (für „Lesung → Zeichen“)', () => {
+    for (let s = 1; s <= 40; s++) {
+      for (const q of buildScriptQuiz([...lesson('s9').chars, ...lesson('s12').chars], seeded(s), 6)) {
+        expect(q.optionChars).toHaveLength(q.options.length)
+        q.optionChars.forEach((c, i) => expect(SCRIPT_DATA[c].roman).toBe(q.options[i]))
+        expect(q.optionChars[q.options.indexOf(q.correct)]).toBe(q.char)
+        expect(new Set(q.optionChars).size).toBe(q.optionChars.length)
+      }
+    }
+  })
 })
 
 describe('notesForLesson', () => {

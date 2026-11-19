@@ -36,7 +36,11 @@ function promptFor(kind, ch, shown) {
 // nicht über das Zeichen: nie zwei gleich lautende Optionen, und kein Ablenker, der
 // zufällig die richtige Lesung trägt. Ablenker zuerst aus der Lektion selbst (das
 // eigentliche Verwechslungsrisiko), dann aus derselben Zeichenart, dann aus allem.
-export function buildScriptQuiz(chars, rand = Math.random) {
+// optionCount: Optionen je Frage (Lektion 3, Üben nach Einstellung 4–8).
+// optionChars[i] ist das Zeichen, von dem options[i] stammt – damit dient dieselbe Frage
+// auch umgekehrt („Lesung sehen → Zeichen wählen“): weil die Lesungen verschieden sind,
+// ist dann auch nie mehr als ein Zeichen richtig (nie श und ष zugleich).
+export function buildScriptQuiz(chars, rand = Math.random, optionCount = 3) {
   const readable = [...new Set(chars)].filter(isReadable)
   const allReadable = Object.keys(SCRIPT_DATA).filter(isReadable)
   return shuffle(readable, rand).map(ch => {
@@ -46,15 +50,19 @@ export function buildScriptQuiz(chars, rand = Math.random) {
       allReadable.filter(c => SCRIPT_DATA[c].kind === kind),
       allReadable,
     ]
-    const picked = []
+    const picked = [] // [Lesung, Zeichen]
     for (const pool of pools) {
       for (const c of shuffle(pool, rand)) {
-        if (picked.length >= 2) break
+        if (picked.length >= optionCount - 1) break
         const r = SCRIPT_DATA[c].roman
-        if (r !== correct && !picked.includes(r)) picked.push(r)
+        if (r !== correct && !picked.some(([pr]) => pr === r)) picked.push([r, c])
       }
     }
-    return { char: ch, shown, correct, prompt: promptFor(kind, ch, shown), options: shuffle([correct, ...picked], rand) }
+    const pairs = shuffle([[correct, ch], ...picked], rand)
+    return {
+      char: ch, shown, correct, prompt: promptFor(kind, ch, shown),
+      options: pairs.map(([r]) => r), optionChars: pairs.map(([, c]) => c),
+    }
   })
 }
 

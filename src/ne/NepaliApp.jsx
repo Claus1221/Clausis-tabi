@@ -1,16 +1,21 @@
-import { useState, lazy, Suspense } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useAuth } from '../AuthGate.jsx'
-import { useLang } from '../LangGate.jsx'
-import { useProgress, computeStats, getSettings } from '../useProgress.js'
+import { useProgress, computeStats } from '../useProgress.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
 import { C, NE } from '../theme.js'
-import { Card, TabBar } from '../components/ui.jsx'
+import { TabBar } from '../components/ui.jsx'
 import { LANGS } from '../lib/lang.js'
+import { learnedItems } from './lib/learned.js'
+import { neSettings } from './lib/settings.js'
 
 // Nepali-Hülle (Yatra): Kopfzeile, Tabs wie TabiApp, ProgressCtx für Sprache `ne`.
-// Screens lazy → je Tab ein eigener Code-Chunk. Tabs ohne Screen zeigen „Kommt bald“.
-// Wechseln/Abmelden stehen in der Kopfzeile, bis es einen Einstellungs-Screen gibt.
+// Screens lazy → je Tab ein eigener Code-Chunk. Einstellungen (⚙) tragen Sprache,
+// Umschrift, Übungs-Parameter, Abmelden und Zurücksetzen.
 const ReiseScreen = lazy(() => import('./screens/reise.jsx'))
+const LernenScreen = lazy(() => import('./screens/lernen.jsx'))
+const UebenScreen = lazy(() => import('./screens/ueben.jsx'))
+const FortschrittScreen = lazy(() => import('./screens/fortschritt.jsx'))
+const SettingsScreen = lazy(() => import('./screens/settings.jsx'))
 
 // Tab-Zeichen auf Nepali, Unterzeile Deutsch (wie 旅/Reise im japanischen Kurs).
 const NE_TABS = [
@@ -24,27 +29,24 @@ function ScreenFallback() {
   return <div style={{ padding: 40, textAlign: 'center', color: C.textMuted, fontSize: 13 }}>Lädt…</div>
 }
 
-function ComingSoon({ title }) {
-  return (
-    <div style={{ padding: 16 }}>
-      <Card>
-        <div style={{ fontSize: 16, fontWeight: 700, color: C.indigo, marginBottom: 4 }}>{title}</div>
-        <div style={{ fontSize: 14, color: C.textMuted }}>Kommt bald.</div>
-      </Card>
-    </div>
-  )
-}
-
 export default function NepaliApp() {
-  const { user, logout, recheckAccess } = useAuth()
-  const { setLang, langs } = useLang()
+  const { user, recheckAccess } = useAuth()
   const progressApi = useProgress(user?.uid, 'ne', { onDenied: recheckAccess })
-  const { progress, saveError } = progressApi
+  const { progress, saveError, scheduleNew } = progressApi
   const { level } = computeStats(progress)
   const [tab, setTab] = useState('reise')
   const [prevTab, setPrevTab] = useState('reise') // Rücksprung aus den Einstellungen
-  // Mit zwei Sprachen ist "wechseln" ein Umschalten zur jeweils anderen.
-  const other = langs.find(l => l !== 'ne')
+  const [uebenMode, setUebenMode] = useState(null) // gewünschter Übungsmodus beim Tab-Wechsel
+
+  // Gelerntes in den Wiederholungsplan einplanen (wie TabiApp): auch bereits gelernte,
+  // aber noch ungeplante Karten – etwa wenn ein Lektionsabschluss offline nur halb
+  // ankam. scheduleNew ist idempotent und schreibt nichts vor dem ersten Snapshot.
+  useEffect(() => {
+    scheduleNew(learnedItems(progress))
+  }, [progress.completedLessons, progress.completedWordBlocks, progress.srs]) // eslint-disable-line
+
+  // Wiederholungen leben im Üben-Tab; andere Screens springen dorthin.
+  const goToReview = () => { setUebenMode('srs'); setTab('ueben') }
 
   const toggleSettings = () => {
     if (tab === 'einstellungen') setTab(prevTab)
@@ -53,10 +55,10 @@ export default function NepaliApp() {
 
   const screens = {
     reise: <ReiseScreen />,
-    lernen: <ComingSoon title="Lernen" />,
-    ueben: <ComingSoon title="Üben" />,
-    fortschritt: <ComingSoon title="Fortschritt" />,
-    einstellungen: <ComingSoon title="Einstellungen" />,
+    lernen: <LernenScreen />,
+    ueben: <UebenScreen initialMode={uebenMode} onConsumeInitial={() => setUebenMode(null)} />,
+    fortschritt: <FortschrittScreen onReview={goToReview} />,
+    einstellungen: <SettingsScreen onClose={() => setTab(prevTab)} />,
   }
 
   const pill = {
@@ -69,7 +71,7 @@ export default function NepaliApp() {
   }
 
   return (
-    <ProgressCtx.Provider value={{ ...progressApi, settings: getSettings(progress) }}>
+    <ProgressCtx.Provider value={{ ...progressApi, settings: neSettings(progress) }}>
     <div className="app-shell" style={{
       maxWidth: 480, margin: '0 auto', height: '100vh',
       display: 'flex', flexDirection: 'column', position: 'relative',
@@ -100,19 +102,16 @@ export default function NepaliApp() {
             <span style={{ width: 5, height: 5, borderRadius: 99, background: C.shu, display: 'inline-block' }} />
             Level {level}
           </div>
+          {/* Sprachwechsel und Abmelden stehen in den Einstellungen: in der Kopfzeile
+              brach die Leiste bei 360 px auf drei Zeilen um. */}
           <button onClick={toggleSettings} title="Einstellungen" aria-label="Einstellungen"
+            aria-pressed={tab === 'einstellungen'}
             style={{
-              ...pill, padding: 0, width: 28, height: 28, fontSize: 14, lineHeight: 1,
+              ...pill, padding: 0, width: 44, height: 44, fontSize: 18, lineHeight: 1,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: tab === 'einstellungen' ? `${C.indigo}12` : 'none',
               color: tab === 'einstellungen' ? C.indigo : C.textMuted,
             }}>⚙</button>
-          {other && (
-            <button onClick={() => setLang(other)} style={pill}>
-              Zu {LANGS[other].name} wechseln
-            </button>
-          )}
-          <button onClick={logout} title={`Abmelden (${user?.email || ''})`} style={pill}>Abmelden</button>
         </div>
       </div>
 
