@@ -6,7 +6,7 @@
 
 **Architecture:** Eigener Zweig `src/ne/` mit den Schichten `data → lib → components → screens`, der nur den sprachneutralen Kern mitbenutzt (`useProgress`, `sm2`, `ui.jsx`, `theme.js`, `xp.js`). Sprachausgabe über vorab erzeugte Azure-MP3s in `public/audio-ne/`. Inhalte entstehen blockweise und gehen jeweils durch Tests und ein unabhängiges Gegenlesen.
 
-**Tech Stack:** React 18, Vite 5, Firebase 12, Vitest (`node`), Azure Speech REST (`ne-NP`), Web Speech API (`ne-NP`, Chrome/Android).
+**Tech Stack:** React 18, Vite 5, Firebase 12, Vitest (`node`), Azure Speech REST (`ne-NP`, vorbereitet, noch ohne Schlüssel), Gerätestimme über `speechSynthesis`.
 
 **Spec:** `docs/superpowers/specs/2026-11-19-mehrnutzer-und-nepali-design.md` (§7, §8, §10). **Voraussetzung:** Plan A ist umgesetzt (`LangGate`, `useProgress(uid, 'ne')`, `ne/NepaliApp.jsx` als Hülle, `NE` in `theme.js`, `NE_PUBLIC`).
 
@@ -20,7 +20,8 @@
 - Lernstand-Felder werden wiederverwendet: `completedLessons` (Schrift), `completedWordBlocks`, `completedGrammar`, `completedChapters`, `completedDialogs`, `completedTalks`, `chapterStars`, `srs`, `xpByDate`, `history`, `settings`.
 - IDs: Schrift `s1…`, Wortblöcke `nw1…`, Grammatik `ng1…`, Kapitel `nc1…`, Szenen `nd1…`, Gespräche `nt-nd1…`.
 - **Gegenlesen (gilt für jeden Inhalts-Task):** Vor dem Commit prüft ein frischer Subagent ohne Kenntnis der Entstehung die neuen Daten gegen diese Liste: Devanagari-Rechtschreibung · Umschrift passt zum Devanagari und zum Schema · Übersetzung stimmt · Höflichkeitsstufe einheitlich · Form ist gebräuchlich, nicht nur grammatisch möglich · kein Wort wird benutzt, bevor es eingeführt ist. Befunde werden behoben; was strittig bleibt, kommt in `docs/nepali-offene-pruefpunkte.md` für eine spätere Durchsicht durch eine Person mit Nepali-Kenntnissen.
-- Nach jeder Änderung an sprechbaren Inhalten: `npm run audio:ne`, `public/audio-ne` mit committen.
+- **Audio ist vorerst ausgesetzt (Entscheidung 19.11.2026, kein Azure-Konto):** Es werden keine MP3s erzeugt. Wo ein Task `npm run audio:ne` nennt, genügt `npm run audio:ne -- --check` (meldet „noch nicht erzeugt“ und endet mit 0). Sobald `AZURE_SPEECH_KEY` vorliegt, erzeugt `npm run audio:ne` alles nachträglich; danach gilt wieder: nach jeder Änderung an sprechbaren Inhalten laufen lassen und `public/audio-ne` mit committen.
+- **Keine Spracherkennung** (Entscheidung 19.11.2026): Antworten werden überall angetippt.
 - Kommentare deutsch, erklären das Warum. `ARCHITECTURE.md` (neuer Abschnitt „Nepali-Zweig“) wird im selben Task mitgepflegt.
 
 ## Review Focus
@@ -28,7 +29,7 @@
 1. Zeichen mit Halant, Matra oder Nasalzeichen als Karten-Schlüssel und Firestore-Feldname (`srs['क्ष']`) → Schreiben und Lesen müssen denselben Schlüssel treffen, auch wenn derselbe Text unterschiedlich normalisiert ankommt (NFC-Test in Task 5).
 2. Sprechstelle ohne MP3 und Gerät ohne Nepali-Stimme → `speak()` löst trotzdem auf, die Übung hängt nicht (Test in Task 3).
 3. Umschrift ausgeschaltet → jede Aufgabe bleibt lösbar; keine Aufgabe zeigt die Lösung nur in Umschrift (Test in Task 6).
-4. Spracherkennung liefert nichts oder lateinische Schrift → Antippen bleibt immer möglich (Task 10).
+4. Ganzer Kurs ohne Ton (kein MP3, keine Gerätestimme) → jede Höraufgabe bleibt lösbar oder wird durch eine Leseaufgabe ersetzt; nirgends ein toter Knopf (Tasks 3, 4, 6, 8, 10).
 5. Halb fertiger Kurs: Pfad endet, bevor alle Phasen da sind → letzte Station zeigt „Hier geht es bald weiter“, kein Absturz bei unbekannter Station (Test in Task 4).
 
 ## Dateiübersicht
@@ -46,22 +47,15 @@ src/ne/screens/     reise.jsx players.jsx lernen.jsx ueben.jsx fortschritt.jsx s
 
 ---
 
-### Task 0: Probeläufe (Wegwerf-Code, kein Produktcode)
+### Task 0: Probeläufe – entfallen (Entscheidung 19.11.2026)
 
-**Files:**
-- Create: `docs/superpowers/specs/2026-11-19-nepali-probelaeufe.md` (Ergebnisse)
-- Wegwerf: `scratch/ne-spike/` (nicht committen; in `.gitignore`)
+Claus kann vorerst kein Azure-Konto anlegen und will den Kurs zuerst ohne Spracherkennung. Statt der Probeläufe gelten diese Festlegungen:
 
-Braucht Claus: Azure-Speech-Ressource anlegen (Stufe F0), `AZURE_SPEECH_KEY` und `AZURE_SPEECH_REGION` in `.env.local`; ein Android-Handy mit Chrome.
-
-- [ ] **Step 1: Stimme.** Zehn Texte (`नमस्ते`, `धन्यवाद`, `क`, `ख`, `ट`, `त`, `मलाई पानी चाहिन्छ।`, `यो कति हो?`, `तपाईंको नाम के हो?`, `म जर्मनीबाट आएको हुँ।`) mit `ne-NP-HemkalaNeural` und `ne-NP-SagarNeural`, jeweils Tempo 1,0 und 0,8, als MP3 erzeugen. Claus hört sie an und wählt Stimme und Tempo für Einzelwörter.
-- [ ] **Step 2: Einzelzeichen.** Prüfen, ob die Stimme einzelne Konsonanten (`क`) als „ka“ spricht. Wenn nicht: festhalten, welcher Ersatztext funktioniert.
-- [ ] **Step 3: Google gegenprüfen.** Aktuelle Stimmenlisten von Google Cloud TTS und Gemini-TTS auf `ne-NP` prüfen. Falls vorhanden: gleiche zehn Texte erzeugen und vergleichen.
-- [ ] **Step 4: Erkennung.** Eine HTML-Seite mit `SpeechRecognition`, `lang = 'ne-NP'`, die erkannte Texte anzeigt. Auf Android/Chrome fünf der Sätze sprechen. Festhalten: kommt Devanagari zurück, wie oft stimmt es, welcher Fehlercode sonst.
-- [ ] **Step 5: Gerätestimme.** Auf demselben Handy `speechSynthesis.getVoices()` nach `ne` filtern und einen Satz sprechen lassen.
-- [ ] **Step 6: Ergebnis festhalten.** In der Ergebnisdatei vier Zeilen ausfüllen: `STIMME=`, `TEMPO_WORT=`, `ERKENNUNG=ja|nein`, `GERAETESTIMME=ja|nein`. Commit: `Nepali-Probeläufe: Stimme und Spracherkennung entschieden`
-
-**Entscheidungstor:** `ERKENNUNG=nein` → Task 10 Step 4 entfällt. Liefert Azure keine brauchbare Stimme → stoppen und mit Claus sprechen.
+- `STIMME=ne-NP-HemkalaNeural` (Voreinstellung im Audio-Skript, ungehört; vor dem ersten echten Lauf anhören und ggf. ändern)
+- `TEMPO_WORT=0.8`, Sätze `1`
+- `ERKENNUNG=nein` → keine Spracherkennung, Task 10 Step 4 entfällt, `ne/lib/listen.js` wird nicht angelegt
+- `GERAETESTIMME=unbekannt` → `speak()` nutzt sie, wenn vorhanden, sonst bleibt es still
+- `say` eines Schriftzeichens = das Zeichen selbst
 
 ---
 
@@ -129,8 +123,8 @@ it('nfc macht zerlegte und zusammengesetzte Form gleich', () => expect(nfc('क�
 - [ ] **Step 2:** → FAIL.
 - [ ] **Step 3:** `collect-ne.mjs` umsetzen. `generate-audio-ne.mjs` nach dem Aufbau von `scripts/generate-audio.mjs`: Dateiname = SHA1 aus `Stimme|Tempo|Text` (16 Zeichen) + `.mp3`; verwaiste Dateien löschen; Wiederholung bei 429/5xx. Azure-Aufruf: `POST https://{region}.tts.speech.microsoft.com/cognitiveservices/v1`, Header `Ocp-Apim-Subscription-Key`, `Content-Type: application/ssml+xml`, `X-Microsoft-OutputFormat: audio-24khz-48kbitrate-mono-mp3`; Rumpf SSML mit `<voice name="{STIMME}"><prosody rate="{tempo}">`. Text im SSML XML-maskieren.
 - [ ] **Step 4:** `vite.config.js`: `globIgnores` um `audio-ne/manifest.json` ergänzen; zwei Laufzeit-Regeln für `/audio-ne/manifest.json` (NetworkFirst, Cache `yatra-audio-manifest`) und `/audio-ne/*.mp3` (CacheFirst, Cache `yatra-audio`). Die bestehende MP3-Regel prüft `includes('/audio/')` und greift für `/audio-ne/` nicht – deshalb eigene Regeln. Funktionen self-contained halten (`ARCHITECTURE.md` §7).
-- [ ] **Step 5:** `.githooks/pre-commit`: zusätzlich `node scripts/generate-audio-ne.mjs --check`; bei Fehlschlag `npm run audio:ne` und `git add public/audio-ne`.
-- [ ] **Step 6: Prüfen.** `npm run audio:ne -- --dry-run` nennt die Zahl der Schriftzeichen-Texte. `npm run audio:ne` erzeugt sie. `npm run audio:ne -- --check` → Exit 0. `npm run build`, dann in `dist/sw.js` nach `audio-ne` suchen → beide Regeln vorhanden, kein Verweis auf eine Variable aus `vite.config.js`.
+- [ ] **Step 5:** `.githooks/pre-commit`: zusätzlich `node scripts/generate-audio-ne.mjs --check`; bei Fehlschlag `npm run audio:ne` und `git add public/audio-ne`. Der japanische Teil des Hooks bleibt unverändert und läuft zuerst.
+- [ ] **Step 6: Prüfen.** `npm run audio:ne -- --dry-run` nennt die Zahl der Schriftzeichen-Texte. **Nicht erzeugen** (kein Schlüssel). `--check`-Verhalten: Gibt es `public/audio-ne/manifest.json` noch nicht, meldet `--check` „Nepali-Audio noch nicht erzeugt (N Texte warten)“ und endet mit 0; gibt es das Manifest, prüft es streng wie das japanische Skript. Ohne Schlüssel bricht ein echter Lauf mit einer klaren deutschen Meldung ab, die sagt, welche zwei Zeilen in `.env.local` fehlen. `npm run audio:ne -- --check` → Exit 0. `npm run build`, dann in `dist/sw.js` nach `audio-ne` suchen → beide Regeln vorhanden, kein Verweis auf eine Variable aus `vite.config.js`.
 - [ ] **Step 7:** Commit: `Nepali: Studio-Audio über Azure, Prüfung im Pre-Commit-Hook`
 
 ---
@@ -146,7 +140,9 @@ it('nfc macht zerlegte und zusammengesetzte Form gleich', () => expect(nfc('क�
   - `speak(text: string): Promise<void>` – löst auf, wenn fertig gesprochen **oder** feststeht, dass nicht gesprochen werden kann. Hängt nie.
   - `stopSpeaking(): void`, `onSpeechState(cb: (s: 'start'|'end') => void): () => void`, `canSpeak(text): boolean`.
 
-- [ ] **Step 1: Failing Test:** Text im Manifest → `mp3` mit Dateiname · nicht im Manifest, Gerätestimme da → `device` · weder noch → `none` · Text wird vor dem Nachschlagen NFC-normalisiert.
+- Zusätzlich `soundAvailable(): Promise<boolean>` – wahr, wenn es ein Manifest mit Einträgen oder eine Nepali-Gerätestimme gibt. Aufgaben, die nur über das Hören lösbar wären (`audio`-Schritte, „Erkennen“), fragen das ab und zeigen ohne Ton stattdessen das Geschriebene.
+
+- [ ] **Step 1: Failing Test:** fehlendes Manifest (404) zählt als leer, kein Wurf · Text im Manifest → `mp3` mit Dateiname · nicht im Manifest, Gerätestimme da → `device` · weder noch → `none` · Text wird vor dem Nachschlagen NFC-normalisiert.
 - [ ] **Step 2:** → FAIL.
 - [ ] **Step 3:** Umsetzen. `speech.js` lädt das Manifest einmal von `${import.meta.env.BASE_URL}audio-ne/manifest.json`; Gerätestimme = `speechSynthesis`-Stimme mit `lang` beginnend `ne`. Jeder Fehlerpfad (Datei fehlt, Autoplay blockiert, `none`) löst das Versprechen auf.
 - [ ] **Step 4:** → PASS.
@@ -279,7 +275,7 @@ it('nfc macht zerlegte und zusammengesetzte Form gleich', () => expect(nfc('क�
 ### Task 10: Gesprächs-Szenen
 
 **Files:**
-- Create: `src/ne/data/dialogs.js`, `src/ne/data/dialogs.test.js`, `src/ne/lib/dialog.js`, `src/ne/lib/dialog.test.js`, `src/ne/lib/listen.js`, `src/ne/lib/listen.test.js`
+- Create: `src/ne/data/dialogs.js`, `src/ne/data/dialogs.test.js`, `src/ne/lib/dialog.js`, `src/ne/lib/dialog.test.js`
 - Modify: `src/ne/screens/players.jsx` (`DialogPlay` mit Aufwärmen), `src/ne/screens/ueben.jsx` (Szenen-Übersicht), `src/ne/data/path.js`, `scripts/lib/collect-ne.mjs`
 
 **Interfaces:**
@@ -287,13 +283,10 @@ it('nfc macht zerlegte und zusammengesetzte Form gleich', () => expect(nfc('क�
   - `DIALOGS: { id, title, emoji, sceneDe, turns: { npc, npcRoman, de, options: string[], answer, answerRoman, answerDe }[] }[]` – `nd1…nd6`: Taxi · Unterkunft · Essen bestellen · Einkaufen und Handeln · Nach dem Weg fragen · Im Teehaus.
   - `dialogGate(dialog, progress): { open: boolean, missing: string[] }` – offen, wenn alle Wörter der Antwortsätze gelernt sind.
   - `phrasesFromTurns(turns): { dev, roman, de }[]`
-  - `matchSpoken(transcripts: string[], options: string[]): string | null` – Vergleich über NFC-Text ohne Satz- und Leerzeichen, Bigramm-Ähnlichkeit; Treffer nur bei klarem Abstand zur zweitbesten Möglichkeit.
-  - `SPEECH_INPUT_SUPPORTED`, `startListening`, `stopListening` (nur wenn `ERKENNUNG=ja`).
 
-- [ ] **Step 1: Failing Tests:** 6 Szenen, je 5–8 Züge · `answer` in `options` · `answerDe` und `de` überall gesetzt · `romanFits` für `npc` und `answer` · jede Szene in `NE_PATH` · `matchSpoken(['मलाई पानी चाहिन्छ'], [...])` trifft die gleichlautende Möglichkeit trotz fehlendem Satzzeichen · lateinischer oder leerer Erkennungstext → `null` · zwei fast gleiche Möglichkeiten → `null`.
+- [ ] **Step 1: Failing Tests:** 6 Szenen, je 5–8 Züge · `answer` in `options` · `answerDe` und `de` überall gesetzt · `romanFits` für `npc` und `answer` · jede Szene in `NE_PATH`.
 - [ ] **Step 2:** → FAIL.
 - [ ] **Step 3:** Szenen schreiben; `DialogPlay`: Einleitung → Aufwärmen (Antwortsätze hören und einmal abfragen) → Szene. Antworten werden angetippt.
-- [ ] **Step 4 (nur bei `ERKENNUNG=ja`):** Einstellung „Antwort sprechen“ (Standard aus). Antippen bleibt daneben immer möglich; bei `null` erscheint „Nicht verstanden – tippe deine Antwort an.“
 - [ ] **Step 5:** Tests → PASS, `audit:ne`, Gegenlesen, `audio:ne`.
 - [ ] **Step 6:** Commit: `Nepali: sechs Gesprächs-Szenen`
 
