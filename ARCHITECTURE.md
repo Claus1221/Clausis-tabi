@@ -37,7 +37,7 @@ Faustregel beim Importieren aus `src/<schicht>/datei`:
 `screens → components → lib → data`, dazu quer erlaubt: `theme`, `state/ProgressContext`,
 `useProgress`, `kanaStrokes`, außerdem `useAuth` (aus `AuthGate.jsx`) und `useLang`
 (aus `LangGate.jsx`) für Screens und Apps. Die Wurzel-Stores `accessStore.js` und
-`useProfile.js` hängen nur an `firebase` und `lib/`. Eine Datei darf **nie** aus ihrer eigenen oder einer
+`useProfile.js` hängen an `firebase`, `lib/` und `useProgress.js` (`localDate`, `isDeniedError`). Eine Datei darf **nie** aus ihrer eigenen oder einer
 höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, s. u.).
 
 ---
@@ -50,8 +50,8 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `main.jsx` | Mount-Punkt: `<AuthGate><LangGate/></AuthGate>`. |
 | `AuthGate.jsx` | Google-Login, Freigabe-Prüfung (Admin aus `ADMIN_EMAILS`, sonst Dokument `allowed/<e-mail>` in Firestore; Zustände prüfen/Kein Zugang/Offline), `useAuth()`-Context mit `user`, `logout`, `isAdmin`, `recheckAccess`. |
 | `firebase.js` | Firebase-Init; exportiert `auth`, `db`, `ADMIN_EMAILS`, `isConfigured`. `db` läuft mit persistentem Offline-Cache (IndexedDB, mehrere Tabs geteilt) – lesen/schreiben funktioniert auch offline, Sync folgt automatisch. |
-| `useProgress.js` | **Firestore-Hook + Fortschritts-Domäne**: `useProgress(uid, lang = 'ja', opts)` (live-Daten der gewählten Sprache + Schreib-Funktionen + `saveError`; Dokumentpfad über `progressPath` aus `lib/lang.js`), `DEFAULT_PROGRESS`, `emptyProgress` (was `reset()` schreibt), `progressView` (zeigt beim Sprachwechsel nie den Stand der anderen Sprache), `computeStats`, `dueKana`, `sm2`, `getSettings`, `localDate`, `addDays`, `SETTINGS_DEFAULTS`, `SRS_STAGE_BOUNDS`. Fortschritts-Felder u. a. `completedTalks` (gemeisterte freie Gespräche) und `extraPhrases` (aus Gesprächen übernommene Wendungen; `addPhrase` legt sie an UND plant sie als SRS-Karte ein). Schreibvorgänge laufen über das interne `safeWrite` (try/catch → `saveError`), damit ein echter Schreibfehler (Firestore-Regel, Quota) sichtbar wird statt den Fortschritt still zu verlieren. Unit-Tests: `useProgress.test.js`. |
-| `LangGate.jsx` | Nach dem Login: entscheidet per `useProfile`, welche App läuft. Neue Person ohne Lernstand → Auswahlbildschirm („Was möchtest du lernen?“, nur `selectableLangs(isAdmin)`); sonst `TabiApp` bzw. `ne/NepaliApp` (beide `React.lazy`, `key={lang}`). Stellt `useLang()` = `{ lang, setLang, langs, error }` bereit. |
+| `useProgress.js` | **Firestore-Hook + Fortschritts-Domäne**: `useProgress(uid, lang = 'ja', opts)` (live-Daten der gewählten Sprache + Schreib-Funktionen + `saveError`; Dokumentpfad über `progressPath` aus `lib/lang.js`), `DEFAULT_PROGRESS`, `emptyProgress` (was `reset()` schreibt), `progressView` (zeigt beim Sprachwechsel nie den Stand der anderen Sprache), `afterListenerError`, `isDeniedError`, `localDateTime`, `addHours`, `isDue`, `LAPSE_RETRY_HOURS`, `computeStats`, `dueKana`, `sm2`, `getSettings`, `localDate`, `addDays`, `SETTINGS_DEFAULTS`, `SRS_STAGE_BOUNDS`. Fortschritts-Felder u. a. `completedTalks` (gemeisterte freie Gespräche) und `extraPhrases` (aus Gesprächen übernommene Wendungen; `addPhrase` legt sie an UND plant sie als SRS-Karte ein). Schreibvorgänge laufen über das interne `safeWrite` (try/catch → `saveError`), damit ein echter Schreibfehler (Firestore-Regel, Quota) sichtbar wird statt den Fortschritt still zu verlieren. Unit-Tests: `useProgress.test.js`. |
+| `LangGate.jsx` | Nach dem Login: entscheidet per `useProfile`, welche App läuft. Neue Person ohne Lernstand → Auswahlbildschirm („Was möchtest du lernen?“), aber nur, wenn `selectableLangs(isAdmin)` mehr als eine Sprache enthält (derzeit nur der Admin); sonst wird die einzige wählbare Sprache still verwendet; sonst `TabiApp` bzw. `ne/NepaliApp` (beide `React.lazy`, `key={lang}`). Stellt `useLang()` = `{ lang, setLang, langs, error }` bereit. |
 | `useProfile.js` | `useProfile(uid, isAdmin, onDenied)` → `{ lang, loading, setLang, error }`. Liest `users/{uid}/meta/profile` per `onSnapshot`, prüft einmalig per `getDoc`, ob `users/{uid}` existiert, und wendet `lib/lang.js: initialLang` an. Zeigt nie wegen eines langsamen oder fehlgeschlagenen Lesens die Auswahl. Nur `setLang` (ausdrückliche Wahl) schreibt `{ lang }`; der stille Standard nicht. Die Entscheidungstabelle steckt als reine Funktion in `lib/lang.js: resolveLang` (getestet); der Hook sammelt nur die Eingaben. Geräte-Hinweis: die aufgelöste Sprache steht in `localStorage` unter `tabi_lang_<uid>` und trägt nur, solange die Lesevorgänge noch laufen (Kaltstart ohne Netz); `setLang` lehnt nicht wählbare Sprachen ab. Dev-Bypass (kein `uid` oder keine `db`): Sprache aus `?lang=`, nur im Speicher. |
 | `accessStore.js` | Freigabeliste in Firestore (`allowed/<e-mail>`): `watchAllowed` (Live-Liste, nach E-Mail sortiert), `addAllowed`, `removeAllowed`. Nur der Admin darf schreiben (Firestore-Regeln). |
 | `kanaStrokes.js` | Generierte KanjiVG-Strichpfade: `HIRAGANA`, `KATAKANA`, `KANA_STROKES`, `STROKE_VIEWBOX`. (Generator: `scripts/gen-kana-strokes.mjs`.) |
@@ -65,13 +65,13 @@ Alles Nepalische liegt unter `src/ne/` mit denselben Schichten wie oben (derzeit
 `useProgress.js`, `state/ProgressContext.js`, `AuthGate.jsx`, `LangGate.jsx`,
 `components/ui.jsx`, `components/ueben.jsx`, `screens/adminUsers.jsx`, `lib/xp.js`,
 `lib/progress.js`, `lib/apiKey.js`, `lib/lang.js` und aus `lib/claude.js` nur `chatTurn`,
-`parseJson`, `hasApiKey`. Japanische Dateien importieren nie aus `src/ne/`; nur
+`parseJson`, `hasApiKey`, `pingApiKey`. Japanische Dateien importieren nie aus `src/ne/`; nur
 `LangGate.jsx` lädt `ne/NepaliApp.jsx` – lazy.
 
 ### `state/`
 | Datei | Exporte | Zweck |
 |---|---|---|
-| `ProgressContext.js` | `ProgressCtx` | React-Context, über den **alle** Screens Fortschritt + Schreib-Funktionen lesen (`useContext(ProgressCtx)`). Befüllt in `TabiApp`. |
+| `ProgressContext.js` | `ProgressCtx` | React-Context, über den **alle** Screens Fortschritt + Schreib-Funktionen lesen (`useContext(ProgressCtx)`). Befüllt in `TabiApp` und `ne/NepaliApp`. |
 
 ### `data/` — reine Inhaltsdaten (kein React, keine Logik)
 > Hier wird **Inhalt** ergänzt (neues Kapitel, Wort, Grammatik …). Schemata s. §4.
@@ -91,7 +91,7 @@ Alles Nepalische liegt unter `src/ne/` mit denselben Schichten wie oben (derzeit
 ### `lib/` — reine Logik
 | Datei | Exporte (Auswahl) | Abhängig von |
 |---|---|---|
-| `access.js` | `normalizeEmail`, `isValidEmail`, `isAdminEmail`, `accessState` (Admin/freigegeben/gesperrt/offline) | – |
+| `access.js` | `normalizeEmail`, `isValidEmail`, `isAdminEmail`, `accessState` (Admin/freigegeben/gesperrt/offline), `effectiveAccess`, `mayRecheck` (Pause zwischen automatischen Neuprüfungen) | – |
 | `lang.js` | `LANGS`, `NE_PUBLIC`, `selectableLangs`, `progressPath`, `profilePath`, `initialLang`, `resolveLang` (Entscheidungstabelle von `useProfile`: Wahl > gelesener Stand > Geräte-Hinweis > laden) | – |
 | `xp.js` | `XP_PER_KANA/CARD/WORD/GRAMMAR/CHAPTER/DIALOG` | – |
 | `kanaStats.js` | `totalKanaCount`, `completedKanaList`, `completedKanaCount` | data/kana |
@@ -152,7 +152,7 @@ Alles Nepalische liegt unter `src/ne/` mit denselben Schichten wie oben (derzeit
   (zuletzt gewählte Sprache; gelesen/geschrieben von `useProfile`).
   Beim Wechsel von Nutzer oder Sprache liefert der Hook sofort `DEFAULT_PROGRESS` mit
   `loading: true`; Schreib-Funktionen, die aus `progress` rechnen, schreiben nicht,
-  solange `loading` gilt.
+  solange kein echter Snapshot für die aktuelle Sprache vorliegt.
   Geschrieben wird immer per `setDoc(..., {merge:true})` (geräteübergreifend).
   Echte Schreibfehler landen in `saveError` und zeigen ein Banner in `TabiApp`.
 - **SRS (Spaced Repetition):** Algorithmus `sm2` in `useProgress.js`; Anzeige-Stufen

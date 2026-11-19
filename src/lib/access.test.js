@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeEmail, isValidEmail, isAdminEmail, accessState, effectiveAccess } from './access.js'
+import { normalizeEmail, isValidEmail, isAdminEmail, accessState, effectiveAccess, mayRecheck } from './access.js'
 const ADMINS = ['clausalbers@gmail.com']
 
 describe('normalizeEmail / isValidEmail', () => {
@@ -36,5 +36,17 @@ describe('effectiveAccess', () => {
     expect(effectiveAccess(null, 'a')).toBe('checking')
     expect(effectiveAccess({ uid: 'a', state: 'admin' }, null)).toBe('checking')
     expect(effectiveAccess({ uid: 'a', state: 'admin' }, undefined)).toBe('checking')
+  })
+})
+
+describe('mayRecheck', () => {
+  it('erlaubt die erste Neupruefung', () => {
+    expect(mayRecheck(null, 1000)).toBe(true)
+  })
+  it('sperrt eine zweite Neupruefung kurz danach', () => {
+    expect(mayRecheck(0, 5000)).toBe(false)
+  })
+  it('erlaubt sie nach Ablauf der Pause wieder', () => {
+    expect(mayRecheck(0, 31000)).toBe(true)
   })
 })

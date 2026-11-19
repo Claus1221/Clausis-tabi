@@ -346,7 +346,8 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   // auftaucht statt in einem Sonderweg. Idempotent: bereits vorhandene
   // Wendungen werden nicht erneut eingeplant (der Lernstand bliebe sonst stehen).
   // Die folgenden Funktionen rechnen aus `progress` und schreiben daher nicht,
-  // solange `loading` gilt: Vor dem ersten Snapshot ist progress nur der Standard,
+  // solange kein echter Snapshot für die aktuelle Sprache vorliegt (`canCompute`):
+  // Davor ist progress nur der Standard,
   // und darauf aufbauend würde echter Lernstand überschrieben.
   const addPhrase = async (jp, kana, de) => {
     const L = latest.current

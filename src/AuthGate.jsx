@@ -1,8 +1,8 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db, googleProvider, isConfigured, ADMIN_EMAILS } from './firebase'
-import { accessState, effectiveAccess, normalizeEmail } from './lib/access'
+import { accessState, effectiveAccess, mayRecheck, normalizeEmail } from './lib/access'
 
 // ─── Theme (passend zur App) ─────────────────────────────────────────────────
 const C = {
@@ -176,7 +176,19 @@ export function AuthGate({ children }) {
   }, [uid, recheckTick])
   const effective = effectiveAccess(access, uid)
 
-  const recheckAccess = () => setRecheckTick(t => t + 1)
+  // Zeitpunkt der letzten Neupruefung je uid: automatische Aufrufe (aus der App
+  // heraus) werden innerhalb der Pause ignoriert, damit ein dauerhaftes
+  // permission-denied keine Schleife aus Laden und Neuaufbau erzeugt.
+  // Der Knopf „Erneut versuchen" geht mit force durch.
+  const lastRecheck = useRef({ uid: null, at: null })
+  const recheckAccess = (force = false) => {
+    const last = lastRecheck.current
+    const lastAt = last.uid === uid ? last.at : null
+    const now = Date.now()
+    if (force !== true && !mayRecheck(lastAt, now)) return
+    lastRecheck.current = { uid, at: now }
+    setRecheckTick(t => t + 1)
+  }
 
   const login = async () => {
     setError(null); setBusy(true)
@@ -203,7 +215,7 @@ export function AuthGate({ children }) {
   if (loading) return <Splash text="Lädt…" />
   if (!user) return <LoginScreen onLogin={login} error={error} busy={busy} />
   if (effective === 'checking') return <Splash text="Lädt…" />
-  if (effective === 'offline') return <OfflineScreen onRetry={recheckAccess} onLogout={logout} />
+  if (effective === 'offline') return <OfflineScreen onRetry={() => recheckAccess(true)} onLogout={logout} />
   if (effective === 'denied') return <NoAccessScreen user={user} onLogout={logout} />
 
   return (

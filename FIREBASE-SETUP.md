@@ -83,6 +83,11 @@ stehen (außer dir als Admin). Weil du die Regeln von Hand in der Console setzt,
 kommt es auf die **Reihenfolge** an.
 
 > **Reihenfolge einhalten, sonst wird die zweite Person ausgesperrt.**
+>
+> **Bis Schritt 3 erledigt ist, nichts nach `main` pushen oder mergen.**
+> `.github/workflows/deploy.yml` deployt bei jedem Push auf `main` sofort. Käme
+> die neue App vor den neuen Regeln online, zeigt sie der zweiten Person
+> „Kein Zugang", weil die alten Regeln die Freigabeliste nicht kennen.
 
 **Schritt 0 – Prüfen, was in der Console steht.**
 Öffne Firestore → **Regeln** und vergleiche den Text dort mit der bisherigen
@@ -101,8 +106,9 @@ service cloud.firestore {
 }
 ```
 
-Weicht der Text in der Console ab (andere Regeln, zusätzliche Zeilen), **hör hier
-auf** und frag nach, bevor du etwas änderst.
+Es zählen nur inhaltliche Unterschiede: Leerzeilen, Einrückung und Kommentare
+spielen keine Rolle. Weicht der Text in der Console inhaltlich ab (andere Regeln,
+zusätzliche Zeilen), **hör hier auf** und frag nach, bevor du etwas änderst.
 
 **Schritt 1 – Freigabeliste anlegen.**
 1. Firestore → Tab **„Daten"** → **„Sammlung starten"**.
@@ -116,6 +122,8 @@ auf** und frag nach, bevor du etwas änderst.
 2. **Nicht** auf „Veröffentlichen" klicken, sondern auf **„Regel-Playground"**.
 3. Anmeldung simulieren: **Authentifiziert** einschalten, Anbieter `google.com`,
    die E-Mail der jeweiligen Zeile eintragen und die UID der Person.
+   Die UIDs findest du in der Firebase-Console unter Authentication → Nutzer,
+   Spalte „Nutzer-UID". Für fremd@gmail.com genügt eine ausgedachte UID.
 4. Alle Zeilen der Tabelle durchgehen:
 
 | Wer | Vorgang | Pfad | Erwartet |
@@ -123,12 +131,16 @@ auf** und frag nach, bevor du etwas änderst.
 | Admin | get, update | `users/<Admin-UID>` | erlaubt |
 | balkonien4ever@web.de | get, update | `users/<ihre UID>` | erlaubt |
 | balkonien4ever@web.de | get | `users/<Admin-UID>` | verweigert |
+| balkonien4ever@web.de, Anbieter `password` (nicht `google.com`) | get | `users/<ihre UID>` | verweigert |
+| balkonien4ever@web.de | get, create | `users/<ihre UID>/meta/profile` | erlaubt |
 | fremd@gmail.com | get, create | `users/<eigene UID>` | verweigert |
 | Admin | create | `users/<Admin-UID>/langs/ne` | erlaubt |
 | Admin | create | `users/<Admin-UID>/meta/profile` | erlaubt |
-| Admin | list, create, delete | `allowed/...` | erlaubt |
+| Admin | list | `allowed` | erlaubt |
+| Admin | create, delete | `allowed/test@example.com` | erlaubt |
 | balkonien4ever@web.de | get | `allowed/balkonien4ever@web.de` | erlaubt |
-| balkonien4ever@web.de | list, create | `allowed/...` | verweigert |
+| balkonien4ever@web.de | list | `allowed` | verweigert |
+| balkonien4ever@web.de | create | `allowed/test@example.com` | verweigert |
 | fremd@gmail.com | get | `allowed/fremd@gmail.com` | erlaubt (leer) |
 
 Stimmt auch nur eine Zeile nicht, **nicht veröffentlichen** und nachfragen.
@@ -137,6 +149,17 @@ Stimmt auch nur eine Zeile nicht, **nicht veröffentlichen** und nachfragen.
 Tab **„Regeln"** → **Veröffentlichen**.
 
 **Schritt 4 – Erst danach die neue App deployen** (wie in Abschnitt 8).
+Diesen Branch erst nach Schritt 3 nach `main` mergen – jeder Push auf `main`
+deployt sofort.
+
+**Schritt 5 – Nach dem Deploy prüfen.**
+1. Als Admin anmelden: Der Japanisch-Lernstand ist unverändert.
+2. Einstellungen → **Nutzer verwalten**: eine Adresse mit Großbuchstaben
+   eintragen – sie erscheint in Kleinbuchstaben in der Liste.
+3. Dieselbe Adresse wieder entfernen – sie verschwindet aus der Liste.
+4. Die zweite Person einmal anmelden lassen: Ihr Lernstand ist unverändert.
+5. Optional: eine Testperson entfernen, während sie die App geöffnet hat. Beim
+   nächsten Speichern sieht sie „Kein Zugang".
 
 ---
 

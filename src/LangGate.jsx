@@ -77,7 +77,7 @@ export function LangGate() {
           background: '#f7e3df', borderBottom: `1px solid ${C.shu}40`,
           fontSize: 12, color: C.shu, display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          <span style={{ flex: 1 }}>⚠ {error} Die Wahl gilt nur auf diesem Gerät, bis das Speichern klappt.</span>
+          <span style={{ flex: 1 }}>⚠ {error} Die Wahl gilt nur bis zum Neuladen.</span>
           <button onClick={() => setDismissed(error)} aria-label="Hinweis schließen"
             style={{ background: 'none', border: 'none', color: C.shu, fontSize: 16, cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>

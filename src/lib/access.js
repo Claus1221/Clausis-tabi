@@ -45,3 +45,10 @@ export function effectiveAccess(access, uid) {
   if (!access || !uid || access.uid !== uid) return 'checking'
   return access.state
 }
+
+// Bremse gegen eine Endlosschleife: Bekäme ein freigegebener Nutzer dauerhaft
+// permission-denied auf sein Fortschrittsdokument, würde die automatische
+// Neupruefung die App immer wieder neu aufbauen. Hoechstens eine pro Pause.
+export function mayRecheck(lastAt, now, minGapMs = 30000) {
+  return lastAt == null || now - lastAt >= minGapMs
+}
