@@ -13,8 +13,8 @@ const IDS = ['ng1', 'ng2', 'ng3', 'ng4', 'ng5', 'ng6', 'ng7', 'ng8', 'ng9', 'ng1
 // erst in der anderen Hälfte der Aufgabe.
 const COURSE = ['nw1', 'ng1', 'ng2', 'nw2', 'ng3', 'nw3', 'ng4', 'ng5', 'nw4', 'ng8', 'ng9', 'ng10',
   'nw5', 'ng6', 'ng7', 'ng11', 'nw6', 'ng12', 'nw7']
-// Angehängte Wörter: झोला+मा, तपाईं+को, दुई+वटा … – im Lückensatz ein Wort ohne Leerzeichen.
-const SUFFIXES = ['लाई', 'बाट', 'वटा', 'मा', 'को', 'ले']
+// Angehängte Wörter: झोला+मा, तपाईं+को, दुई+वटा, म+सँग … – im Lückensatz ein Wort ohne Leerzeichen.
+const SUFFIXES = ['लाई', 'बाट', 'वटा', 'सँग', 'मा', 'को', 'ले']
 // Funktionswörter des Wort-Audits (FUNCTION_WORDS in scripts/audit-ne.mjs) – hier abgeschrieben,
 // weil src/ne/ nicht aus scripts/ importieren darf (Importgrenze, s. src/ne/imports.test.js).
 // Beide gleich halten.
