@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db, googleProvider, isConfigured, ADMIN_EMAILS } from './firebase'
-import { accessState, normalizeEmail } from './lib/access'
+import { accessState, effectiveAccess, normalizeEmail } from './lib/access'
 
 // ─── Theme (passend zur App) ─────────────────────────────────────────────────
 const C = {
@@ -138,7 +138,7 @@ export function AuthGate({ children }) {
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
   // Freigabe-Zustand des angemeldeten Nutzers (siehe lib/access.js).
-  const [access, setAccess] = useState('checking')
+  const [access, setAccess] = useState(null)
   // Hochzählen = Abfrage für den aktuellen Nutzer wiederholen.
   const [recheckTick, setRecheckTick] = useState(0)
 
@@ -148,27 +148,33 @@ export function AuthGate({ children }) {
   }, [])
 
   // Freigabe prüfen: Admin kommt ohne Abfrage durch, alle anderen brauchen das
-  // Dokument allowed/<e-mail>. Bei jedem Nutzerwechsel zuerst auf 'checking'
-  // zurücksetzen, damit das Ergebnis des Vorgängers nie für den Nächsten gilt;
+  // Dokument allowed/<e-mail>. Das Ergebnis wird zusammen mit der uid gespeichert
+  // und nur für genau diesen Nutzer verwendet (effectiveAccess) – so gilt das
+  // Ergebnis eines Vorgängers nie, auch nicht einen Moment lang bei direktem
+  // Nutzerwechsel. Der Schlüssel ist die uid, nicht das user-Objekt: ein neues
+  // Objekt für denselben Nutzer soll die Prüfung nicht neu starten.
   // `cancelled` verwirft Antworten, die erst nach dem Wechsel eintreffen.
+  const uid = user?.uid
   useEffect(() => {
-    setAccess('checking')
+    setAccess(null)
     if (!user) return
     const email = normalizeEmail(user.email || '')
-    if (accessState({ email, admins: ADMIN_EMAILS, docExists: false }) === 'admin') {
-      setAccess('admin')
-      return
-    }
+    const done = state => setAccess({ uid: user.uid, state })
+    const admin = accessState({ email, admins: ADMIN_EMAILS, docExists: false })
+    // Admin oder ohne E-Mail (doc() würde sonst werfen): sofort entscheiden.
+    if (admin === 'admin' || !email) { done(admin); return }
     let cancelled = false
     getDoc(doc(db, 'allowed', email))
       .then(snap => {
-        if (!cancelled) setAccess(accessState({ email, admins: ADMIN_EMAILS, docExists: snap.exists() }))
+        if (!cancelled) done(accessState({ email, admins: ADMIN_EMAILS, docExists: snap.exists() }))
       })
       .catch(err => {
-        if (!cancelled) setAccess(accessState({ email, admins: ADMIN_EMAILS, docExists: false, errorCode: err.code || 'unknown' }))
+        if (!cancelled) done(accessState({ email, admins: ADMIN_EMAILS, docExists: false, errorCode: err.code || 'unknown' }))
       })
     return () => { cancelled = true }
-  }, [user, recheckTick])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uid, recheckTick])
+  const effective = effectiveAccess(access, uid)
 
   const recheckAccess = () => setRecheckTick(t => t + 1)
 
@@ -196,12 +202,12 @@ export function AuthGate({ children }) {
   if (!isConfigured) return <SetupScreen />
   if (loading) return <Splash text="Lädt…" />
   if (!user) return <LoginScreen onLogin={login} error={error} busy={busy} />
-  if (access === 'checking') return <Splash text="Lädt…" />
-  if (access === 'offline') return <OfflineScreen onRetry={recheckAccess} onLogout={logout} />
-  if (access === 'denied') return <NoAccessScreen user={user} onLogout={logout} />
+  if (effective === 'checking') return <Splash text="Lädt…" />
+  if (effective === 'offline') return <OfflineScreen onRetry={recheckAccess} onLogout={logout} />
+  if (effective === 'denied') return <NoAccessScreen user={user} onLogout={logout} />
 
   return (
-    <AuthContext.Provider value={{ user, logout, isAdmin: access === 'admin', recheckAccess }}>
+    <AuthContext.Provider value={{ user, logout, isAdmin: effective === 'admin', recheckAccess }}>
       {children}
     </AuthContext.Provider>
   )

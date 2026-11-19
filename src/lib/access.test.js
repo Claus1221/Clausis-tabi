@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeEmail, isValidEmail, isAdminEmail, accessState } from './access.js'
+import { normalizeEmail, isValidEmail, isAdminEmail, accessState, effectiveAccess } from './access.js'
 const ADMINS = ['clausalbers@gmail.com']
 
 describe('normalizeEmail / isValidEmail', () => {
@@ -22,4 +22,19 @@ describe('accessState', () => {
     expect(accessState({ email: 'x@web.de', admins: ADMINS, errorCode: 'unavailable' })).toBe('offline'))
   it('fehlende Adresse → denied', () =>
     expect(accessState({ email: '', admins: ADMINS, docExists: true })).toBe('denied'))
+})
+
+describe('effectiveAccess', () => {
+  it('gibt den Zustand zurueck, wenn er dem aktuellen Nutzer gehoert', () => {
+    expect(effectiveAccess({ uid: 'a', state: 'allowed' }, 'a')).toBe('allowed')
+    expect(effectiveAccess({ uid: 'a', state: 'admin' }, 'a')).toBe('admin')
+  })
+  it('behandelt das Ergebnis eines anderen Nutzers als checking', () => {
+    expect(effectiveAccess({ uid: 'a', state: 'allowed' }, 'b')).toBe('checking')
+  })
+  it('ohne Ergebnis oder ohne Nutzer ist es checking', () => {
+    expect(effectiveAccess(null, 'a')).toBe('checking')
+    expect(effectiveAccess({ uid: 'a', state: 'admin' }, null)).toBe('checking')
+    expect(effectiveAccess({ uid: 'a', state: 'admin' }, undefined)).toBe('checking')
+  })
 })

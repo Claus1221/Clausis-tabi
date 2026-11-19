@@ -37,3 +37,11 @@ export function accessState({ email, admins, docExists, errorCode }) {
   if (errorCode) return 'offline'
   return docExists ? 'allowed' : 'denied'
 }
+
+// Das Pruef-Ergebnis gehoert einem Nutzer (uid). Wechselt der Nutzer direkt
+// (z. B. Abmelden und Anmelden in einem anderen Tab), darf das Ergebnis des
+// Vorgaengers keinen Moment lang fuer den Neuen gelten: dann gilt "checking".
+export function effectiveAccess(access, uid) {
+  if (!access || !uid || access.uid !== uid) return 'checking'
+  return access.state
+}
