@@ -6,6 +6,19 @@ spätere Durchsicht durch eine solche Person gedacht. Je Punkt: was der Kurs jet
 was daran zweifelhaft war. Fundstelle ist, wo nicht anders genannt, `src/ne/data/script.js`
 (Feld `tip` bzw. Lektionsuntertitel `sub`).
 
+## Festgelegte Umschrift-Regel
+
+- **Bewusst so entschieden, kein Fehler:** Jede Umschrift neben Devanagari (Feld `roman` und
+  Beispielwörter in Merkhilfen) folgt der Schreibung nach dem Kurs-Schema: श/ष = `sh` (देश „desh“,
+  शान्ति „shānti“, शून्य „shūnya“), ā ī ū wie geschrieben, stummes End-a fällt weg. Einzige
+  Ausnahme, wie in jeder praktischen Nepali-Umschrift: व wie gesprochen – `b` in den meisten Wörtern
+  (विदेश „bidesh“, धन्यवाद „dhanyabād“, प्रवेश „prabesh“), `w`, wo w gesprochen wird (स्वागत „swāgat“);
+  der Einzelbuchstabe व behält `wa`. Die Aussprache steht getrennt davon, als ausdrückliche
+  Bemerkung („देश „desh“ – klingt fast wie „des““), nie als Umschrift ausgegeben.
+- **Offen dazu:** ज्ञ steht als `gya` (wie gesprochen, wie in praktisch jeder Nepali-Umschrift:
+  ज्ञान „gyān“), ऋ/ृ als `ri` – nach der Regel oben wären das eigentlich weitere Ausnahmen
+  (Schreibung wäre `jña` bzw. `r̥`). Zu entscheiden, ob sie als Ausnahmen gelten.
+
 ## Schrift (Task 1)
 
 - **अ** – Kurs: „dumpfes a, zwischen a und o“. Zweifel: zuerst „kurzes, dumpfes a“, dann „wie das

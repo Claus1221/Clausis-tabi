@@ -3,9 +3,8 @@
 //
 // Felder je Zeichen:
 //   roman – Umschrift nach dem Kurs-Schema (ā ī ū, h für Behauchung, ṭ ḍ ṇ, ṃ, c/ch, sh).
-//           Sie spiegelt die SCHREIBUNG: ī/ū stehen für ई/ऊ, obwohl sie im Nepali wie i/u
-//           klingen; श/ष bleiben „sh“, obwohl meist s gesprochen wird. Was man hört,
-//           steht im tip. Konsonanten mit ihrem a („ka“); Vokal- und Zusatzzeichen mit dem
+//           Sie spiegelt die SCHREIBUNG (Regel s. bei SCRIPT_DATA). Was man hört, steht
+//           nur als ausdrückliche Aussprache-Bemerkung im tip. Konsonanten mit ihrem a („ka“); Vokal- und Zusatzzeichen mit dem
 //           Laut, den sie beisteuern („ā“, „ṃ“) – gezeigt werden sie an क (s. shown).
 //   kind  – vowel | consonant | matra | conjunct | sign | digit
 //   tip   – eine Zeile Deutsch: verbindet die FORM mit dem LAUT (keine Herkunftsbehauptung).
@@ -72,20 +71,20 @@ const RAW = {
   य: E('ya', 'consonant', 'Ein Haken mit Schlaufe am Stab, Dach DURCHGEHEND – „ya“ wie „ja“ (mit Lücke im Dach: थ)'),
   र: E('ra', 'consonant', 'Nur ein kleiner Haken unter der Linie, kein Stab – „ra“, ein kurz getipptes r'),
   ल: E('la', 'consonant', 'Zwei Bögen übereinander am Stab – „la“ wie Leiter'),
-  व: E('wa', 'consonant', 'Ein Kästchen am Stab, innen LEER – meist wie b, auch im Wort (विदेश „bides“, धन्यवाद „dhanyabād“), in manchen Wörtern wie engl. w (स्वागत „swāgat“); mit Schrägstrich: ब'),
+  व: E('wa', 'consonant', 'Ein Kästchen am Stab, innen LEER – meist wie b, auch im Wort (विदेश „bidesh“, धन्यवाद „dhanyabād“), in manchen Wörtern wie engl. w (स्वागत „swāgat“); mit Schrägstrich: ब'),
 
   // ── श bis ह (Zischlaute und h) ─────────────────────────────────────────
-  श: E('sha', 'consonant', 'Ein Kringel mit Querstrich am Stab, Dach unterbrochen – im Alltag meist wie s (शान्ति „sānti“ = Frieden, देश „des“); „sch“ nur in sorgfältiger Rede (श्री „shrī“)'),
-  ष: E('sha', 'consonant', 'Wie प mit Schrägstrich durch das „U“ – wie श im Alltag meist s (भाषा klingt „bhāsā“)'),
+  श: E('sha', 'consonant', 'Ein Kringel mit Querstrich am Stab, Dach unterbrochen – im Alltag meist wie s gesprochen: शान्ति „shānti“ (Frieden) klingt fast wie „sānti“, देश „desh“ fast wie „des“; „sch“ nur in sorgfältiger Rede (श्री „shrī“)'),
+  ष: E('sha', 'consonant', 'Wie प mit Schrägstrich durch das „U“ – wie श im Alltag meist wie s gesprochen: भाषा „bhāshā“ (Sprache) klingt fast wie „bhāsā“'),
   स: E('sa', 'consonant', 'Ein Haken mit Schlaufe und Querstrich am Stab – „sa“, scharfes s wie in „Bus“'),
   ह: E('ha', 'consonant', 'Ein Bogen mit Haken nach unten, kein Stab – „ha“ wie Haus'),
 
   // ── Vokalzeichen (Matras) – gezeigt an क ───────────────────────────────
   'ा': E('ā', 'matra', 'Ein Extrastab rechts – macht aus dem dumpfen a ein helles ā: का = „kā“', 'का'),
   'ि': E('i', 'matra', 'Stab VOR dem Konsonanten, der Bogen wölbt sich über ihn – steht vorn, klingt danach: कि = „ki“; klingt wie ी', 'कि'),
-  'ी': E('ī', 'matra', 'Stab HINTER dem Konsonanten, der Bogen wölbt sich zurück über ihn – klingt genau wie ि: की = „ki“ (Umschrift kī)', 'की'),
+  'ी': E('ī', 'matra', 'Stab HINTER dem Konsonanten, der Bogen wölbt sich zurück über ihn – की = „kī“ – klingt genau wie कि', 'की'),
   'ु': E('u', 'matra', 'Ein kleines Häkchen, meist unten (bei र rechts: रु „ru“) – „u“: कु = „ku“; klingt wie ू', 'कु'),
-  'ू': E('ū', 'matra', 'Ein Häkchen, andersherum geschwungen als ु, meist unten (bei र rechts: रू „rū“) – klingt wie ु: कू = „ku“ (Umschrift kū)', 'कू'),
+  'ू': E('ū', 'matra', 'Ein Häkchen, andersherum geschwungen als ु, meist unten (bei र rechts: रू „rū“) – कू = „kū“ – klingt genau wie कु', 'कू'),
   'े': E('e', 'matra', 'Ein schräger Strich oben auf dem Dach – „e“: के = „ke“', 'के'),
   'ै': E('ai', 'matra', 'Zwei schräge Striche oben – „ai“: कै = „kai“', 'कै'),
   'ो': E('o', 'matra', 'Extrastab ा plus Strich oben – „o“: को = „ko“', 'को'),
@@ -93,7 +92,7 @@ const RAW = {
   'ृ': E('ri', 'matra', 'Ein Häkchen unten nach links – selten, „ri“: कृ = „kri“', 'कृ'),
   // Sonderfall र: das u-Zeichen sitzt rechts statt unten. Wichtig für Preise (रु. = Rupien).
   'रु': E('ru', 'matra', 'Bei र sitzt das u-Zeichen RECHTS, nicht unten – रु = „ru“; रु. ist die Abkürzung für Rupien'),
-  'रू': E('rū', 'matra', 'Auch ū sitzt bei र rechts, anders geschwungen als bei रु – रू klingt ebenfalls „ru“'),
+  'रू': E('rū', 'matra', 'Auch ū sitzt bei र rechts, anders geschwungen als bei रु – रू = „rū“ – klingt genau wie रु'),
 
   // ── Zusatzzeichen – gezeigt an क ────────────────────────────────────────
   'ं': E('ṃ', 'sign', 'Ein Punkt oben – ein n/m klingt mit: कं = „kaṃ“', 'कं'),
@@ -107,9 +106,9 @@ const RAW = {
   'न्य': E('nya', 'conjunct', 'Halbes न (der Stab fehlt) direkt vor य – „nya“ wie in धन्यवाद („dhanyabād“ = danke)'),
 
   // ── Verbindungen ────────────────────────────────────────────────────────
-  'क्ष': E('ksha', 'conjunct', 'क und ष zu einer eigenen Form verschmolzen – gesprochen „kchh“, oft nur „chh“ (क्षेत्री = „Chhetri“)'),
+  'क्ष': E('ksha', 'conjunct', 'क und ष zu einer eigenen Form verschmolzen – gesprochen „kchh“, oft nur „chh“: क्षेत्री „kshetrī“ klingt fast wie „chhetrī“'),
   'ज्ञ': E('gya', 'conjunct', 'ज und ञ verschmolzen – im Nepali gesprochen „gya“, nicht „jña“'),
-  'प्र': E('pra', 'conjunct', 'Ein Schrägstrich unten am Stab ist ein r NACH dem Konsonanten – „pra“ wie in प्रवेश („prabes“ = Eingang), प्रहरी („prahari“ = Polizei)'),
+  'प्र': E('pra', 'conjunct', 'Ein Schrägstrich unten am Stab ist ein r NACH dem Konsonanten – „pra“ wie in प्रवेश („prabesh“ = Eingang), प्रहरी („praharī“ = Polizei)'),
   'त्र': E('tra', 'conjunct', 'Sonderform der r-Strich-Regel: त mit Schrägstrich unten – „tra“, das t ohne Luftstoß'),
   'श्र': E('shra', 'conjunct', 'Eigene Form: der linke Teil von श wird zum Bogen, darunter der r-Strich – „shra“, wie in श्री („shrī“)'),
   'र्म': E('rma', 'conjunct', 'र vor einem Konsonanten wird zum Häkchen OBEN auf dem nächsten Zeichen – र्म = „rma“, das r klingt zuerst (धर्म „dharma“ = Religion, मार्ग „mārga“ = Straße, in Straßennamen)'),
@@ -128,8 +127,9 @@ const RAW = {
 }
 
 // say = shown, solange es kein Audio gibt (s. Kopfkommentar).
-// Beispielwörter in tips dürfen Zeichen späterer Lektionen enthalten – dann steht die
-// Umschrift direkt daneben, damit man sie trotzdem lesen kann.
+// Umschrift-Regel (roman UND Beispielwörter in tips): folgt der Schreibung – श/ष = sh, ā ī ū wie
+// geschrieben, stummes End-a fällt weg; einzige Ausnahme: व wie gesprochen (meist b, sonst w).
+// Aussprache steht getrennt davon („klingt fast wie …“). Jedes Beispielwort trägt seine Umschrift.
 // Achtung: roman ist NICHT eindeutig (श/ष = „sha“, ं/ँ = „ṃ“) – ein Quiz darf nie zwei
 // Antwortoptionen mit gleichem roman anbieten.
 export const SCRIPT_DATA = Object.fromEntries(
