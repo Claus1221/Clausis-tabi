@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sm2, addDays, addHours, localDateTime, LAPSE_RETRY_HOURS, dueKana, computeStats, isDeniedError } from './useProgress.js'
+import { sm2, addDays, addHours, localDateTime, LAPSE_RETRY_HOURS, dueKana, computeStats, isDeniedError, emptyProgress, DEFAULT_PROGRESS, progressView } from './useProgress.js'
 
 // Werte unten sind von Hand anhand der sm2()-Formel nachgerechnet (siehe
 // useProgress.js), nicht aus der Implementierung zurückgewonnen.
@@ -96,5 +96,27 @@ describe('isDeniedError (gesperrt bei offener App)', () => {
     expect(isDeniedError({ code: 'unavailable' })).toBe(false)
     expect(isDeniedError(undefined)).toBe(false)
     expect(isDeniedError(new Error('x'))).toBe(false)
+  })
+})
+
+describe('emptyProgress', () => {
+  it('setzt jedes Lernstand-Feld zurück und behält nur die Einstellungen', () => {
+    const e = emptyProgress({ options: 4 })
+    expect(Object.keys(e).sort()).toEqual(Object.keys(DEFAULT_PROGRESS).sort())
+    expect(e.settings).toEqual({ options: 4 })
+    expect(e.srs).toEqual({}); expect(e.completedLessons).toEqual([])
+  })
+})
+
+describe('progressView (kein Stand einer anderen Sprache sichtbar)', () => {
+  const data = { ...DEFAULT_PROGRESS, completedLessons: ['h1'] }
+  it('gleicher Schlüssel: die geladenen Daten, nicht mehr am Laden', () => {
+    expect(progressView({ key: 'u|ja', data }, 'u|ja')).toEqual({ progress: data, loading: false })
+  })
+  it('anderer Schlüssel: Standardwerte und noch am Laden', () => {
+    expect(progressView({ key: 'u|ja', data }, 'u|ne')).toEqual({ progress: DEFAULT_PROGRESS, loading: true })
+  })
+  it('noch nichts geladen: Standardwerte und noch am Laden', () => {
+    expect(progressView(null, 'u|ja')).toEqual({ progress: DEFAULT_PROGRESS, loading: true })
   })
 })

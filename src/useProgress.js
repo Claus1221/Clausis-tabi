@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { doc, onSnapshot, setDoc, arrayUnion, increment } from 'firebase/firestore'
 import { db } from './firebase'
+import { progressPath } from './lib/lang'
 
 // Standard-Fortschritt für einen neuen Nutzer: alles bei 0.
-const DEFAULT = {
+export const DEFAULT_PROGRESS = {
   completedLessons: [],    // IDs abgeschlossener Kana-Lektionen, z.B. ['h1','h2']
   completedWordBlocks: [], // IDs abgeschlossener Wort-Blöcke, z.B. ['wb1']
   completedGrammar: [],    // IDs gelesener Grammatik-Themen, z.B. ['g1']
@@ -16,6 +17,21 @@ const DEFAULT = {
   history: {},             // { 'YYYY-MM-DD': { kana, words, grammar, chapters, scenes } } → Wochen-Rückblick
   srs: {},                 // { '山': { ease, interval, reps, due } }  → Wiederholungsplan
   settings: {},            // Nutzer-Einstellungen (s. SETTINGS_DEFAULTS)
+}
+
+// Das Objekt, das reset() schreibt: jedes Lernstand-Feld leer, nur die
+// Einstellungen bleiben. Aus DEFAULT_PROGRESS abgeleitet, damit ein neues Feld
+// beim Zurücksetzen nie vergessen wird.
+export function emptyProgress(settings = {}) {
+  return { ...DEFAULT_PROGRESS, settings }
+}
+
+// Was der Hook nach außen zeigt: nur Daten, die zum AKTUELLEN Nutzer+Sprache
+// gehören. Beim Sprachwechsel ist so nie – auch nicht für einen Render – der
+// Stand der anderen Sprache sichtbar oder beschreibbar.
+export function progressView(loaded, key) {
+  if (loaded && loaded.key === key) return { progress: loaded.data, loading: false }
+  return { progress: DEFAULT_PROGRESS, loading: true }
 }
 
 const DAILY_GOAL = 200      // XP-Ziel pro Tag (Standard, per Einstellungen änderbar)
@@ -166,12 +182,15 @@ export function isDeniedError(err) {
 }
 
 // ─── Hook: lädt live aus Firestore und liefert Schreib-Funktionen ─────────────
-// `lang` ist für die Sprachwahl vorgesehen und wird hier noch nicht gelesen.
+// Der Lernstand liegt je Sprache in einem eigenen Dokument (progressPath):
+// Japanisch unter users/{uid}, jede weitere Sprache darunter.
 // opts.onDenied: wird (höchstens einmal je Nutzer) gerufen, wenn Lesen/Schreiben
 // mit permission-denied scheitert – die App prüft dann den Zugang neu.
 export function useProgress(uid, lang = 'ja', opts = {}) {
-  const [progress, setProgress] = useState(DEFAULT)
-  const [loading, setLoading] = useState(true)
+  // Geladene Daten samt dem Schlüssel (Nutzer|Sprache), zu dem sie gehören.
+  const key = `${uid}|${lang}`
+  const [loaded, setLoaded] = useState(null)
+  const { progress, loading } = progressView(loaded, key)
   // Echter Schreibfehler (z. B. von Firestore-Regeln verweigert) – NICHT bloßes
   // Offline-Sein: das fängt der lokale Cache (firebase.js) unsichtbar ab und
   // synchronisiert automatisch, sobald wieder Netz da ist.
@@ -183,7 +202,7 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   onDeniedRef.current = opts.onDenied
   // Mehrere gleichzeitig scheiternde Zugriffe sollen nur EINE Neuprüfung auslösen.
   const deniedRef = useRef(false)
-  useEffect(() => { deniedRef.current = false }, [uid])
+  useEffect(() => { deniedRef.current = false }, [uid, lang])
   const handleDenied = (err) => {
     if (!isDeniedError(err) || deniedRef.current) return
     deniedRef.current = true
@@ -191,27 +210,29 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   }
 
   useEffect(() => {
-    if (!uid || !db) { setLoading(false); return }
-    const ref = doc(db, 'users', uid)
+    // Ohne Nutzer (lokaler Dev-Bypass) gibt es nichts zu laden: Standardwerte.
+    if (!uid || !db) { setLoaded({ key, data: DEFAULT_PROGRESS }); return }
     const unsub = onSnapshot(
-      ref,
+      doc(db, ...progressPath(uid, lang)),
       snap => {
-        setProgress(snap.exists() ? { ...DEFAULT, ...snap.data() } : DEFAULT)
-        setLoading(false)
+        setLoaded({ key, data: snap.exists() ? { ...DEFAULT_PROGRESS, ...snap.data() } : DEFAULT_PROGRESS })
       },
-      err => { setLoading(false); handleDenied(err) },
+      // Auch nach einem Fehler nicht ewig „lädt": Standardwerte für diesen Schlüssel.
+      err => { setLoaded({ key, data: DEFAULT_PROGRESS }); handleDenied(err) },
     )
     return unsub
-  }, [uid])
+  }, [uid, lang])
 
-  const ref = () => doc(db, 'users', uid)
+  // Das Dokument wird bei jedem Schreiben für den AKTUELLEN Nutzer/Sprache
+  // gebildet – nie aus einem Rest der vorherigen Sprache.
+  const ref = () => doc(db, ...progressPath(uid, lang))
 
   // Schreibt sicher: fängt echte Fehler ab (Firestore-Regel verweigert, Quota,
   // korrupte Daten) und macht sie über `saveError` sichtbar, statt den
   // Fortschritt kommentarlos verschwinden zu lassen.
-  const safeWrite = async (data, opts) => {
+  const safeWrite = async (data, setOpts) => {
     try {
-      await setDoc(ref(), data, opts)
+      await setDoc(ref(), data, setOpts)
       setSaveError(null)
     } catch (err) {
       setSaveError(err?.message || 'Speichern fehlgeschlagen')
@@ -294,8 +315,11 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   // wird sofort eingeplant, damit sie im normalen Wiederholungs-Rhythmus
   // auftaucht statt in einem Sonderweg. Idempotent: bereits vorhandene
   // Wendungen werden nicht erneut eingeplant (der Lernstand bliebe sonst stehen).
+  // Die folgenden Funktionen rechnen aus `progress` und schreiben daher nicht,
+  // solange `loading` gilt: Vor dem ersten Snapshot ist progress nur der Standard,
+  // und darauf aufbauend würde echter Lernstand überschrieben.
   const addPhrase = async (jp, kana, de) => {
-    if (!uid || !db || !jp) return
+    if (loading || !uid || !db || !jp) return
     const known = (progress.extraPhrases || {})[jp]
     const patch = { extraPhrases: { [jp]: { kana: kana || jp, de: de || '', addedAt: localDate() } } }
     if (!known && !(progress.srs || {})[jp]) {
@@ -306,7 +330,7 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
 
   // Eine SRS-Karte bewerten → nächste Fälligkeit per SM-2 berechnen & speichern.
   const reviewCard = async (key, quality) => {
-    if (!uid || !db) return
+    if (loading || !uid || !db) return
     const next = sm2((progress.srs || {})[key], quality)
     await safeWrite({ srs: { [key]: next } }, { merge: true })
   }
@@ -316,7 +340,7 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   // zählen. So zeigt „fällig" echte anstehende Reviews und wächst nicht einfach
   // mit jedem gelernten Zeichen. Idempotent: plant nur noch nicht geplante Keys.
   const scheduleNew = async (keys) => {
-    if (!uid || !db || !keys || !keys.length) return
+    if (loading || !uid || !db || !keys || !keys.length) return
     const srs = progress.srs || {}
     // Noch ungeplante Keys: kein Eintrag ODER nur eine Notiz ohne Fälligkeit
     // (z. B. wenn vor dem ersten Review schon eine Merkhilfe gespeichert wurde).
@@ -332,7 +356,7 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   // Sterne-Höchststand je Kapitel anheben (monoton: nur Anstiege werden gespeichert,
   // damit einmal erreichte Sterne nie wieder verloren gehen). `updates` = { c1: 3, … }.
   const bumpChapterStars = async (updates) => {
-    if (!uid || !db || !updates) return
+    if (loading || !uid || !db || !updates) return
     const cur = progress.chapterStars || {}
     const patch = {}
     for (const [id, n] of Object.entries(updates)) {
@@ -359,8 +383,8 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   // Kompletter Reset auf 0 (überschreibt das Dokument). Einstellungen bleiben erhalten:
   // volles Überschreiben (löscht srs/xpByDate sicher), aber settings werden mitgenommen.
   const reset = async () => {
-    if (!uid || !db) return
-    await safeWrite({ completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], completedTalks: [], extraPhrases: {}, chapterStars: {}, xpByDate: {}, history: {}, srs: {}, settings: progress.settings || {} })
+    if (loading || !uid || !db) return
+    await safeWrite(emptyProgress(progress.settings || {}))
   }
 
   return { progress, loading, saveError, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, completeTalk, addPhrase, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset }

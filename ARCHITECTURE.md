@@ -44,7 +44,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `main.jsx` | Mount-Punkt: `<AuthGate><TabiApp/></AuthGate>`. |
 | `AuthGate.jsx` | Google-Login, Freigabe-Prüfung (Admin aus `ADMIN_EMAILS`, sonst Dokument `allowed/<e-mail>` in Firestore; Zustände prüfen/Kein Zugang/Offline), `useAuth()`-Context mit `user`, `logout`, `isAdmin`, `recheckAccess`. |
 | `firebase.js` | Firebase-Init; exportiert `auth`, `db`, `ADMIN_EMAILS`, `isConfigured`. `db` läuft mit persistentem Offline-Cache (IndexedDB, mehrere Tabs geteilt) – lesen/schreiben funktioniert auch offline, Sync folgt automatisch. |
-| `useProgress.js` | **Firestore-Hook + Fortschritts-Domäne**: `useProgress(uid)` (live-Daten + Schreib-Funktionen + `saveError`), `computeStats`, `dueKana`, `sm2`, `getSettings`, `localDate`, `addDays`, `SETTINGS_DEFAULTS`, `SRS_STAGE_BOUNDS`. Fortschritts-Felder u. a. `completedTalks` (gemeisterte freie Gespräche) und `extraPhrases` (aus Gesprächen übernommene Wendungen; `addPhrase` legt sie an UND plant sie als SRS-Karte ein). Schreibvorgänge laufen über das interne `safeWrite` (try/catch → `saveError`), damit ein echter Schreibfehler (Firestore-Regel, Quota) sichtbar wird statt den Fortschritt still zu verlieren. Unit-Tests: `useProgress.test.js`. |
+| `useProgress.js` | **Firestore-Hook + Fortschritts-Domäne**: `useProgress(uid, lang = 'ja', opts)` (live-Daten der gewählten Sprache + Schreib-Funktionen + `saveError`; Dokumentpfad über `progressPath` aus `lib/lang.js`), `DEFAULT_PROGRESS`, `emptyProgress` (was `reset()` schreibt), `progressView` (zeigt beim Sprachwechsel nie den Stand der anderen Sprache), `computeStats`, `dueKana`, `sm2`, `getSettings`, `localDate`, `addDays`, `SETTINGS_DEFAULTS`, `SRS_STAGE_BOUNDS`. Fortschritts-Felder u. a. `completedTalks` (gemeisterte freie Gespräche) und `extraPhrases` (aus Gesprächen übernommene Wendungen; `addPhrase` legt sie an UND plant sie als SRS-Karte ein). Schreibvorgänge laufen über das interne `safeWrite` (try/catch → `saveError`), damit ein echter Schreibfehler (Firestore-Regel, Quota) sichtbar wird statt den Fortschritt still zu verlieren. Unit-Tests: `useProgress.test.js`. |
 | `accessStore.js` | Freigabeliste in Firestore (`allowed/<e-mail>`): `watchAllowed` (Live-Liste, nach E-Mail sortiert), `addAllowed`, `removeAllowed`. Nur der Admin darf schreiben (Firestore-Regeln). |
 | `kanaStrokes.js` | Generierte KanjiVG-Strichpfade: `HIRAGANA`, `KATAKANA`, `KANA_STROKES`, `STROKE_VIEWBOX`. (Generator: `scripts/gen-kana-strokes.mjs`.) |
 | `theme.js` | `C` (Farb-Token) · `JP` (japanische Font-Stack). |
@@ -126,8 +126,14 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 
 ## 3. Datenfluss & zentrale Mechaniken
 
-- **Fortschritt:** `useProgress(uid)` in `TabiApp` lädt live aus Firestore und
+- **Fortschritt:** `useProgress(uid, lang)` in `TabiApp` lädt live aus Firestore und
   liefert Schreib-Funktionen. Beides geht via `ProgressCtx` an alle Screens.
+  Datenmodell: `users/{uid}` = japanischer Lernstand (unverändert, nie migriert),
+  `users/{uid}/langs/ne` = Nepali-Lernstand, `users/{uid}/meta/profile` = `{ lang }`
+  (zuletzt gewählte Sprache; wird erst von einer späteren Aufgabe gelesen/geschrieben).
+  Beim Wechsel von Nutzer oder Sprache liefert der Hook sofort `DEFAULT_PROGRESS` mit
+  `loading: true`; Schreib-Funktionen, die aus `progress` rechnen, schreiben nicht,
+  solange `loading` gilt.
   Geschrieben wird immer per `setDoc(..., {merge:true})` (geräteübergreifend).
   Echte Schreibfehler landen in `saveError` und zeigen ein Banner in `TabiApp`.
 - **SRS (Spaced Repetition):** Algorithmus `sm2` in `useProgress.js`; Anzeige-Stufen
