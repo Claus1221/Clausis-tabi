@@ -20,19 +20,25 @@ export default function AdminUsers() {
   const [name, setName] = useState('')
   const [hint, setHint] = useState('')
   const [error, setError] = useState('')
+  // Fehler des Listeners getrennt halten: ein späterer erfolgreicher Schreibvorgang
+  // darf nicht verdecken, dass die Liste nicht mehr live ist.
+  const [listError, setListError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => watchAllowed(setRows, setError), [])
+  useEffect(() => watchAllowed(setRows, setListError), [])
 
   const add = async () => {
     setError('')
-    if (!isValidEmail(email)) return setHint('Das ist keine gültige E-Mail-Adresse.')
-    if (isAdminEmail(email, ADMIN_EMAILS)) return setHint('Diese Adresse ist Admin und braucht keinen Eintrag.')
+    // Erst normalisieren (Leerzeichen, Großbuchstaben von Handy-Tastatur/Autofill),
+    // dann prüfen und schreiben – immer mit demselben Wert.
+    const addr = normalizeEmail(email)
+    if (!isValidEmail(addr)) return setHint('Das ist keine gültige E-Mail-Adresse.')
+    if (isAdminEmail(addr, ADMIN_EMAILS)) return setHint('Diese Adresse ist Admin und braucht keinen Eintrag.')
     // Gegen die Live-Liste prüfen, damit ein Doppeleintrag nicht still den Namen überschreibt.
-    if ((rows || []).some(r => r.email === normalizeEmail(email))) return setHint('Schon freigeschaltet.')
+    if ((rows || []).some(r => r.email === addr)) return setHint('Schon freigeschaltet.')
     setHint(''); setBusy(true)
     try {
-      await addAllowed(email, name)
+      await addAllowed(addr, name)
       setEmail(''); setName('')
     } catch (e) {
       setError(e.message || String(e))
@@ -55,7 +61,7 @@ export default function AdminUsers() {
     <>
       <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, margin: '18px 0 8px' }}>NUTZER VERWALTEN</div>
       <Card style={{ marginBottom: 12 }}>
-        {rows === null && !error && <div style={{ fontSize: 12, color: C.textMuted }}>Lade …</div>}
+        {rows === null && !listError && <div style={{ fontSize: 12, color: C.textMuted }}>Lade …</div>}
         {rows && rows.length === 0 && <div style={{ fontSize: 12, color: C.textMuted }}>Noch niemand freigeschaltet.</div>}
         {(rows || []).map(r => (
           <div key={r.email} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0' }}>
@@ -76,6 +82,7 @@ export default function AdminUsers() {
           <Btn onClick={add} disabled={busy}>Freischalten</Btn>
         </div>
         {hint && <div style={{ fontSize: 12, color: C.shu, marginTop: 8 }}>{hint}</div>}
+        {listError && <div style={{ fontSize: 12, color: C.shu, marginTop: 8, lineHeight: 1.5 }}>✗ Liste nicht ladbar: {listError}</div>}
         {error && <div style={{ fontSize: 12, color: C.shu, marginTop: 8, lineHeight: 1.5 }}>✗ {error}</div>}
       </Card>
     </>
