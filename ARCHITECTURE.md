@@ -59,8 +59,30 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `TabiApp.jsx` | Root-Orchestrator (≈120 Z.). Hält Tab-State, lädt Screens via `React.lazy`, stellt `ProgressCtx` bereit. |
 
 ### `ne/` — Zweig für Nepali (Yatra)
-Alles Nepalische liegt unter `src/ne/` mit denselben Schichten wie oben (derzeit nur
-`NepaliApp.jsx`, eine leere Hülle mit Kopfzeile und `ProgressCtx` für Sprache `ne`).
+Alles Nepalische liegt unter `src/ne/` mit denselben Schichten wie oben.
+
+| Datei | Rolle |
+|---|---|
+| `ne/NepaliApp.jsx` | Hülle mit Kopfzeile und `ProgressCtx` für Sprache `ne` (Kursinhalte folgen). |
+| `ne/lib/deva.js` | Reine Devanagari-Werkzeuge: `nfc` (jeder SRS-Karten-Schlüssel geht hier durch), `aksharas` (Schreibsilben: Verbund über Halant + Matra + Zusatzzeichen; Leer-/Satzzeichen und Ziffern fallen weg), `romanSyllables` (Vokalkerne, `ai`/`au` einfach), `romanFits` (Umschrift plausibel: `aksharas − stumme ≤ Kerne ≤ aksharas`; stumm = Silbe ohne Matra und ohne eigenständigen Vokal). Tests: `deva.test.js`. |
+| `ne/data/script.js` | `SCRIPT_DATA`, `SCRIPT_LESSONS` (14 Schrift-Lektionen `s1…s14`), `SCRIPT_NOTES` (Laut-Hinweise). Tests: `script.test.js`. |
+| `ne/imports.test.js` | Wächter der Importregel unten: liest alle Dateien unter `src/` als Text und prüft die Import-Spezifizierer (relative Pfade aufgelöst; aus `lib/claude.js` nur die erlaubten Namen; Pakete in `ne/` nur `react`, in Tests zusätzlich `vitest` und `node:*`). |
+
+Schemata (`ne/data/script.js`):
+```js
+SCRIPT_DATA[char] = { roman, kind, tip, say, shown }
+// kind: 'vowel' | 'consonant' | 'matra' | 'conjunct' | 'sign' | 'digit'
+// roman: Kurs-Umschrift; Konsonanten mit a ('ka'), Matras/Zeichen mit ihrem Beitrag ('ā', 'ṃ')
+// tip:   eine Zeile Deutsch, Form ↔ Laut; Verwechslungspaare grenzen sich ab
+// shown: was die Karte zeigt – Matras und Zusatzzeichen an क ('का'), sonst das Zeichen selbst
+// say:   Text für die Sprachausgabe (derzeit = shown, noch kein Audio)
+// Schlüssel sind NFC.
+SCRIPT_LESSONS[] = { id: 's1', title, sub, chars: [char, …] }
+// s1–s2 Vokale · s3–s9 Konsonanten nach Lautgruppen · s10–s11 Matras ·
+// s12 Verbindungen · s13 Zusatzzeichen · s14 Ziffern ०–९; jedes Zeichen in genau einer Lektion
+SCRIPT_NOTES[] = { id, title, text, pairs: [[char, char], …] }   // behaucht/unbehaucht, dental/retroflex
+```
+
 **Importregel:** `src/ne/**` darf nur den sprachneutralen Kern importieren: `theme.js`,
 `useProgress.js`, `state/ProgressContext.js`, `AuthGate.jsx`, `LangGate.jsx`,
 `components/ui.jsx`, `components/ueben.jsx`, `screens/adminUsers.jsx`, `lib/xp.js`,
