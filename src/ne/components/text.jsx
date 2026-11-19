@@ -1,7 +1,7 @@
-import { useState, useContext, useEffect } from 'react'
+import { useState, useContext, useEffect, useLayoutEffect, useRef } from 'react'
 import { C, NE } from '../../theme.js'
 import { ProgressCtx } from '../../state/ProgressContext.js'
-import { sentenceGroups } from '../lib/sentence.js'
+import { sentenceGroups, hitSegments } from '../lib/sentence.js'
 import { stopSpeaking } from '../lib/speech.js'
 import { ListenButton } from './sound.jsx'
 
@@ -33,22 +33,81 @@ export function NeText({ dev, roman, size = 28, color = C.sumi, align }) {
 
 // Beispielsatz mit antippbaren Stücken. Eingabe = Beispielsatz aus words.js
 // ({ dev, roman, tokens }). Wo Nepali zusammenschreibt (तपाईंलाई, छ?), kleben die Stücke
-// aneinander; die Gruppierung kommt aus `dev` (lib/sentence.js). Jedes Stück mit `de` ist
-// ein echter Knopf mit 44 px Tippfläche. Angezeigt wird IMMER das `de` des Tokens selbst,
-// nie ein Nachschlagen im Wortschatz – छ ist im Satz meist „ist“, als Wort „sechs“.
+// aneinander; die Gruppierung kommt aus `dev` (lib/sentence.js). Angezeigt wird IMMER das
+// `de` des Tokens selbst, nie ein Nachschlagen im Wortschatz – छ ist im Satz meist „ist“,
+// als Wort „sechs“.
+//
+// Tippflächen: jedes Stück mit `de` ist ein Knopf, 44 px hoch. Kurze Stücke (मा, को, हो)
+// sind sichtbar nur 15–30 px breit; damit sie trotzdem 44 px breit treffbar sind, ohne den
+// Text auseinanderzuziehen, liegt in jedem Knopf eine unsichtbare Fläche, deren Lage nach
+// dem Rendern gemessen und je Zeile mit hitSegments verteilt wird: lückenlos, nie
+// überlappend, jede ≥ 44 px, an der Naht angeklebter Stücke geteilt (lib/sentence.js).
+//
+// Nachschlage-Kasten: liegt ÜBER dem Folgenden (kein Springen des Textes), schließt bei
+// Tipp außerhalb des Satzes, bei Escape und beim Antippen eines anderen Stücks (das dann
+// aufgeht). Der Tipp außerhalb wird nicht verschluckt: „Weiter“ o. Ä. wirkt sofort.
+// hint: Tipp-Hinweis „💡 Tippe …“ zeigen (nur beim ersten Satz einer Lektion).
 // sound: Ergebnis von useSound() – Anhören-Knöpfe erscheinen nur mit Ton.
-export function TappableSentence({ dev, roman, tokens, size = 26, sound }) {
+export function TappableSentence({ dev, roman, tokens, size = 26, sound, hint = false }) {
   const showRoman = useShowRoman()
   const [active, setActive] = useState(null)
+  const [hits, setHits] = useState({}) // Token-Index → { dx, w } der unsichtbaren Fläche
+  const rootRef = useRef(null)
+  const lineRef = useRef(null)
+  const btnRefs = useRef({})
   useEffect(() => () => stopSpeaking(), []) // Satz verschwindet → nicht weiterreden
-  const groups = sentenceGroups(dev, tokens)
-  const tk = active !== null ? (tokens || [])[active] : null
-  let n = -1 // laufender Token-Index über alle Gruppen
+  const list = tokens || []
+  const groups = sentenceGroups(dev, list)
+  const tk = active !== null ? list[active] : null
 
+  // Tippflächen messen und verteilen; erneut bei Größenänderung (Drehen, Schriftladen).
+  useLayoutEffect(() => {
+    const box = lineRef.current
+    if (!box) return
+    const measure = () => {
+      const base = box.getBoundingClientRect()
+      const rows = new Map() // gerundete Oberkante → [{ i, left, right }]
+      for (const [i, el] of Object.entries(btnRefs.current)) {
+        if (!el) continue
+        const r = el.getBoundingClientRect()
+        const top = Math.round(r.top - base.top)
+        if (!rows.has(top)) rows.set(top, [])
+        rows.get(top).push({ i: Number(i), left: r.left - base.left, right: r.right - base.left })
+      }
+      const next = {}
+      for (const row of rows.values()) {
+        row.sort((a, b) => a.left - b.left)
+        hitSegments(row, 44, 0, base.width).forEach((s, k) => {
+          next[row[k].i] = { dx: Math.round((s.left - row[k].left) * 10) / 10, w: Math.round((s.right - s.left) * 10) / 10 }
+        })
+      }
+      setHits(prev => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(box)
+    return () => ro.disconnect()
+  }, [dev, size, list.length])
+
+  // Offener Kasten: Tipp außerhalb des Satzes oder Escape schließt ihn.
+  useEffect(() => {
+    if (active === null) return
+    const onDown = e => { if (!rootRef.current?.contains(e.target)) setActive(null) }
+    const onKey = e => { if (e.key === 'Escape') setActive(null) }
+    document.addEventListener('pointerdown', onDown, true)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onDown, true)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [active])
+
+  let n = -1 // laufender Token-Index über alle Gruppen
   return (
-    <div>
+    <div ref={rootRef} style={{ position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexWrap: 'wrap', columnGap: '0.3em', alignItems: 'center' }}>
+        <div ref={lineRef} style={{ flex: 1, minWidth: 0, display: 'flex', flexWrap: 'wrap', columnGap: '0.3em', alignItems: 'center', position: 'relative' }}>
           {groups.map((g, gi) => (
             // Eine Schreibgruppe bricht nie um – sonst risse तपाईं|लाई auseinander.
             <span key={gi} style={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
@@ -58,14 +117,24 @@ export function TappableSentence({ dev, roman, tokens, size = 26, sound }) {
                 const text = <span style={{ fontFamily: NE, fontSize: size, lineHeight: 1.3 }}>{t.t}</span>
                 if (!t.de) return <span key={i} style={{ color: C.sumi }}>{text}</span>
                 const on = active === i
+                const hit = hits[i]
                 return (
-                  <button key={i} onClick={() => setActive(on ? null : i)} aria-pressed={on}
+                  <button key={i} ref={el => { btnRefs.current[i] = el }}
+                    onClick={() => setActive(on ? null : i)} aria-pressed={on}
                     aria-label={`${t.t} – Bedeutung zeigen`}
                     style={{
-                      minHeight: 44, padding: '0 1px', margin: 0, border: 'none', borderRadius: 4, cursor: 'pointer',
+                      position: 'relative', minHeight: 44, padding: '0 1px', margin: 0, border: 'none', borderRadius: 4, cursor: 'pointer',
                       background: on ? `${C.shu}22` : 'transparent', color: C.sumi,
                       boxShadow: `inset 0 -2px 0 ${on ? C.shu : `${C.indigo}55`}`,
-                    }}>{text}</button>
+                    }}>
+                    {text}
+                    {/* Unsichtbare Tippfläche (s. oben); z-index, damit sie über dem
+                        sichtbaren Nachbarn liegt, in den sie an der Naht hineinreicht. */}
+                    {hit && (
+                      <span aria-hidden="true" data-hit=""
+                        style={{ position: 'absolute', top: 0, bottom: 0, left: hit.dx, width: hit.w, zIndex: 1 }} />
+                    )}
+                  </button>
                 )
               })}
             </span>
@@ -75,9 +144,18 @@ export function TappableSentence({ dev, roman, tokens, size = 26, sound }) {
         {sound && dev && <ListenButton text={dev} sound={sound} quiet label="Satz" />}
       </div>
       {showRoman && roman && <div style={{ fontSize: 14, color: C.textMuted, marginTop: 2 }}>{roman}</div>}
+      {/* Beim offenen Kasten nur unsichtbar statt weg – sonst rutschte der Text darunter. */}
+      {hint && (
+        <div style={{ fontSize: 11, color: C.textMuted, fontStyle: 'italic', marginTop: 6, visibility: tk ? 'hidden' : 'visible' }}>💡 Tippe ein Wort im Satz für seine Bedeutung</div>
+      )}
 
-      {tk ? (
-        <div style={{ background: `${C.indigo}10`, border: `1px solid ${C.indigo}30`, borderRadius: 8, padding: '8px 10px', marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+      {tk && (
+        <div role="status" aria-live="polite"
+          style={{
+            position: 'absolute', left: 0, right: 0, top: '100%', marginTop: 6, zIndex: 3,
+            background: '#fff', border: `1px solid ${C.indigo}40`, borderRadius: 8, padding: '8px 10px',
+            boxShadow: '0 8px 20px -10px rgba(33,31,27,0.45)', display: 'flex', alignItems: 'center', gap: 10,
+          }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 22, fontFamily: NE, color: C.sumi }}>{tk.t}</span>
@@ -87,8 +165,6 @@ export function TappableSentence({ dev, roman, tokens, size = 26, sound }) {
           </div>
           {sound && <ListenButton key={active} text={tk.t} sound={sound} quiet label="" />}
         </div>
-      ) : (
-        <div style={{ fontSize: 11, color: C.textMuted, fontStyle: 'italic', marginTop: 6 }}>💡 Tippe ein Wort im Satz für seine Bedeutung</div>
       )}
     </div>
   )

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { NE_PATH } from '../data/path.js'
 import { SCRIPT_LESSONS } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
-import { isNodeDone, nodeMeta, nextOpenIndex, stationStates } from './path.js'
+import { isNodeDone, nodeMeta, nextOpenIndex, stationStates, wordsBefore } from './path.js'
 
 const stations = NE_PATH.filter(n => !n.world)
 const EMPTY = { completedLessons: [] }
@@ -95,5 +95,20 @@ describe('stationStates', () => {
   })
   it('alles erledigt → keine offene Station', () => {
     expect(stationStates(path, { completedLessons: ['s1', 's2', 's3'] })).toEqual([null, 'done', 'done', null, 'done'])
+  })
+})
+
+describe('wordsBefore', () => {
+  const w = d => ({ dev: d })
+  const blocks = [{ id: 'nw1', words: [w('क')] }, { id: 'nw2', words: [w('ख')] }, { id: 'nw3', words: [w('ग')] }]
+  it('Wörter der Wort-Stationen VOR dem Block, in Pfad-Reihenfolge (nicht Array-Reihenfolge)', () => {
+    const path = [{ world: 'A' }, { type: 'word', id: 'nw3' }, { type: 'script', id: 's1' }, { type: 'word', id: 'nw1' }, { type: 'word', id: 'nw2' }]
+    expect(wordsBefore(path, blocks, 'nw1').map(x => x.dev)).toEqual(['ग'])
+    expect(wordsBefore(path, blocks, 'nw2').map(x => x.dev)).toEqual(['ग', 'क'])
+    expect(wordsBefore(path, blocks, 'nw3')).toEqual([])
+  })
+  it('Block nicht im Pfad → leer; Station ohne Daten wird übersprungen', () => {
+    expect(wordsBefore([{ type: 'word', id: 'nw1' }], blocks, 'nw9')).toEqual([])
+    expect(wordsBefore([{ type: 'word', id: 'nw8' }, { type: 'word', id: 'nw2' }], blocks, 'nw2')).toEqual([])
   })
 })

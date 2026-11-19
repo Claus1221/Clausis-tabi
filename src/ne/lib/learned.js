@@ -26,25 +26,23 @@ export const alone = ch => (/^[ऀ-ःऺ-ॏ॑-ॗॢॣ]/.test(ch) ? '◌' + 
 // richtig, wenn ein Eintrag einmal anders eingetippt wird).
 const SCRIPT_BY_KEY = Object.fromEntries(Object.entries(SCRIPT_DATA).map(([k, d]) => [nfc(k), d]))
 
-// Wörter nach NFC-Schlüssel – nicht WORD_BY_DEV, damit auch ein anders eingetippter
-// Eintrag gefunden wird (wie SCRIPT_BY_KEY).
-const WORD_BY_KEY = Object.fromEntries(WORD_BLOCKS.flatMap(b => b.words).map(w => [nfc(w.dev), w]))
+// Namensräume der Karten-Schlüssel: Zeichen = der Text selbst, Wörter = 'w:' + Text,
+// (später Grammatik = 'g:' + id). Grund: ein Wort kann sich schreiben wie ein Zeichen
+// (छ = Konsonant „cha“ UND Zahlwort „sechs“) – ohne Präfix teilten sich beide eine Karte.
+export const WORD_PREFIX = 'w:'
+export const wordKey = dev => WORD_PREFIX + nfc(dev)
 
-// Schlüssel, die ein Wort UND ein Schriftzeichen sind (gleiche Schreibung = eine Karte,
-// denn der Schlüssel ist der Devanagari-Text). Je Eintrag: welche Quelle die Karte zeigt.
-// learned.test.js lässt jede NICHT verzeichnete Doppelung scheitern.
-//   छ – Konsonant „cha“ (Schrift) und Zahlwort „sechs“ (Wort). Die Schrift gewinnt: wer
-//       nur die Zeichen gelernt hat, soll bei छ nicht plötzlich „sechs“ lesen. Folge: das
-//       Zahlwort „sechs“ bekommt keine eigene Wiederholungskarte (offen, s. Bericht Task 6).
-export const KEY_COLLISIONS = { छ: 'script' }
+// Wörter nach Karten-Schlüssel – über nfc, damit auch ein anders eingetippter Eintrag
+// gefunden wird (wie SCRIPT_BY_KEY).
+const WORD_BY_KEY = Object.fromEntries(WORD_BLOCKS.flatMap(b => b.words).map(w => [wordKey(w.dev), w]))
 
 // Alle Karten-Schlüssel (NFC, ohne Doppel) laut Lernstand: erst Schriftzeichen in
-// Lektionsreihenfolge, dann Wörter in Blockreihenfolge.
+// Lektionsreihenfolge, dann Wörter (w:-Schlüssel) in Blockreihenfolge.
 export function learnedItems(progress) {
   const done = progress?.completedLessons || []
   return [...new Set([
     ...SCRIPT_LESSONS.filter(l => done.includes(l.id)).flatMap(l => l.chars.map(nfc)),
-    ...learnedWords(progress?.completedWordBlocks),
+    ...learnedWords(progress?.completedWordBlocks).map(wordKey),
   ])]
 }
 
@@ -56,14 +54,17 @@ export function learnedItems(progress) {
 //   de    – deutsche Erklärung (bei Zeichen die Merkhilfe)
 //   say   – Text für die Sprachausgabe
 //   kindLabel – Zeichenart auf Deutsch („Konsonant“, „Wort“); leer, wenn unbekannt
-//   ex    – nur bei Wörtern: der Beispielsatz { dev, roman, de, tokens }
+//   ex    – nur bei Wörtern: der Beispielsatz { dev, roman, de, tokens } (null, wenn unbekannt)
 export function itemInfo(key) {
   const k = nfc(key)
-  const d = SCRIPT_BY_KEY[k]
-  const w = WORD_BY_KEY[k]
-  if (w && (!d || KEY_COLLISIONS[k] === 'word')) {
+  if (k.startsWith(WORD_PREFIX)) {
+    const w = WORD_BY_KEY[k]
+    // Unbekanntes Wort (neuere Version): das Präfix nie anzeigen oder sprechen.
+    const text = k.slice(WORD_PREFIX.length)
+    if (!w) return { key: k, front: text, roman: '', de: '', kind: 'word', say: text, kindLabel: 'Wort', ex: null }
     return { key: k, front: w.dev, roman: w.roman, de: w.de, kind: 'word', say: w.dev, kindLabel: 'Wort', ex: w.ex }
   }
+  const d = SCRIPT_BY_KEY[k]
   if (!d) return { key: k, front: k, roman: '', de: '', kind: 'script', say: k, kindLabel: '' }
   return { key: k, front: d.shown, roman: d.roman, de: d.tip, kind: 'script', say: d.say, kindLabel: KIND_LABEL[d.kind] || '' }
 }

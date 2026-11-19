@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { auditPath, FUNCTION_WORDS, functionWordSet } from './audit-ne.mjs'
+import { auditPath, FUNCTION_WORDS, functionWordSet, FUNCTION_WORD_LIMIT } from './audit-ne.mjs'
 
 const tok = (t, de = 'x') => ({ t, r: 'x', de })
 const word = (dev, ...tokens) => ({ dev, roman: 'x', de: 'x', ex: { dev: tokens.map(t => t.t).join(' '), roman: 'x', de: 'x', tokens } })
@@ -38,7 +38,7 @@ describe('auditPath', () => {
 describe('FUNCTION_WORDS', () => {
   it('kurz, ohne Doppel, NFC', () => {
     const all = Object.values(FUNCTION_WORDS).flat()
-    expect(all.length).toBeLessThanOrEqual(30)
+    expect(all.length).toBeLessThanOrEqual(FUNCTION_WORD_LIMIT)
     expect(new Set(all).size).toBe(all.length)
     for (const w of all) expect(w).toBe(w.normalize('NFC'))
     expect(functionWordSet().size).toBe(all.length)

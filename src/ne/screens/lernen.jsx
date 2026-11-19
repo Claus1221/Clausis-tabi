@@ -152,6 +152,53 @@ function WordList({ done, onPick }) {
   ))
 }
 
+// Zeichentafel nach Lektion samt Eintrag „Laut-Hinweise“ (Ansicht „Zeichen“).
+function CharTable({ done, onPick, onNotes }) {
+  return (
+    <>
+      <button onClick={onNotes} style={{
+        width: '100%', minHeight: 56, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+        background: '#fff', border: '1px solid rgba(33,31,27,0.05)', borderRadius: 12,
+        boxShadow: 'var(--shadow-card)', padding: '10px 14px', cursor: 'pointer',
+      }}>
+        <span style={{ fontSize: 22 }}>👄</span>
+        <span style={{ flex: 1 }}>
+          <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: C.sumi }}>Laut-Hinweise</span>
+          <span style={{ display: 'block', fontSize: 12, color: C.textMuted }}>{SCRIPT_NOTES.map(n => n.title).join(' · ')}</span>
+        </span>
+        <span style={{ fontSize: 16, color: C.textMuted }}>›</span>
+      </button>
+
+      {SCRIPT_LESSONS.map(l => (
+        <div key={l.id}>
+          <div style={sectionLabel}>
+            {l.title.toUpperCase()}
+            {done.includes(l.id) && <span style={{ color: C.matcha, marginLeft: 6 }}>✓</span>}
+            <span style={{ color: C.textMuted, fontWeight: 500, letterSpacing: 0, marginLeft: 6 }}>{l.sub}</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(56px, 1fr))', gap: 6 }}>
+            {l.chars.map(ch => {
+              const d = SCRIPT_DATA[ch]
+              return (
+                // Lesung steht immer da (unabhängig von showRoman): sie ist der Inhalt des
+                // Schriftlernens, wie in Lektionen und auf der Kartenrückseite.
+                <button key={ch} onClick={() => onPick(ch)} aria-label={`${alone(ch)}, Umschrift ${d.roman} – Details öffnen`}
+                  style={{
+                    minHeight: 60, minWidth: 0, background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 8,
+                    cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px 2px',
+                  }}>
+                  <span style={{ fontSize: 24, fontFamily: NE, color: C.sumi, lineHeight: 1.3 }}>{d.shown}</span>
+                  <span style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.2, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.roman}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}
+
 export default function LernenScreen() {
   const { progress } = useContext(ProgressCtx)
   const sound = useSound()
@@ -197,49 +244,7 @@ export default function LernenScreen() {
       </div>
 
       {view === 'woerter' && <WordList done={doneBlocks} onPick={(word, block) => setSelWord({ word, block })} />}
-      {view === 'zeichen' && (
-        <>
-        <button onClick={() => setNotesOpen(true)} style={{
-          width: '100%', minHeight: 56, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
-          background: '#fff', border: '1px solid rgba(33,31,27,0.05)', borderRadius: 12,
-          boxShadow: 'var(--shadow-card)', padding: '10px 14px', cursor: 'pointer',
-        }}>
-          <span style={{ fontSize: 22 }}>👄</span>
-          <span style={{ flex: 1 }}>
-            <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: C.sumi }}>Laut-Hinweise</span>
-            <span style={{ display: 'block', fontSize: 12, color: C.textMuted }}>{SCRIPT_NOTES.map(n => n.title).join(' · ')}</span>
-          </span>
-          <span style={{ fontSize: 16, color: C.textMuted }}>›</span>
-        </button>
-
-        {SCRIPT_LESSONS.map(l => (
-          <div key={l.id}>
-            <div style={sectionLabel}>
-              {l.title.toUpperCase()}
-              {done.includes(l.id) && <span style={{ color: C.matcha, marginLeft: 6 }}>✓</span>}
-              <span style={{ color: C.textMuted, fontWeight: 500, letterSpacing: 0, marginLeft: 6 }}>{l.sub}</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(56px, 1fr))', gap: 6 }}>
-              {l.chars.map(ch => {
-                const d = SCRIPT_DATA[ch]
-                return (
-                  // Lesung steht immer da (unabhängig von showRoman): sie ist der Inhalt des
-                  // Schriftlernens, wie in Lektionen und auf der Kartenrückseite.
-                  <button key={ch} onClick={() => setSel(ch)} aria-label={`${alone(ch)}, Umschrift ${d.roman} – Details öffnen`}
-                    style={{
-                      minHeight: 60, minWidth: 0, background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 8,
-                      cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px 2px',
-                    }}>
-                    <span style={{ fontSize: 24, fontFamily: NE, color: C.sumi, lineHeight: 1.3 }}>{d.shown}</span>
-                    <span style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.2, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.roman}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        ))}
-        </>
-      )}
+      {view === 'zeichen' && <CharTable done={done} onPick={setSel} onNotes={() => setNotesOpen(true)} />}
     </div>
   )
 }

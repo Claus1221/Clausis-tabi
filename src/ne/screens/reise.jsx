@@ -8,6 +8,7 @@ import { SCRIPT_LESSONS } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
 import { nfc } from '../lib/deva.js'
 import { isNodeDone, nodeMeta, stationStates } from '../lib/path.js'
+import { wordKey } from '../lib/learned.js'
 import { buildBackdrop, roadPath, startFlags, STATE_PALETTE } from '../lib/scene.jsx'
 import { ScriptLesson, WordBlock } from './players.jsx'
 
@@ -73,7 +74,7 @@ export default function ReiseScreen() {
         onComplete={() => {
           // Wie bei der Schrift: Einplanen idempotent und immer, XP und Zähler `words`
           // (Wochenrückblick) nur beim ersten Abschluss.
-          scheduleNew(block.words.map(w => nfc(w.dev)))
+          scheduleNew(block.words.map(w => wordKey(w.dev))) // Wort-Karten: 'w:' + Text
           if (!already) completeWordBlock(block.id, n * XP_PER_WORD, { words: n })
         }} />
     )

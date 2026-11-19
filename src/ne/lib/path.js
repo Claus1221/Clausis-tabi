@@ -61,3 +61,13 @@ export function stationStates(path, progress) {
     return i === open ? 'current' : 'locked'
   })
 }
+
+// Wörter aller Wortblöcke, die im Pfad VOR dem Block `id` liegen, in Pfad-Reihenfolge –
+// der Ablenker-Vorrat fürs Wort-Quiz. Maßgeblich ist der Pfad, nicht die Reihenfolge in
+// WORD_BLOCKS: nur so kennt der Lernende die Ablenker schon. Block nicht im Pfad → [].
+export function wordsBefore(path, blocks, id) {
+  const at = path.findIndex(n => n.type === 'word' && n.id === id)
+  if (at === -1) return []
+  const byId = new Map(blocks.map(b => [b.id, b]))
+  return path.slice(0, at).filter(n => n.type === 'word').flatMap(n => byId.get(n.id)?.words || [])
+}

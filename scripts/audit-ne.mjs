@@ -28,8 +28,9 @@ export const FUNCTION_WORDS = {
   Postpositionen: ['मा', 'को', 'लाई', 'बाट'],
   // „ist / bin / ist nicht“
   Kopula: ['हो', 'छ', 'छैन', 'होइन', 'छु'],
-  // ich, Sie, das, das dort, mein
-  Pronomen: ['म', 'तपाईं', 'यो', 'त्यो', 'मेरो'],
+  // ich, Sie, das, das dort, mein, ich (Ergativ, „मैले बुझिनँ“) – Pronomenformen sind
+  // Funktionswörter; die Ergativ-Regel selbst erklärt später eine Grammatik-Lektion.
+  Pronomen: ['म', 'तपाईं', 'यो', 'त्यो', 'मेरो', 'मैले'],
   // was, wie viel, wo
   Fragewörter: ['के', 'कति', 'कहाँ'],
   // „und“ (in den Zahlensätzen von nw2: „eins und eins …“)
@@ -37,6 +38,9 @@ export const FUNCTION_WORDS = {
   // „wird gebraucht“, „geben Sie“, „gehen Sie“, „geht/fährt“, „wird/ergibt“ (… macht zwei)
   Verbformen: ['चाहिन्छ', 'दिनुहोस्', 'जानुहोस्', 'जान्छ', 'हुन्छ'],
 }
+
+// Ab hier wird die Liste zum Schlupfloch für Inhaltswörter – das Skript warnt dann.
+export const FUNCTION_WORD_LIMIT = 30
 
 export const functionWordSet = () => new Set(Object.values(FUNCTION_WORDS).flat().map(nfc))
 
@@ -63,6 +67,8 @@ export function auditPath(path, blocks, known) {
 }
 
 function main(argv) {
+  const fwCount = functionWordSet().size
+  if (fwCount > FUNCTION_WORD_LIMIT) console.warn(`⚠ ${fwCount} Funktionswörter (mehr als ${FUNCTION_WORD_LIMIT}) – Liste kürzen, Inhaltswörter gehören in Wortblöcke.`)
   if (argv.includes('--list-function-words')) {
     console.log('Funktionswörter (gelten überall als eingeführt):')
     for (const [group, list] of Object.entries(FUNCTION_WORDS)) console.log(`  ${group}: ${list.join(' ')}`)

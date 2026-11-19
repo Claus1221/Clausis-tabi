@@ -4,11 +4,13 @@ import { Btn, Card } from '../../components/ui.jsx'
 import { XP_PER_KANA, XP_PER_WORD } from '../../lib/xp.js'
 import { SCRIPT_DATA } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
-import { speak, stopSpeaking } from '../lib/speech.js'
+import { speak, stopSpeaking, soundAvailable } from '../lib/speech.js'
 import { buildScriptQuiz, notesForLesson } from '../lib/scriptQuiz.js'
 import { buildWordQuiz } from '../lib/wordQuiz.js'
 import { feedbackColor } from '../lib/srs.js'
 import { KIND_LABEL, alone } from '../lib/learned.js'
+import { wordsBefore } from '../lib/path.js'
+import { NE_PATH } from '../data/path.js'
 import TraceCanvas from '../components/TraceCanvas.jsx'
 import { useSound, usePlayback, ListenButton, NoSoundMark, NO_SOUND_HINT } from '../components/sound.jsx'
 import { NeText, TappableSentence, useShowRoman } from '../components/text.jsx'
@@ -320,7 +322,8 @@ export function ScriptLesson({ lesson, alreadyDone = false, onComplete, onClose 
 
 // Ein Wort vorstellen: groß in Devanagari (Umschrift nach Schalter), Bedeutung, Anhören
 // (nur mit Ton), Beispielsatz zum Antippen mit Übersetzung.
-function WordStep({ word, idx, total, sound }) {
+// hint: Tipp-Hinweis unter dem Satz – nur beim ersten Wort des Blocks.
+function WordStep({ word, idx, total, sound, hint }) {
   return (
     <div>
       <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.indigo, textAlign: 'center', marginBottom: 4 }}>
@@ -331,7 +334,7 @@ function WordStep({ word, idx, total, sound }) {
       {sound !== false && <div style={{ textAlign: 'center', marginBottom: 14 }}><ListenButton text={word.dev} sound={sound} /></div>}
       <Card>
         <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>BEISPIELSATZ</div>
-        <TappableSentence dev={word.ex.dev} roman={word.ex.roman} tokens={word.ex.tokens} sound={sound} />
+        <TappableSentence dev={word.ex.dev} roman={word.ex.roman} tokens={word.ex.tokens} sound={sound} hint={hint} />
         <div style={{ fontSize: 15, color: C.indigo, marginTop: 8, lineHeight: 1.45 }}>„{word.ex.de}“</div>
       </Card>
     </div>
@@ -346,7 +349,10 @@ const WORD_PROMPT = {
 
 // Quiz am Blockende (Fragen aus lib/wordQuiz.js). Einmal beim Betreten gebaut – mit dem
 // Ton-Stand von diesem Moment: Hörfragen gibt es nur, wenn Ton sicher da ist (true, nicht
-// „wird geprüft“), und auch dann lässt sich statt des Tons die Bedeutung einblenden.
+// „wird geprüft“). Je Hörfrage wird der Ton beim Zeigen neu geprüft: ist er inzwischen weg
+// (Stimme entladen, Manifest nicht erreichbar), steht sofort die Bedeutung da und die Frage
+// wird zu „Bedeutung sehen → Nepali wählen“ – nie ein Knopf, der nichts tut. Mit Ton lässt
+// sich die Bedeutung trotzdem einblenden.
 // Nepali-Optionen zeigen immer Devanagari, die Umschrift nur nach Schalter.
 function WordQuizStep({ block, earlier, sound, onFinish }) {
   const showRoman = useShowRoman()
@@ -355,14 +361,25 @@ function WordQuizStep({ block, earlier, sound, onFinish }) {
   const [answer, setAnswer] = useState(null) // gewählter Index
   const [right, setRight] = useState(0)
   const [showMeaning, setShowMeaning] = useState(false) // Hörfrage: Bedeutung eingeblendet
+  const [qSound, setQSound] = useState(null) // Ton-Stand der aktuellen Hörfrage
   const cur = quiz[qi]
   const revealed = answer !== null
   const isLast = qi === quiz.length - 1
 
-  // Hörfrage: einmal vorlesen; beim Wechsel/Schließen verstummen.
+  // Hörfrage: Ton prüfen, dann einmal vorlesen – oder ohne Ton die Bedeutung zeigen.
+  // Beim Wechsel/Schließen verstummen; eine späte Antwort der Prüfung wirkt nicht mehr.
   useEffect(() => {
-    if (cur?.kind === 'listen') speak(cur.word.dev)
-    return () => stopSpeaking()
+    let live = true
+    setQSound(null)
+    if (cur?.kind === 'listen') {
+      soundAvailable().then(ok => {
+        if (!live) return
+        setQSound(!!ok)
+        if (ok) speak(cur.word.dev)
+        else setShowMeaning(true)
+      })
+    }
+    return () => { live = false; stopSpeaking() }
   }, [qi]) // eslint-disable-line
 
   const choose = i => {
@@ -386,13 +403,16 @@ function WordQuizStep({ block, earlier, sound, onFinish }) {
         {cur.kind === 'word' && <div style={{ fontSize: 20, fontWeight: 600, color: C.sumi, lineHeight: 1.4 }}>{cur.word.de}</div>}
         {cur.kind === 'listen' && (
           <>
-            <button onClick={() => speak(cur.word.dev)} aria-label="Nochmal anhören"
-              style={{ background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, borderRadius: 36, width: 72, height: 72, fontSize: 30, cursor: 'pointer', margin: '0 auto 6px' }}>🔊</button>
+            {/* Gemeinsamer Anhören-Knopf: prüfen → gesperrt, kein Ton → nichts (quiet). */}
+            {qSound !== false && (
+              <div style={{ marginBottom: 6 }}><ListenButton key={qi} text={cur.word.dev} sound={qSound} label="Nochmal anhören" quiet /></div>
+            )}
+            {qSound === false && <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 4 }}><NoSoundMark /> Gerade kein Ton – wähle nach der Bedeutung:</div>}
             {/* Ausweg, falls der Ton doch nicht kommt: die Bedeutung, nie die Umschrift –
                 sonst wäre die Frage nur über die Umschrift lösbar. */}
             {showMeaning ? (
               <div style={{ fontSize: 17, fontWeight: 600, color: C.sumi }}>{cur.word.de}</div>
-            ) : !revealed && (
+            ) : !revealed && qSound === true && (
               <button onClick={() => setShowMeaning(true)}
                 style={{ minHeight: 44, background: 'none', border: 'none', color: C.indigo, fontSize: 13, textDecoration: 'underline', cursor: 'pointer' }}>
                 Nichts gehört? Bedeutung zeigen
@@ -401,7 +421,7 @@ function WordQuizStep({ block, earlier, sound, onFinish }) {
           </>
         )}
       </Card>
-      <p style={{ marginBottom: 12, fontWeight: 500 }}>{WORD_PROMPT[cur.kind]}</p>
+      <p style={{ marginBottom: 12, fontWeight: 500 }}>{WORD_PROMPT[cur.kind === 'listen' && qSound === false ? 'word' : cur.kind]}</p>
 
       {/* Bedeutungen (oft lang) einspaltig, Nepali-Wörter zweispaltig. */}
       <div style={{ display: 'grid', gridTemplateColumns: nepaliOptions ? '1fr 1fr' : '1fr', gap: 8 }}>
@@ -452,11 +472,9 @@ function WordQuizStep({ block, earlier, sound, onFinish }) {
 export function WordBlock({ block, alreadyDone = false, onComplete, onClose }) {
   const sound = useSound()
   const words = block.words
-  // Ablenker-Vorrat fürs Quiz: Wörter der Blöcke davor (kleine Blöcke füllen auf).
-  const earlier = useMemo(() => {
-    const i = WORD_BLOCKS.findIndex(b => b.id === block.id)
-    return WORD_BLOCKS.slice(0, Math.max(0, i)).flatMap(b => b.words)
-  }, [block.id])
+  // Ablenker-Vorrat fürs Quiz: Wörter der Wort-Stationen, die im PFAD davor liegen
+  // (kleine Blöcke füllen auf) – nicht die Array-Reihenfolge von WORD_BLOCKS.
+  const earlier = useMemo(() => wordsBefore(NE_PATH, WORD_BLOCKS, block.id), [block.id])
   // Ein leerer Block (Datenfehler) hätte kein Quiz – dann springt der Ablauf direkt zum Ende.
   const steps = useMemo(() => [
     { kind: 'intro' },
@@ -499,7 +517,7 @@ export function WordBlock({ block, alreadyDone = false, onComplete, onClose }) {
       </div>
     )
   } else if (cur.kind === 'word') {
-    content = <WordStep key={step} word={cur.w} idx={cur.i} total={words.length} sound={sound} />
+    content = <WordStep key={step} word={cur.w} idx={cur.i} total={words.length} sound={sound} hint={cur.i === 0} />
   } else if (cur.kind === 'quiz') {
     content = <WordQuizStep block={block} earlier={earlier} sound={sound} onFinish={(r, n) => { setScore([r, n]); next() }} />
   } else {

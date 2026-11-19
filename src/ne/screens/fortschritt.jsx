@@ -5,8 +5,8 @@ import { computeStats } from '../../useProgress.js'
 import { periodBuckets, weekSummary } from '../../lib/progress.js'
 import { Card } from '../../components/ui.jsx'
 import { SCRIPT_DATA, SCRIPT_LESSONS } from '../data/script.js'
-import { WORD_BLOCKS, learnedWords } from '../data/words.js'
-import { learnedItems, dueItems, srsEntry } from '../lib/learned.js'
+import { WORD_BLOCKS } from '../data/words.js'
+import { learnedItems, dueItems, srsEntry, itemInfo } from '../lib/learned.js'
 import { SRS_STAGES } from '../lib/srs.js'
 
 // ─── Fortschritt (Yatra) ──────────────────────────────────────────────────────
@@ -40,13 +40,13 @@ export default function FortschrittScreen({ onReview }) {
   const cardTotal = srsVals.length
   const due = dueItems(progress).length
 
-  // learned enthält auch Wörter – für „Devanagari lesen“ zählen nur Schriftzeichen.
+  // learned enthält Zeichen und Wörter (w:-Schlüssel) – gezählt wird je Art über itemInfo.
   const charsTotal = Object.keys(SCRIPT_DATA).length
-  const charsLearned = learned.filter(k => k in SCRIPT_DATA).length
+  const charsLearned = learned.filter(k => itemInfo(k).kind === 'script').length
   const lessonsDone = SCRIPT_LESSONS.filter(l => (progress.completedLessons || []).includes(l.id)).length
   const pct = Math.round(charsLearned / charsTotal * 100)
   const wordsTotal = WORD_BLOCKS.reduce((n, b) => n + b.words.length, 0)
-  const wordsLearned = learnedWords(progress.completedWordBlocks).length
+  const wordsLearned = learned.filter(k => itemInfo(k).kind === 'word').length
   const blocksDone = WORD_BLOCKS.filter(b => (progress.completedWordBlocks || []).includes(b.id)).length
   const wordPct = Math.round(wordsLearned / Math.max(1, wordsTotal) * 100)
 
