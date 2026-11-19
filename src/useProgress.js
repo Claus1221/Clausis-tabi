@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { doc, onSnapshot, setDoc, arrayUnion, increment } from 'firebase/firestore'
 import { db } from './firebase'
 
@@ -159,14 +159,36 @@ export function computeStats(progress) {
   return { xpToday, totalXp, level, streak, goal }
 }
 
+// Hat Firestore den Zugriff verweigert? Das passiert, wenn der Admin jemanden
+// sperrt, während die App offen ist (Regeln prüfen die Freigabeliste).
+export function isDeniedError(err) {
+  return err?.code === 'permission-denied'
+}
+
 // ─── Hook: lädt live aus Firestore und liefert Schreib-Funktionen ─────────────
-export function useProgress(uid) {
+// `lang` ist für die Sprachwahl vorgesehen und wird hier noch nicht gelesen.
+// opts.onDenied: wird (höchstens einmal je Nutzer) gerufen, wenn Lesen/Schreiben
+// mit permission-denied scheitert – die App prüft dann den Zugang neu.
+export function useProgress(uid, lang = 'ja', opts = {}) {
   const [progress, setProgress] = useState(DEFAULT)
   const [loading, setLoading] = useState(true)
   // Echter Schreibfehler (z. B. von Firestore-Regeln verweigert) – NICHT bloßes
   // Offline-Sein: das fängt der lokale Cache (firebase.js) unsichtbar ab und
   // synchronisiert automatisch, sobald wieder Netz da ist.
   const [saveError, setSaveError] = useState(null)
+
+  // Neuester Callback in einer Ref: so hängt der Firestore-Listener nicht an
+  // dessen Identität (AuthGate erzeugt sie bei jedem Render neu).
+  const onDeniedRef = useRef(opts.onDenied)
+  onDeniedRef.current = opts.onDenied
+  // Mehrere gleichzeitig scheiternde Zugriffe sollen nur EINE Neuprüfung auslösen.
+  const deniedRef = useRef(false)
+  useEffect(() => { deniedRef.current = false }, [uid])
+  const handleDenied = (err) => {
+    if (!isDeniedError(err) || deniedRef.current) return
+    deniedRef.current = true
+    onDeniedRef.current?.()
+  }
 
   useEffect(() => {
     if (!uid || !db) { setLoading(false); return }
@@ -177,7 +199,7 @@ export function useProgress(uid) {
         setProgress(snap.exists() ? { ...DEFAULT, ...snap.data() } : DEFAULT)
         setLoading(false)
       },
-      () => setLoading(false),
+      err => { setLoading(false); handleDenied(err) },
     )
     return unsub
   }, [uid])
@@ -193,6 +215,7 @@ export function useProgress(uid) {
       setSaveError(null)
     } catch (err) {
       setSaveError(err?.message || 'Speichern fehlgeschlagen')
+      handleDenied(err)
     }
   }
 

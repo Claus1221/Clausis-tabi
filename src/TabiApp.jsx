@@ -23,8 +23,8 @@ export default function TabiApp() {
   const [tab, setTab] = useState('reise')
   const [prevTab, setPrevTab] = useState('reise')   // Rücksprung aus den Einstellungen
   const [uebenMode, setUebenMode] = useState(null)  // gewünschter Übungsmodus beim Tab-Wechsel
-  const { user, logout } = useAuth()
-  const { progress, saveError, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, completeTalk, addPhrase, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset } = useProgress(user?.uid)
+  const { user, logout, recheckAccess } = useAuth()
+  const { progress, saveError, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, completeTalk, addPhrase, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset } = useProgress(user?.uid, 'ja', { onDenied: recheckAccess })
   const { level } = computeStats(progress)
   const settings = getSettings(progress)
 

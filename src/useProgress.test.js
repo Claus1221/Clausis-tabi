@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sm2, addDays, addHours, localDateTime, LAPSE_RETRY_HOURS, dueKana, computeStats } from './useProgress.js'
+import { sm2, addDays, addHours, localDateTime, LAPSE_RETRY_HOURS, dueKana, computeStats, isDeniedError } from './useProgress.js'
 
 // Werte unten sind von Hand anhand der sm2()-Formel nachgerechnet (siehe
 // useProgress.js), nicht aus der Implementierung zurückgewonnen.
@@ -85,5 +85,16 @@ describe('computeStats', () => {
     expect(computeStats({ xpByDate: {} }).level).toBe(1)
     expect(computeStats({ xpByDate: { '2020-01-01': 999 } }).level).toBe(1)
     expect(computeStats({ xpByDate: { '2020-01-01': 1000 } }).level).toBe(2)
+  })
+})
+
+describe('isDeniedError (gesperrt bei offener App)', () => {
+  it('erkennt nur permission-denied', () => {
+    expect(isDeniedError({ code: 'permission-denied' })).toBe(true)
+  })
+  it('ignoriert andere Fehler', () => {
+    expect(isDeniedError({ code: 'unavailable' })).toBe(false)
+    expect(isDeniedError(undefined)).toBe(false)
+    expect(isDeniedError(new Error('x'))).toBe(false)
   })
 })
