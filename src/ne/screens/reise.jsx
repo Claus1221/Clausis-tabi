@@ -24,6 +24,8 @@ const BAND_THEMES = ['tal', 'huegel', 'see', 'berge']
 export default function ReiseScreen() {
   const { progress, completeLesson, scheduleNew } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
+  // Station öffnen und dabei merken, ob sie schon erledigt war (s. ScriptLesson unten).
+  const open = node => setActive({ ...node, wasDone: isNodeDone(node, progress) })
   const currentRef = useRef(null)
 
   // Beim Öffnen zur offenen Station scrollen (wie auf der japanischen Karte).
@@ -39,9 +41,14 @@ export default function ReiseScreen() {
   // ─ Aktive Lektion als Vollbild-Overlay ─
   if (active?.type === 'script') {
     const lesson = SCRIPT_LESSONS.find(l => l.id === active.id)
-    const already = isNodeDone(active, progress)
+    // Stand beim ÖFFNEN: onComplete bucht sofort, die Lektion steht danach noch ~350 ms.
+    // Läse man hier live, kippte der Abschluss-Bildschirm in dieser Spanne auf
+    // „Schon abgeschlossen“.
+    const already = active.wasDone
     const close = () => setActive(null)
     return (
+      // onComplete bucht nur; geschlossen wird über onClose (ScriptLesson ruft es nach
+      // dem Buchen verzögert bzw. beim ✕).
       <ScriptLesson lesson={lesson} alreadyDone={already} onClose={close}
         onComplete={() => {
           // Wiederholung plant idempotent ein (falls ein früherer Abschluss offline
@@ -51,7 +58,6 @@ export default function ReiseScreen() {
           // idempotent bzw. ein merge-sicherer Patch (arrayUnion/increment, nur fehlende Karten).
           scheduleNew(lesson.chars.map(nfc))
           if (!already) completeLesson(lesson.id, lesson.chars.length * XP_PER_KANA, { kana: lesson.chars.length })
-          close()
         }} />
     )
   }
@@ -104,7 +110,7 @@ export default function ReiseScreen() {
           Station für Station durch Nepal – zuerst die Schrift: Devanagari, Zeichen für Zeichen.
         </p>
         {current ? (
-          <Btn onClick={() => setActive(current)} style={{ width: '100%', minHeight: 48, marginBottom: 12 }}>
+          <Btn onClick={() => open(current)} style={{ width: '100%', minHeight: 48, marginBottom: 12 }}>
             Weiter: {nodeMeta(current).title} →
           </Btn>
         ) : (
@@ -151,7 +157,7 @@ export default function ReiseScreen() {
             return (
               <div key={i} ref={n.state === 'current' ? currentRef : null}
                 style={{ position: 'absolute', left: n.x, top: n.y, transform: 'translate(-50%,-50%)', width: 2 * R + 64, textAlign: 'center' }}>
-                <button onClick={() => !locked && setActive(n.node)} disabled={locked}
+                <button onClick={() => !locked && open(n.node)} disabled={locked}
                   aria-label={`${n.meta.title}${locked ? ' (gesperrt)' : n.state === 'done' ? ' (geschafft, wiederholen)' : ' (starten)'}`}
                   style={{
                     position: 'relative', width: 2 * R, height: 2 * R, borderRadius: '50%',

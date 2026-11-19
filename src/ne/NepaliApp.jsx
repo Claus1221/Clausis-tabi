@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { useAuth } from '../AuthGate.jsx'
+import { useLang } from '../LangGate.jsx'
 import { useProgress, computeStats } from '../useProgress.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
 import { C, NE } from '../theme.js'
@@ -25,14 +26,47 @@ const NE_TABS = [
   { id: 'fortschritt', label: 'प्रगति', sub: 'Fortschritt' },
 ]
 
+// Nach so vielen ms Laden bietet der Platzhalter Abmelden und Sprachwechsel an.
+const STUCK_MS = 4000
+
+// Platzhalter beim Laden – des Lernstands (s. unten) wie eines Screen-Chunks. Abmelden
+// und Sprachwechsel wohnen in den Einstellungen, also selbst in einem lazy Chunk; hängt
+// das Laden (kein Netz, Chunk fehlt nach einem Update), wären sie unerreichbar. Daher
+// erscheinen sie hier nach STUCK_MS kompakt (44 px) – vorher nicht, damit ein normaler
+// kurzer Ladevorgang nicht flackert.
 function ScreenFallback() {
-  return <div style={{ padding: 40, textAlign: 'center', color: C.textMuted, fontSize: 13 }}>Lädt…</div>
+  const { logout } = useAuth()
+  const { setLang, langs } = useLang()
+  const [stuck, setStuck] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setStuck(true), STUCK_MS)
+    return () => clearTimeout(t)
+  }, [])
+  const other = langs.find(l => l !== 'ne')
+  const btn = {
+    minHeight: 44, padding: '0 16px', borderRadius: 22, border: `1px solid ${C.washiDark}`,
+    background: '#fff', color: C.sumi, fontSize: 13, cursor: 'pointer',
+  }
+  return (
+    <div style={{ padding: 40, textAlign: 'center', color: C.textMuted, fontSize: 13 }}>
+      Lädt…
+      {stuck && (
+        <div style={{ marginTop: 18 }}>
+          <p style={{ margin: '0 0 10px' }}>Dauert ungewöhnlich lange.</p>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {other && <button onClick={() => setLang(other)} style={btn}>Zu {LANGS[other].name} wechseln</button>}
+            <button onClick={logout} style={btn}>Abmelden</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function NepaliApp() {
   const { user, recheckAccess } = useAuth()
   const progressApi = useProgress(user?.uid, 'ne', { onDenied: recheckAccess })
-  const { progress, saveError, scheduleNew } = progressApi
+  const { progress, saveError, scheduleNew, loading } = progressApi
   const { level } = computeStats(progress)
   const [tab, setTab] = useState('reise')
   const [prevTab, setPrevTab] = useState('reise') // Rücksprung aus den Einstellungen
@@ -118,11 +152,17 @@ export default function NepaliApp() {
       {saveError && <div style={banner}>⚠ Speichern fehlgeschlagen – Fortschritt wird lokal gehalten, bitte Verbindung prüfen.</div>}
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 80 }}>
-        <div key={tab} className="screen-enter">
-          <Suspense fallback={<ScreenFallback />}>
-            {screens[tab]}
-          </Suspense>
-        </div>
+        {/* Ein Tor für alle Screens: solange der Lernstand lädt, ist `progress` nur der
+            leere Standard. Screens bauen Stapel/Runden aus useState-Startwerten – sie
+            blieben sonst leer („Nichts fällig“), und auf der Karte wäre eine erledigte
+            Lektion scheinbar offen (nochmal XP). Die Kopfzeile bleibt sichtbar. */}
+        {loading ? <ScreenFallback /> : (
+          <div key={tab} className="screen-enter">
+            <Suspense fallback={<ScreenFallback />}>
+              {screens[tab]}
+            </Suspense>
+          </div>
+        )}
       </div>
 
       <TabBar active={tab} setActive={setTab} tabs={NE_TABS} font={NE} />

@@ -5,6 +5,7 @@ import { SETTINGS_DEFAULTS } from '../useProgress.js'
 export const ProgressCtx = createContext({
   progress: { completedLessons: [], completedWordBlocks: [], completedGrammar: [], completedChapters: [], completedDialogs: [], chapterStars: {}, xpByDate: {}, srs: {}, settings: {} },
   settings: SETTINGS_DEFAULTS,
+  loading: false, // Nepali reicht den Ladezustand aus useProgress durch (Japanisch nicht)
   awardXp: async () => {},
   completeLesson: async () => {},
   completeWordBlock: async () => {},

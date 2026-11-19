@@ -1,9 +1,10 @@
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useRef, useContext } from 'react'
 import { C, NE } from '../../theme.js'
 import { ProgressCtx } from '../../state/ProgressContext.js'
 import { XP_PER_CARD } from '../../lib/xp.js'
 import { Card, Btn } from '../../components/ui.jsx'
-import { UebenEmpty, UebenDone } from '../../components/ueben.jsx'
+import { UebenHead, UebenEmpty, UebenDone } from '../../components/ueben.jsx'
+import { startSession, rateCard, currentCard, isFinished } from '../lib/reviewQueue.js'
 import { SCRIPT_DATA } from '../data/script.js'
 import { learnedItems, itemInfo, dueItems, alone } from '../lib/learned.js'
 import { SRS_RATINGS, feedbackColor } from '../lib/srs.js'
@@ -17,52 +18,51 @@ import { useSound, ListenButton } from '../components/sound.jsx'
 // Alles geht ohne Ton: Hören ist eine Zusatz-Art, nie die einzige, und auch dort lässt
 // sich das Geschriebene einblenden. Karten-Schlüssel kommen aus learned.js (NFC).
 
-// Kopfzeile wie UebenHead (components/ueben.jsx), aber mit 44-px-Schließen-Knopf –
-// das ✕ dort ist für Finger zu klein, und der geteilte Baustein bleibt unverändert.
-function Head({ title, idx, total, onClose }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-      <span style={{ color: C.textMuted, fontSize: 13 }}>{title}{total ? ` · ${idx + 1} / ${total}` : ''}</span>
-      <button onClick={onClose} aria-label="Übung schließen" style={{
-        width: 44, height: 44, marginRight: -10, background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: 18,
-      }}>✕</button>
-    </div>
-  )
-}
+const HEAD_CLOSE = 44 // Tippfläche des ✕ in UebenHead
 
 // Schriftgröße für die große Kartenfront: Verbindungen und Vokalzeichen am क sind breiter.
 const frontSize = s => ([...s].length > 3 ? 56 : 80)
 
 // ─── Wiederholen (SRS) ────────────────────────────────────────────────────────
 // Modus 'due' = fällige Karten; 'free' = Fleiß über ALLE gelernten Karten (begrenzte
-// Runde). Nur wirklich fällige Karten verschieben den Plan – so bringt Vorab-Üben den
-// Wiederholungsplan nicht durcheinander (wie im Japanischen).
+// Runde). Die Regeln der Runde (Nochmal ans Ende, höchstens eine Bewertung je Karte,
+// nur beim Start fällige Karten) stehen getestet in lib/reviewQueue.js.
+// Der Stapel wird beim Öffnen aus `progress` gebaut – das ist sicher, weil NepaliApp
+// keinen Screen zeigt, solange der Lernstand noch lädt.
 function SRSQuiz({ onClose, initialMode = 'due', sound }) {
   const { progress, awardXp, reviewCard, settings } = useContext(ProgressCtx)
   const learned = learnedItems(progress)
-  const [dueSet, setDueSet] = useState(() => new Set(dueItems(progress)))
 
   // Gemischt, damit nicht immer die Lektionsreihenfolge abgefragt wird.
-  const buildDeck = m => (m === 'free' ? shuffle(learned).slice(0, settings.freeSize) : shuffle([...dueSet]))
+  const buildDeck = (m, due) => (m === 'free' ? shuffle(learned).slice(0, settings.freeSize) : shuffle(due))
 
-  const [mode, setMode] = useState(initialMode)
-  const [deck, setDeck] = useState(() => buildDeck(initialMode))
-  const [queue, setQueue] = useState(deck)
+  // Eine Runde = Modus + Stapelgröße (für „x / N gekonnt“) + Zustand aus reviewQueue.
+  const [round, setRound] = useState(() => {
+    const due = dueItems(progress)
+    const deck = buildDeck(initialMode, due)
+    return { mode: initialMode, size: deck.length, s: startSession(deck, due) }
+  })
   const [flipped, setFlipped] = useState(false)
-  const [passed, setPassed] = useState(0)
-  const [lapses, setLapses] = useState(0)
-  const [repeats, setRepeats] = useState(() => new Set())
+  const { mode, size, s: session } = round
+  const item = currentCard(session)
+  // Jüngster Rundenstand, schon bevor neu gerendert ist; folgt jedem neuen `round`.
+  const liveRef = useRef(session)
+  const seenRound = useRef(round)
+  if (seenRound.current !== round) { seenRound.current = round; liveRef.current = session }
 
   // Nichts weiterreden lassen, wenn die Karte wechselt oder die Runde endet.
-  useEffect(() => () => stopSpeaking(), [queue[0], flipped]) // eslint-disable-line
+  useEffect(() => () => stopSpeaking(), [item, flipped])
 
+  // Fleiß-Runde: Karten, die beim ersten Start fällig waren und noch nicht bewertet
+  // sind, zählen weiter als fällig – alle anderen verschieben den Plan nicht.
   const startFree = () => {
     const d = buildDeck('free')
-    setMode('free'); setDeck(d); setQueue(d)
-    setPassed(0); setLapses(0); setRepeats(new Set()); setFlipped(false)
+    setRound({ mode: 'free', size: d.length, s: startSession(d, session.pending) })
+    setFlipped(false)
   }
+  const { passed, lapses, repeats } = session
 
-  if (deck.length === 0) {
+  if (size === 0) {
     const canFree = mode !== 'free' && learned.length > 0
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
@@ -79,7 +79,7 @@ function SRSQuiz({ onClose, initialMode = 'due', sound }) {
     )
   }
 
-  if (queue.length === 0) {
+  if (isFinished(session)) {
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>{mode === 'free' ? '🔥' : '✅'}</div>
@@ -95,35 +95,28 @@ function SRSQuiz({ onClose, initialMode = 'due', sound }) {
     )
   }
 
-  const item = queue[0]
   const info = itemInfo(item)
 
   const rate = quality => {
-    // Fällige Karte: Bewertung sofort in den Plan (auch „Nochmal“ – dann ist sie in ein
-    // paar Stunden wieder dran). Danach zählt sie in dieser Runde nicht mehr als fällig.
-    if (dueSet.has(item)) {
-      reviewCard(item, quality)
-      setDueSet(prev => { const n = new Set(prev); n.delete(item); return n })
-    }
-    if (quality < 3) {
-      // „Nochmal“: ans Ende der Warteschlange, kommt in dieser Runde wieder.
-      setRepeats(prev => new Set(prev).add(item))
-      setQueue(prev => [...prev.slice(1), prev[0]])
-      setLapses(l => l + 1)
-    } else {
-      awardXp(XP_PER_CARD)
-      setPassed(p => p + 1)
-      setQueue(prev => prev.slice(1))
-    }
+    // Schreiben (reviewCard) nur, wenn reviewQueue es verlangt: erste Bewertung einer
+    // beim Start fälligen Karte – auch „Nochmal“, dann ist sie in ein paar Stunden dran.
+    // Gerechnet wird auf liveRef, nicht auf dem gerenderten `session`: zwei Tipps im
+    // selben Render-Durchgang sähen sonst beide denselben Stand und schrieben doppelt.
+    const { state, review } = rateCard(liveRef.current, quality)
+    if (state === liveRef.current) return
+    liveRef.current = state
+    if (review) reviewCard(review.key, review.quality)
+    if (quality >= 3) awardXp(XP_PER_CARD)
+    setRound(r => ({ ...r, s: state }))
     setFlipped(false)
   }
 
   return (
     <div style={{ padding: '12px 20px 20px' }}>
-      <Head title={`${mode === 'free' ? '🔥 Fleiß · ' : ''}${passed} / ${deck.length} gekonnt · noch ${queue.length}`} onClose={onClose} />
+      <UebenHead title={`${mode === 'free' ? '🔥 Fleiß · ' : ''}${passed} / ${size} gekonnt · noch ${session.queue.length}`} onClose={onClose} closeSize={HEAD_CLOSE} />
 
       <Card style={{ textAlign: 'center', minHeight: 200, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 14, position: 'relative' }}>
-        {repeats.has(item) && (
+        {repeats.includes(item) && (
           <div style={{ position: 'absolute', top: 10, left: 12, fontSize: 11, color: C.shu, fontWeight: 600 }}>🔁 nochmal</div>
         )}
         <div style={{ fontSize: frontSize(info.front), fontFamily: NE, color: C.sumi, lineHeight: 1.3 }}>{info.front}</div>
@@ -225,7 +218,7 @@ function PracticeQuiz({ mode, onClose }) {
 
   return (
     <div style={{ padding: '12px 20px 20px' }}>
-      <Head title={PRACTICE_TITLE[mode]} idx={idx} total={rounds.length} onClose={onClose} />
+      <UebenHead title={PRACTICE_TITLE[mode]} idx={idx} total={rounds.length} onClose={onClose} closeSize={HEAD_CLOSE} />
 
       <Card style={{ textAlign: 'center', minHeight: 150, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 14 }}>
         {mode === 'lesen' && (

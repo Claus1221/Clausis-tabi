@@ -2,11 +2,17 @@ import { C } from '../theme.js'
 import { Btn } from './ui.jsx'
 import { XP_PER_CARD } from '../lib/xp.js'
 
-export function UebenHead({ title, idx, total, onClose }) {
+// closeSize (optional, px): feste Tippfläche für das ✕ (z. B. 44 im Nepali-Kurs), dazu
+// ein aria-label. Ohne Angabe bleibt die Ausgabe exakt wie bisher.
+export function UebenHead({ title, idx, total, onClose, closeSize }) {
+  const big = closeSize ? {
+    width: closeSize, height: closeSize, marginRight: -Math.round((closeSize - 20) / 2), fontSize: 18,
+  } : null
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
       <span style={{ color: C.textMuted, fontSize: 13 }}>{title}{total ? ` · ${idx + 1} / ${total}` : ''}</span>
-      <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: 16 }}>✕</button>
+      <button onClick={onClose} {...(big ? { 'aria-label': 'Schließen' } : {})}
+        style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: 16, ...big }}>✕</button>
     </div>
   )
 }

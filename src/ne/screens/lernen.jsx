@@ -4,7 +4,7 @@ import { ProgressCtx } from '../../state/ProgressContext.js'
 import { Btn, LibSheet } from '../../components/ui.jsx'
 import { SCRIPT_DATA, SCRIPT_LESSONS, SCRIPT_NOTES } from '../data/script.js'
 import { KIND_LABEL, alone } from '../lib/learned.js'
-import { useSound, ListenButton } from '../components/sound.jsx'
+import { useSound, ListenButton, NO_SOUND_HINT } from '../components/sound.jsx'
 import { stopSpeaking } from '../lib/speech.js'
 
 // ─── Lernen (Yatra): Bibliothek zum Nachschlagen ──────────────────────────────
@@ -96,18 +96,18 @@ function NotesSheet({ onClose }) {
 }
 
 export default function LernenScreen() {
-  const { progress, settings } = useContext(ProgressCtx)
+  const { progress } = useContext(ProgressCtx)
   const sound = useSound()
   const [sel, setSel] = useState(null)        // Zeichen
   const [notesOpen, setNotesOpen] = useState(false)
-  const showRoman = settings?.showRoman !== false
   const done = progress.completedLessons || []
 
-  if (sel) return <CharSheet ch={sel} sound={sound} onClose={() => setSel(null)} />
-  if (notesOpen) return <NotesSheet onClose={() => setNotesOpen(false)} />
-
+  // Die Blätter liegen als fixes Overlay ÜBER der Tafel, statt sie zu ersetzen: so bleibt
+  // die Tafel gerendert und die Scroll-Position nach dem Schließen dieselbe.
   return (
     <div style={{ padding: '16px 16px 0' }}>
+      {sel && <CharSheet ch={sel} sound={sound} onClose={() => setSel(null)} />}
+      {notesOpen && <NotesSheet onClose={() => setNotesOpen(false)} />}
       <h2 style={{ fontSize: 20, color: C.indigo, marginBottom: 4 }}>
         Bibliothek <span style={{ fontFamily: NE }}>पढाइ</span>
       </h2>
@@ -115,6 +115,12 @@ export default function LernenScreen() {
         Alle Devanagari-Zeichen zum Nachschlagen – ohne Sperren, ohne Druck. Tippe ein Zeichen für
         Umschrift, Merkhilfe{sound ? ' und Ton' : ''}. Gelernt wird auf der Reise.
       </p>
+      {/* Ohne Ton steht der Hinweis hier einmal ausgeschrieben; im Blatt nur 🔇. */}
+      {sound === false && (
+        <div style={{ background: `${C.indigo}12`, borderRadius: 10, padding: 12, fontSize: 13, color: C.indigo, lineHeight: 1.5, marginBottom: 14 }}>
+          🔇 {NO_SOUND_HINT}
+        </div>
+      )}
 
       <button onClick={() => setNotesOpen(true)} style={{
         width: '100%', minHeight: 56, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
@@ -140,15 +146,15 @@ export default function LernenScreen() {
             {l.chars.map(ch => {
               const d = SCRIPT_DATA[ch]
               return (
-                <button key={ch} onClick={() => setSel(ch)} aria-label={`${ch} · ${d.roman}`}
+                // Lesung steht immer da (unabhängig von showRoman): sie ist der Inhalt des
+                // Schriftlernens, wie in Lektionen und auf der Kartenrückseite.
+                <button key={ch} onClick={() => setSel(ch)} aria-label={`${alone(ch)}, Umschrift ${d.roman} – Details öffnen`}
                   style={{
                     minHeight: 60, minWidth: 0, background: '#fff', border: `1px solid ${C.washiDark}`, borderRadius: 8,
                     cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px 2px',
                   }}>
                   <span style={{ fontSize: 24, fontFamily: NE, color: C.sumi, lineHeight: 1.3 }}>{d.shown}</span>
-                  {showRoman && (
-                    <span style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.2, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.roman}</span>
-                  )}
+                  <span style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.2, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.roman}</span>
                 </button>
               )
             })}

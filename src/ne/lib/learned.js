@@ -12,8 +12,7 @@ import { nfc } from './deva.js'
 // ankommen (Tastatur, Kopieren, Datenpflege) – ohne NFC wären das zwei Karten bzw. ein
 // Review, der seinen srs-Eintrag nicht findet.
 
-// Anzeige-Helfer für Karten und Zeichentafel (dieselben Werte wie in screens/players.jsx,
-// das sie noch selbst definiert).
+// Anzeige-Helfer für Lektion, Karten und Zeichentafel (einzige Fassung).
 export const KIND_LABEL = {
   vowel: 'Vokal', consonant: 'Konsonant', matra: 'Vokalzeichen',
   conjunct: 'Verbindung', sign: 'Zusatzzeichen', digit: 'Ziffer',

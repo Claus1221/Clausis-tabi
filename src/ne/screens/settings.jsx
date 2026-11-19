@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { C, NE } from '../../theme.js'
+import { C } from '../../theme.js'
 import { ProgressCtx } from '../../state/ProgressContext.js'
 import { Card, Btn } from '../../components/ui.jsx'
 import { useAuth } from '../../AuthGate.jsx'
@@ -90,18 +90,19 @@ export default function SettingsScreen({ onClose }) {
       {/* Umschrift */}
       <div style={section}>UMSCHRIFT</div>
       <Card style={{ marginBottom: 12 }}>
+        <div style={{ fontWeight: 600, fontSize: 14, color: C.sumi, marginBottom: 4 }}>Umschrift bei Wörtern und Sätzen</div>
         <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 10 }}>
-          Lateinische Umschrift unter dem Devanagari (z. B. <span style={{ fontFamily: NE, color: C.sumi }}>क</span> ka):
+          Lateinische Umschrift unter dem Devanagari:
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8 }} role="group" aria-label="Umschrift bei Wörtern und Sätzen">
           {[[true, 'An'], [false, 'Aus']].map(([val, lbl]) => (
             <button key={lbl} onClick={() => saveSettings({ showRoman: val })} aria-pressed={settings.showRoman === val}
               style={choice(settings.showRoman === val)}>{lbl}</button>
           ))}
         </div>
         <div style={{ fontSize: 12, color: C.textMuted, marginTop: 10, lineHeight: 1.5 }}>
-          Gilt für die Zeichentafel unter Lernen. Wo die Umschrift die Lösung ist – Lektionen,
-          beim Aufdecken einer Karte, im Nachschlage-Blatt –, steht sie immer.
+          Gilt für Wörter und Sätze, sobald es sie im Kurs gibt. Bei einzelnen Schriftzeichen
+          (Lektionen, Zeichentafel, Karteikarten) steht die Umschrift immer – sie ist dort der Lerninhalt.
         </div>
       </Card>
 
