@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sm2, addDays, addHours, localDateTime, LAPSE_RETRY_HOURS, dueKana, computeStats, isDeniedError, emptyProgress, DEFAULT_PROGRESS, progressView } from './useProgress.js'
+import { sm2, addDays, addHours, localDateTime, LAPSE_RETRY_HOURS, dueKana, computeStats, isDeniedError, emptyProgress, DEFAULT_PROGRESS, progressView, afterListenerError } from './useProgress.js'
 
 // Werte unten sind von Hand anhand der sm2()-Formel nachgerechnet (siehe
 // useProgress.js), nicht aus der Implementierung zurückgewonnen.
@@ -110,13 +110,38 @@ describe('emptyProgress', () => {
 
 describe('progressView (kein Stand einer anderen Sprache sichtbar)', () => {
   const data = { ...DEFAULT_PROGRESS, completedLessons: ['h1'] }
-  it('gleicher Schlüssel: die geladenen Daten, nicht mehr am Laden', () => {
-    expect(progressView({ key: 'u|ja', data }, 'u|ja')).toEqual({ progress: data, loading: false })
+  it('gleicher Schlüssel mit Snapshot: Daten, nicht am Laden, Rechnen erlaubt', () => {
+    expect(progressView({ key: 'u|ja', data, known: true }, 'u|ja'))
+      .toEqual({ progress: data, loading: false, canCompute: true })
   })
-  it('anderer Schlüssel: Standardwerte und noch am Laden', () => {
-    expect(progressView({ key: 'u|ja', data }, 'u|ne')).toEqual({ progress: DEFAULT_PROGRESS, loading: true })
+  it('gleicher Schlüssel, Fehler vor dem ersten Snapshot: Standardwerte, nicht am Laden, Rechnen gesperrt', () => {
+    expect(progressView({ key: 'u|ja', data: DEFAULT_PROGRESS, known: false }, 'u|ja'))
+      .toEqual({ progress: DEFAULT_PROGRESS, loading: false, canCompute: false })
   })
-  it('noch nichts geladen: Standardwerte und noch am Laden', () => {
-    expect(progressView(null, 'u|ja')).toEqual({ progress: DEFAULT_PROGRESS, loading: true })
+  it('anderer Schlüssel: Standardwerte, am Laden, Rechnen gesperrt', () => {
+    expect(progressView({ key: 'u|ja', data, known: true }, 'u|ne'))
+      .toEqual({ progress: DEFAULT_PROGRESS, loading: true, canCompute: false })
+  })
+  it('noch nichts geladen: Standardwerte, am Laden, Rechnen gesperrt', () => {
+    expect(progressView(null, 'u|ja')).toEqual({ progress: DEFAULT_PROGRESS, loading: true, canCompute: false })
+  })
+})
+
+describe('afterListenerError', () => {
+  it('behält bereits geladene Daten desselben Schlüssels', () => {
+    const prev = { key: 'u|ja', data: { ...DEFAULT_PROGRESS, completedLessons: ['h1'] }, known: true }
+    expect(afterListenerError(prev, 'u|ja')).toBe(prev)
+  })
+  it('ohne Daten für den Schlüssel: Standardwerte, aber unbekannter Stand', () => {
+    expect(afterListenerError(null, 'u|ja')).toEqual({ key: 'u|ja', data: DEFAULT_PROGRESS, known: false })
+    const other = { key: 'u|ne', data: DEFAULT_PROGRESS, known: true }
+    expect(afterListenerError(other, 'u|ja')).toEqual({ key: 'u|ja', data: DEFAULT_PROGRESS, known: false })
+  })
+})
+
+describe('DEFAULT_PROGRESS', () => {
+  it('ist tief eingefroren (wird als Live-Zustand geteilt)', () => {
+    expect(Object.isFrozen(DEFAULT_PROGRESS)).toBe(true)
+    for (const v of Object.values(DEFAULT_PROGRESS)) expect(Object.isFrozen(v)).toBe(true)
   })
 })

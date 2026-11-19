@@ -3,8 +3,15 @@ import { doc, onSnapshot, setDoc, arrayUnion, increment } from 'firebase/firesto
 import { db } from './firebase'
 import { progressPath } from './lib/lang'
 
+// Der Standard wird als Live-Zustand von allen geteilt – eingefroren, damit
+// ihn kein Verbraucher versehentlich für alle verändert.
+function deepFreeze(o) {
+  Object.values(o).forEach(v => { if (v && typeof v === 'object') deepFreeze(v) })
+  return Object.freeze(o)
+}
+
 // Standard-Fortschritt für einen neuen Nutzer: alles bei 0.
-export const DEFAULT_PROGRESS = {
+export const DEFAULT_PROGRESS = deepFreeze({
   completedLessons: [],    // IDs abgeschlossener Kana-Lektionen, z.B. ['h1','h2']
   completedWordBlocks: [], // IDs abgeschlossener Wort-Blöcke, z.B. ['wb1']
   completedGrammar: [],    // IDs gelesener Grammatik-Themen, z.B. ['g1']
@@ -17,7 +24,7 @@ export const DEFAULT_PROGRESS = {
   history: {},             // { 'YYYY-MM-DD': { kana, words, grammar, chapters, scenes } } → Wochen-Rückblick
   srs: {},                 // { '山': { ease, interval, reps, due } }  → Wiederholungsplan
   settings: {},            // Nutzer-Einstellungen (s. SETTINGS_DEFAULTS)
-}
+})
 
 // Das Objekt, das reset() schreibt: jedes Lernstand-Feld leer, nur die
 // Einstellungen bleiben. Aus DEFAULT_PROGRESS abgeleitet, damit ein neues Feld
@@ -30,8 +37,19 @@ export function emptyProgress(settings = {}) {
 // gehören. Beim Sprachwechsel ist so nie – auch nicht für einen Render – der
 // Stand der anderen Sprache sichtbar oder beschreibbar.
 export function progressView(loaded, key) {
-  if (loaded && loaded.key === key) return { progress: loaded.data, loading: false }
-  return { progress: DEFAULT_PROGRESS, loading: true }
+  if (loaded && loaded.key === key) {
+    // known: Daten stammen aus einem echten Snapshot. Sonst (Fehler vor dem
+    // ersten Snapshot) zeigt die UI Standardwerte, der echte Stand ist aber
+    // unbekannt – darauf aufbauend darf nichts geschrieben werden.
+    return { progress: loaded.data, loading: false, canCompute: !!loaded.known }
+  }
+  return { progress: DEFAULT_PROGRESS, loading: true, canCompute: false }
+}
+
+// Zustand nach einem Listener-Fehler: schon geladene Daten desselben Schlüssels
+// bleiben stehen (wie vor der Sprachwahl), sonst Standardwerte mit unbekanntem Stand.
+export function afterListenerError(prev, key) {
+  return prev && prev.key === key ? prev : { key, data: DEFAULT_PROGRESS, known: false }
 }
 
 const DAILY_GOAL = 200      // XP-Ziel pro Tag (Standard, per Einstellungen änderbar)
@@ -190,7 +208,12 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   // Geladene Daten samt dem Schlüssel (Nutzer|Sprache), zu dem sie gehören.
   const key = `${uid}|${lang}`
   const [loaded, setLoaded] = useState(null)
-  const { progress, loading } = progressView(loaded, key)
+  const { progress, loading, canCompute } = progressView(loaded, key)
+  // Schreib-Funktionen lesen Nutzer/Sprache/Stand zum AUFRUFZEITPUNKT aus dieser
+  // Ref: eine vor einem Sprachwechsel gemerkte Funktion schreibt sonst ins alte
+  // Dokument oder rechnet aus den Daten der alten Sprache.
+  const latest = useRef({})
+  latest.current = { uid, lang, progress, canCompute }
   // Echter Schreibfehler (z. B. von Firestore-Regeln verweigert) – NICHT bloßes
   // Offline-Sein: das fängt der lokale Cache (firebase.js) unsichtbar ab und
   // synchronisiert automatisch, sobald wieder Netz da ist.
@@ -211,21 +234,21 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
 
   useEffect(() => {
     // Ohne Nutzer (lokaler Dev-Bypass) gibt es nichts zu laden: Standardwerte.
-    if (!uid || !db) { setLoaded({ key, data: DEFAULT_PROGRESS }); return }
+    if (!uid || !db) { setLoaded({ key, data: DEFAULT_PROGRESS, known: false }); return }
     const unsub = onSnapshot(
       doc(db, ...progressPath(uid, lang)),
       snap => {
-        setLoaded({ key, data: snap.exists() ? { ...DEFAULT_PROGRESS, ...snap.data() } : DEFAULT_PROGRESS })
+        setLoaded({ key, data: snap.exists() ? { ...DEFAULT_PROGRESS, ...snap.data() } : DEFAULT_PROGRESS, known: true })
       },
-      // Auch nach einem Fehler nicht ewig „lädt": Standardwerte für diesen Schlüssel.
-      err => { setLoaded({ key, data: DEFAULT_PROGRESS }); handleDenied(err) },
+      // Nach einem Fehler nicht ewig „lädt"; geladene Daten bleiben erhalten.
+      err => { setLoaded(prev => afterListenerError(prev, key)); handleDenied(err) },
     )
     return unsub
   }, [uid, lang])
 
   // Das Dokument wird bei jedem Schreiben für den AKTUELLEN Nutzer/Sprache
   // gebildet – nie aus einem Rest der vorherigen Sprache.
-  const ref = () => doc(db, ...progressPath(uid, lang))
+  const ref = () => doc(db, ...progressPath(latest.current.uid, latest.current.lang))
 
   // Schreibt sicher: fängt echte Fehler ab (Firestore-Regel verweigert, Quota,
   // korrupte Daten) und macht sie über `saveError` sichtbar, statt den
@@ -242,7 +265,8 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
 
   // XP für heute gutschreiben (atomar per increment, auch geräteübergreifend korrekt).
   const awardXp = async (amount) => {
-    if (!uid || !db || !amount) return
+    const L = latest.current
+    if (!L.uid || !db || !amount) return
     await safeWrite({ xpByDate: { [localDate()]: increment(amount) } }, { merge: true })
   }
 
@@ -257,7 +281,8 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
 
   // Lektion abschließen: als erledigt markieren UND XP gutschreiben.
   const completeLesson = async (id, xp = 0, stats) => {
-    if (!uid || !db) return
+    const L = latest.current
+    if (!L.uid || !db) return
     await safeWrite(
       { completedLessons: arrayUnion(id), xpByDate: { [localDate()]: increment(xp) }, ...histPatch(stats) },
       { merge: true },
@@ -266,7 +291,8 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
 
   // Einen Wort-Block als abgeschlossen markieren + XP gutschreiben.
   const completeWordBlock = async (blockId, xp = 0, stats) => {
-    if (!uid || !db) return
+    const L = latest.current
+    if (!L.uid || !db) return
     await safeWrite(
       { completedWordBlocks: arrayUnion(blockId), xpByDate: { [localDate()]: increment(xp) }, ...histPatch(stats) },
       { merge: true },
@@ -275,7 +301,8 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
 
   // Ein Grammatik-Thema als gelernt markieren + XP gutschreiben.
   const completeGrammar = async (grammarId, xp = 0, stats = { grammar: 1 }) => {
-    if (!uid || !db) return
+    const L = latest.current
+    if (!L.uid || !db) return
     await safeWrite(
       { completedGrammar: arrayUnion(grammarId), xpByDate: { [localDate()]: increment(xp) }, ...histPatch(stats) },
       { merge: true },
@@ -284,7 +311,8 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
 
   // Ein Geschichts-Kapitel als abgeschlossen markieren + XP gutschreiben.
   const completeChapter = async (chapterId, xp = 0, stats = { chapters: 1 }) => {
-    if (!uid || !db) return
+    const L = latest.current
+    if (!L.uid || !db) return
     await safeWrite(
       { completedChapters: arrayUnion(chapterId), xpByDate: { [localDate()]: increment(xp) }, ...histPatch(stats) },
       { merge: true },
@@ -293,7 +321,8 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
 
   // Eine Gesprächs-Szene als abgeschlossen markieren + XP gutschreiben.
   const completeDialog = async (dialogId, xp = 0, stats = { scenes: 1 }) => {
-    if (!uid || !db) return
+    const L = latest.current
+    if (!L.uid || !db) return
     await safeWrite(
       { completedDialogs: arrayUnion(dialogId), xpByDate: { [localDate()]: increment(xp) }, ...histPatch(stats) },
       { merge: true },
@@ -303,7 +332,8 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   // Ein freies KI-Gespräch als gemeistert markieren + XP gutschreiben. Zählt im
   // Tages-Journal als Szene mit (es IST eine Gesprächs-Übung).
   const completeTalk = async (talkId, xp = 0, stats = { scenes: 1 }) => {
-    if (!uid || !db) return
+    const L = latest.current
+    if (!L.uid || !db) return
     await safeWrite(
       { completedTalks: arrayUnion(talkId), xpByDate: { [localDate()]: increment(xp) }, ...histPatch(stats) },
       { merge: true },
@@ -319,10 +349,11 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   // solange `loading` gilt: Vor dem ersten Snapshot ist progress nur der Standard,
   // und darauf aufbauend würde echter Lernstand überschrieben.
   const addPhrase = async (jp, kana, de) => {
-    if (loading || !uid || !db || !jp) return
-    const known = (progress.extraPhrases || {})[jp]
+    const L = latest.current
+    if (!L.canCompute || !L.uid || !db || !jp) return
+    const known = (L.progress.extraPhrases || {})[jp]
     const patch = { extraPhrases: { [jp]: { kana: kana || jp, de: de || '', addedAt: localDate() } } }
-    if (!known && !(progress.srs || {})[jp]) {
+    if (!known && !(L.progress.srs || {})[jp]) {
       patch.srs = { [jp]: { ease: 2.5, interval: 0, reps: 0, due: addDays(1) } }
     }
     await safeWrite(patch, { merge: true })
@@ -330,8 +361,9 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
 
   // Eine SRS-Karte bewerten → nächste Fälligkeit per SM-2 berechnen & speichern.
   const reviewCard = async (key, quality) => {
-    if (loading || !uid || !db) return
-    const next = sm2((progress.srs || {})[key], quality)
+    const L = latest.current
+    if (!L.canCompute || !L.uid || !db) return
+    const next = sm2((L.progress.srs || {})[key], quality)
     await safeWrite({ srs: { [key]: next } }, { merge: true })
   }
 
@@ -340,8 +372,9 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   // zählen. So zeigt „fällig" echte anstehende Reviews und wächst nicht einfach
   // mit jedem gelernten Zeichen. Idempotent: plant nur noch nicht geplante Keys.
   const scheduleNew = async (keys) => {
-    if (loading || !uid || !db || !keys || !keys.length) return
-    const srs = progress.srs || {}
+    const L = latest.current
+    if (!L.canCompute || !L.uid || !db || !keys || !keys.length) return
+    const srs = L.progress.srs || {}
     // Noch ungeplante Keys: kein Eintrag ODER nur eine Notiz ohne Fälligkeit
     // (z. B. wenn vor dem ersten Review schon eine Merkhilfe gespeichert wurde).
     const fresh = keys.filter(k => !srs[k] || srs[k].due == null)
@@ -356,8 +389,9 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   // Sterne-Höchststand je Kapitel anheben (monoton: nur Anstiege werden gespeichert,
   // damit einmal erreichte Sterne nie wieder verloren gehen). `updates` = { c1: 3, … }.
   const bumpChapterStars = async (updates) => {
-    if (loading || !uid || !db || !updates) return
-    const cur = progress.chapterStars || {}
+    const L = latest.current
+    if (!L.canCompute || !L.uid || !db || !updates) return
+    const cur = L.progress.chapterStars || {}
     const patch = {}
     for (const [id, n] of Object.entries(updates)) {
       if ((n || 0) > (cur[id] || 0)) patch[id] = n
@@ -370,21 +404,24 @@ export function useProgress(uid, lang = 'ja', opts = {}) {
   // beim nächsten Aufdecken wieder angezeigt. Deep-Merge lässt ease/interval/due
   // unberührt; reviewCard wiederum lässt die Notiz unberührt.
   const saveNote = async (key, note) => {
-    if (!uid || !db || !key) return
+    const L = latest.current
+    if (!L.uid || !db || !key) return
     await safeWrite({ srs: { [key]: { note: (note || '').trim() } } }, { merge: true })
   }
 
   // Einstellungen (teil-)speichern. Merge lässt unveränderte Werte unberührt.
   const saveSettings = async (patch) => {
-    if (!uid || !db || !patch) return
+    const L = latest.current
+    if (!L.uid || !db || !patch) return
     await safeWrite({ settings: patch }, { merge: true })
   }
 
   // Kompletter Reset auf 0 (überschreibt das Dokument). Einstellungen bleiben erhalten:
   // volles Überschreiben (löscht srs/xpByDate sicher), aber settings werden mitgenommen.
   const reset = async () => {
-    if (loading || !uid || !db) return
-    await safeWrite(emptyProgress(progress.settings || {}))
+    const L = latest.current
+    if (!L.canCompute || !L.uid || !db) return
+    await safeWrite(emptyProgress(L.progress.settings || {}))
   }
 
   return { progress, loading, saveError, awardXp, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, completeTalk, addPhrase, reviewCard, scheduleNew, saveNote, saveSettings, bumpChapterStars, reset }
