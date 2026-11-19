@@ -1,21 +1,63 @@
+import { useState, lazy, Suspense } from 'react'
 import { useAuth } from '../AuthGate.jsx'
 import { useLang } from '../LangGate.jsx'
 import { useProgress, computeStats, getSettings } from '../useProgress.js'
 import { ProgressCtx } from '../state/ProgressContext.js'
 import { C, NE } from '../theme.js'
-import { Card } from '../components/ui.jsx'
+import { Card, TabBar } from '../components/ui.jsx'
 import { LANGS } from '../lib/lang.js'
 
-// Nepali-Hülle (Yatra): Kopfzeile, Level, Wechseln/Abmelden und ein Platzhalter.
-// ProgressCtx steht schon, damit die Kursinhalte (Plan B) direkt aufsetzen.
+// Nepali-Hülle (Yatra): Kopfzeile, Tabs wie TabiApp, ProgressCtx für Sprache `ne`.
+// Screens lazy → je Tab ein eigener Code-Chunk. Tabs ohne Screen zeigen „Kommt bald“.
+// Wechseln/Abmelden stehen in der Kopfzeile, bis es einen Einstellungs-Screen gibt.
+const ReiseScreen = lazy(() => import('./screens/reise.jsx'))
+
+// Tab-Zeichen auf Nepali, Unterzeile Deutsch (wie 旅/Reise im japanischen Kurs).
+const NE_TABS = [
+  { id: 'reise', label: 'यात्रा', sub: 'Reise' },
+  { id: 'lernen', label: 'पढाइ', sub: 'Lernen' },
+  { id: 'ueben', label: 'अभ्यास', sub: 'Üben' },
+  { id: 'fortschritt', label: 'प्रगति', sub: 'Fortschritt' },
+]
+
+function ScreenFallback() {
+  return <div style={{ padding: 40, textAlign: 'center', color: C.textMuted, fontSize: 13 }}>Lädt…</div>
+}
+
+function ComingSoon({ title }) {
+  return (
+    <div style={{ padding: 16 }}>
+      <Card>
+        <div style={{ fontSize: 16, fontWeight: 700, color: C.indigo, marginBottom: 4 }}>{title}</div>
+        <div style={{ fontSize: 14, color: C.textMuted }}>Kommt bald.</div>
+      </Card>
+    </div>
+  )
+}
+
 export default function NepaliApp() {
   const { user, logout, recheckAccess } = useAuth()
   const { setLang, langs } = useLang()
   const progressApi = useProgress(user?.uid, 'ne', { onDenied: recheckAccess })
   const { progress, saveError } = progressApi
   const { level } = computeStats(progress)
+  const [tab, setTab] = useState('reise')
+  const [prevTab, setPrevTab] = useState('reise') // Rücksprung aus den Einstellungen
   // Mit zwei Sprachen ist "wechseln" ein Umschalten zur jeweils anderen.
   const other = langs.find(l => l !== 'ne')
+
+  const toggleSettings = () => {
+    if (tab === 'einstellungen') setTab(prevTab)
+    else { setPrevTab(tab); setTab('einstellungen') }
+  }
+
+  const screens = {
+    reise: <ReiseScreen />,
+    lernen: <ComingSoon title="Lernen" />,
+    ueben: <ComingSoon title="Üben" />,
+    fortschritt: <ComingSoon title="Fortschritt" />,
+    einstellungen: <ComingSoon title="Einstellungen" />,
+  }
 
   const pill = {
     background: 'none', border: `1px solid ${C.washiDark}`, borderRadius: 999,
@@ -42,7 +84,7 @@ export default function NepaliApp() {
         flexShrink: 0, position: 'relative', zIndex: 10,
       }}>
         <div className="hanko-in" style={{
-          width: 34, height: 34, background: C.shu, borderRadius: 9,
+          width: 34, height: 34, background: C.shu, borderRadius: 9, flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 19, fontFamily: NE, color: '#fff', fontWeight: 600, lineHeight: 1,
           boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.22), inset 0 -2px 5px rgba(120,20,10,0.32), 0 2px 6px rgba(218,74,56,0.34)',
@@ -58,6 +100,13 @@ export default function NepaliApp() {
             <span style={{ width: 5, height: 5, borderRadius: 99, background: C.shu, display: 'inline-block' }} />
             Level {level}
           </div>
+          <button onClick={toggleSettings} title="Einstellungen" aria-label="Einstellungen"
+            style={{
+              ...pill, padding: 0, width: 28, height: 28, fontSize: 14, lineHeight: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: tab === 'einstellungen' ? `${C.indigo}12` : 'none',
+              color: tab === 'einstellungen' ? C.indigo : C.textMuted,
+            }}>⚙</button>
           {other && (
             <button onClick={() => setLang(other)} style={pill}>
               Zu {LANGS[other].name} wechseln
@@ -69,11 +118,15 @@ export default function NepaliApp() {
 
       {saveError && <div style={banner}>⚠ Speichern fehlgeschlagen – Fortschritt wird lokal gehalten, bitte Verbindung prüfen.</div>}
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-        <Card>
-          <div style={{ fontSize: 15, color: C.sumi }}>Der Nepali-Kurs ist im Aufbau.</div>
-        </Card>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 80 }}>
+        <div key={tab} className="screen-enter">
+          <Suspense fallback={<ScreenFallback />}>
+            {screens[tab]}
+          </Suspense>
+        </div>
       </div>
+
+      <TabBar active={tab} setActive={setTab} tabs={NE_TABS} font={NE} />
     </div>
     </ProgressCtx.Provider>
   )

@@ -42,13 +42,15 @@ export function Emoji({ name, size = 48, style }) {
 
 // ─── Tiny components ─────────────────────────────────────────────────────────
 
-export function TabBar({ active, setActive }) {
-  const tabs = [
-    { id: 'reise', label: '旅', sub: 'Reise' },
-    { id: 'lernen', label: '辞書', sub: 'Bibliothek' },
-    { id: 'ueben', label: '練習', sub: 'Üben' },
-    { id: 'fortschritt', label: '進歩', sub: 'Fortschritt' },
-  ]
+const JA_TABS = [
+  { id: 'reise', label: '旅', sub: 'Reise' },
+  { id: 'lernen', label: '辞書', sub: 'Bibliothek' },
+  { id: 'ueben', label: '練習', sub: 'Üben' },
+  { id: 'fortschritt', label: '進歩', sub: 'Fortschritt' },
+]
+// tabs/font: andere Kurse (Nepali) reichen eigene Zeichen und Schrift herein;
+// ohne Angabe bleibt die japanische Leiste unverändert.
+export function TabBar({ active, setActive, tabs = JA_TABS, font = JP }) {
   return (
     <nav style={{
       display: 'flex', borderTop: `1px solid ${C.washiDark}`,
@@ -72,7 +74,7 @@ export function TabBar({ active, setActive }) {
               background: C.shu, opacity: on ? 1 : 0, transform: on ? 'scale(1)' : 'scale(0.3)',
               transition: 'opacity 0.25s ease, transform 0.25s ease',
             }} />
-            <span style={{ fontSize: 20, fontFamily: JP, transform: on ? 'translateY(-1px)' : 'none', transition: 'transform 0.25s ease' }}>{t.label}</span>
+            <span style={{ fontSize: 20, fontFamily: font, transform: on ? 'translateY(-1px)' : 'none', transition: 'transform 0.25s ease' }}>{t.label}</span>
             <span style={{ fontSize: 10, fontWeight: on ? 700 : 500, letterSpacing: 0.2 }}>{t.sub}</span>
           </button>
         )

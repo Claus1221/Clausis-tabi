@@ -63,7 +63,14 @@ Alles Nepalische liegt unter `src/ne/` mit denselben Schichten wie oben.
 
 | Datei | Rolle |
 |---|---|
-| `ne/NepaliApp.jsx` | Hülle mit Kopfzeile und `ProgressCtx` für Sprache `ne` (Kursinhalte folgen). |
+| `ne/NepaliApp.jsx` | Root der Nepali-App: Kopfzeile (Level, ⚙, „Zu Japanisch wechseln“, „Abmelden“ – bleiben dort, bis es einen Einstellungs-Screen gibt), Speicherfehler-Banner, `ProgressCtx` für Sprache `ne`, Tabs wie `TabiApp` (Reise, Lernen, Üben, Fortschritt + Einstellungen über ⚙; `TabBar` mit `NE_TABS` und Schrift `NE`). Screens lazy; Tabs ohne Screen zeigen eine `Card` „Kommt bald“. |
+| `ne/data/path.js` | `NE_PATH`: der Lernpfad (Schema unten). Heute drei Welten mit `s1…s14`. |
+| `ne/lib/path.js` | Reine Pfad-Logik: `isNodeDone(node, progress)` (Typ → Fortschritts-Feld, unbekannter Typ → `false`), `nodeMeta(node)` → `{ title, glyph }` oder `null` (Überschrift oder Station ohne heutige Daten), `nextOpenIndex(path, progress)` (erste nicht erledigte Station mit Daten, sonst `path.length`), `stationStates(path, progress)` → je Eintrag `'done' \| 'current' \| 'locked' \| null`. Tests: `path.test.js`. |
+| `ne/lib/scriptQuiz.js` | Reine Logik der Schrift-Lektion: `buildScriptQuiz(chars, rand)` (je lesbares Zeichen eine Frage mit drei Optionen; entdoppelt über `roman`, nie zwei gleich lautende Optionen; Halant/Danda mit Klammer-`roman` fehlen im Lese-Quiz; Ablenker zuerst aus der Lektion, dann gleiche Zeichenart, dann alle; Frage je Art: Lesung / Laut am क / Zahl), `notesForLesson(id)` (Laut-Hinweise, deren Paar ein Zeichen dieser Lektion enthält und deren anderes Zeichen hier oder früher gelernt wurde → dental/retroflex erst bei der त-Reihe), `isReadable`, `shuffle(arr, rand)` (Fisher-Yates). Liest alles aus `SCRIPT_DATA`, nichts fest verdrahtet. Tests: `scriptQuiz.test.js`. |
+| `ne/lib/scene.jsx` | Kulissen der Karte als flache SVG-Formen, Bauweise wie `lib/scene.jsx` (ein Himmel-Verlauf, ferner/naher Rücken je Band mit weichen Nähten, Requisiten am Talrand): `buildBackdrop(bands)` mit Themen `tal` (Stupa, Gebetsfahnen, Ziegelhäuser), `huegel` (Terrassenfelder, Bauernhäuser, ferne Gipfel), `see` (See mit Booten, Schilf), `berge` (Himalaya-Gipfel, Chörten, Gebetsfahnen); dazu `startFlags`, `roadPath`, `STATE_PALETTE`. |
+| `ne/components/TraceCanvas.jsx` | `TraceCanvas({ char })` (default): 220-px-Mal-Fläche, Zeichen blass dahinter (Schrift `NE`), Pointer-Events (Maus, Finger, Stift; `setPointerCapture`, Zwischenpunkte über `getCoalescedEvents`), `devicePixelRatio`-scharf, `touch-action: none` plus nicht-passiver Touch-Listener gegen Seiten-Scrollen; Knopf „Löschen“ (44 px). |
+| `ne/screens/players.jsx` | `ScriptLesson({ lesson, alreadyDone, onComplete, onClose })`: Einleitung → je Zeichen „zeigen“ (Art, groß `shown`, kombinierende Zeichen zusätzlich allein auf ◌, Umschrift, Anhören, Merkhilfe) und „nachmalen“ → passende Laut-Hinweise mit Hörvergleich der Paare → Quiz (drei Optionen, bei Fehler die Merkhilfe) → Abschluss mit `XP_PER_KANA` je Zeichen. Ton: `soundAvailable()` einmal je Lektion; ohne Ton kein Anhören-Knopf, sondern ein kurzer Hinweis – die Lektion ist still voll benutzbar. Vergibt selbst nichts. |
+| `ne/screens/reise.jsx` | Reise-Tab (default): Karte nach dem Muster von `screens/reise.jsx` – Stationen auf gewundenem Weg, Welt-Überschriften, Kulisse je Welt (`tal`, `huegel`, `see`, danach `berge`), „Weiter: …“-Knopf, Fortschrittsbalken, am Pfadende die Tafel „Hier geht es bald weiter“ vor Himalaya-Kulisse. Stationen mit `nodeMeta` `null` fallen still weg. Abschluss einer Schrift-Lektion: `scheduleNew(chars.map(nfc))` (idempotent, auch bei Wiederholung), beim ersten Mal `completeLesson(id, n × XP_PER_KANA, { kana: n })` – der Verlaufszähler heißt bewusst `kana`, damit Wochenrückblick & Co. Schriftzeichen mitzählen. |
 | `ne/lib/deva.js` | Reine Devanagari-Werkzeuge: `nfc` (jeder SRS-Karten-Schlüssel geht hier durch), `aksharas` (Schreibsilben: Verbund über Halant + Matra + Zusatzzeichen; Leer-/Satzzeichen und Ziffern fallen weg), `romanSyllables` (Vokalkerne; nur `ai`/`au` ohne Längenstrich zählen einfach, `āu`/`jāū` sind zwei; ॐ und ऽ fallen in `aksharas` bewusst weg), `romanFits` (Umschrift plausibel: `aksharas − stumme ≤ Kerne ≤ aksharas`; stumm = Silbe ohne Matra und ohne eigenständigen Vokal). Tests: `deva.test.js`. |
 | `ne/data/script.js` | `SCRIPT_DATA`, `SCRIPT_LESSONS` (14 Schrift-Lektionen `s1…s14`), `SCRIPT_NOTES` (Laut-Hinweise). Tests: `script.test.js`. |
 | `ne/lib/speechPick.js` | Reine Auswahl der Sprachausgabe (kein `window`/`fetch`): `pickSource({ text, manifest, hasDeviceVoice })` → `mp3` \| `device` \| `none` (Text vorher NFC), `deviceMode(voices)` (`voice` \| `lang-only` bei leerer Liste \| `none`), `pickVoice(voices)` (`ne-NP` vor anderem `ne*`, lokal vor Netz, nie Hindi/andere Sprache), `isNepaliLang`, `watchdogMs`. Tests: `speechPick.test.js`. |
@@ -109,6 +116,22 @@ SCRIPT_LESSONS[] = { id: 's1', title, sub, chars: [char, …] }
 // jedes Zeichen in genau einer Lektion, höchstens 7 (Ziffern 10); Halant vor allen Verbindungen
 SCRIPT_NOTES[] = { id, title, text, pairs: [[char, char], …] }   // behaucht/unbehaucht, dental/retroflex
 ```
+
+Schema `ne/data/path.js`:
+```js
+NE_PATH = ({ world, sub } | { type, id })[]
+// world/sub: Welt-Überschrift (world in Devanagari oder Deutsch, sub kurz Deutsch)
+// type: 'script' (s1…, abgehakt über completedLessons) · später 'word' (nw1…, completedWordBlocks) ·
+//       'grammar' (ng1…, completedGrammar) · 'chapter' (nc1…, completedChapters) ·
+//       'dialog' (nd1…, completedDialogs) · 'goal' (nie „erledigt“)
+// Heute: काठमाडौं · Ankommen (s1–s5) · Die Konsonanten (s6–s9) · Zeichen verbinden (s10–s14).
+// Neue Typen: in lib/path.js DONE_FIELD und nodeMeta ergänzen – bis dahin liefert nodeMeta null
+// und die Karte lässt die Station still aus (kein Absturz, nextOpenIndex springt darüber).
+```
+**Freischalt-Regel (wie die japanische Karte):** erledigt bleibt immer `done` (antippbar zum
+Wiederholen, auch hinter der offenen Station); die erste nicht erledigte Station mit Daten ist
+`current` (START); alle übrigen sind `locked`. Eine Station ist also offen, sobald alle Stationen
+davor erledigt sind.
 Noch ungeprüfte Nepali-Aussagen (Aussprache, Formbeschreibungen) stehen in
 `docs/nepali-offene-pruefpunkte.md` – für die spätere Durchsicht durch eine Person, die Nepali kann.
 
@@ -172,7 +195,7 @@ Noch ungeprüfte Nepali-Aussagen (Aussprache, Formbeschreibungen) stehen in
 ### `components/` — geteilte UI
 | Datei | Exporte | Notiz |
 |---|---|---|
-| `ui.jsx` | `Card`, `Btn`, `Emoji`, `TabBar`, `Stars`, `LibSheet` | Generische Atome/Chrome; hängt nur an `theme`. |
+| `ui.jsx` | `Card`, `Btn`, `Emoji`, `TabBar`, `Stars`, `LibSheet` | Generische Atome/Chrome; hängt nur an `theme`. `TabBar({ active, setActive, tabs, font })`: ohne `tabs`/`font` die japanische Leiste (旅 辞書 練習 進歩, Schrift `JP`); Nepali reicht eigene Tabs und `NE` herein. |
 | `avatar.jsx` | `Avatar` | Gezeichneter Gesprächspartner + Bühne fürs freie Gespräch (SVG, Stil von `lib/scene.jsx`). Stimmungen: `idle`/`speaking`/`listening`/`thinking`/`happy`. Dauer-Bewegung als CSS-Klassen in `index.css` (`tabi-mood-*`), Zufälliges (Blinzeln, Mundtakt) in React. |
 | `kana.jsx` | `StrokeDisplay`, `DrawCanvas` | Strichanimation + Mal-Canvas. |
 | `japanese.jsx` | `CardNote`, `KanjiOrigin`, `WordDetail`, `TappableSentence`, `TappableJp`, `StoryLine` | Antippbare JP-Texte + Wort-Detail. |
