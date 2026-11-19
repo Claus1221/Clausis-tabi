@@ -47,6 +47,8 @@ export default function ReiseScreen() {
           // Wiederholung plant idempotent ein (falls ein früherer Abschluss offline
           // verloren ging); XP und Verlaufszähler nur beim ersten Abschluss. Der Zähler
           // heißt `kana`, damit Wochenrückblick & Co. Schriftzeichen mitzählen.
+          // Beide Schreibvorgänge laufen bewusst ohne Reihenfolge: jeder ist für sich
+          // idempotent bzw. ein merge-sicherer Patch (arrayUnion/increment, nur fehlende Karten).
           scheduleNew(lesson.chars.map(nfc))
           if (!already) completeLesson(lesson.id, lesson.chars.length * XP_PER_KANA, { kana: lesson.chars.length })
           close()

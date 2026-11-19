@@ -14,6 +14,9 @@ export default function TraceCanvas({ char }) {
   const canvasRef = useRef(null)
   const drawing = useRef(false)
   const last = useRef(null)
+  // Nur der Zeiger, der den Strich begonnen hat, zählt: ein zweiter Finger mitten im
+  // Strich darf ihn weder fortsetzen noch beenden.
+  const activeId = useRef(null)
 
   // Scharf auf hochauflösenden Displays: Pixelpuffer × devicePixelRatio, Zeichnen in
   // CSS-Pixeln. Bei neuem Zeichen leer beginnen.
@@ -53,6 +56,8 @@ export default function TraceCanvas({ char }) {
   const down = e => {
     if (e.button != null && e.button > 0) return // nur Haupttaste / Finger / Stiftspitze
     e.preventDefault()
+    if (drawing.current) return // schon ein Strich im Gange (zweiter Finger)
+    activeId.current = e.pointerId
     try { canvasRef.current.setPointerCapture(e.pointerId) } catch { /* ältere Browser */ }
     drawing.current = true
     const p = pos(e)
@@ -65,7 +70,7 @@ export default function TraceCanvas({ char }) {
   }
 
   const move = e => {
-    if (!drawing.current) return
+    if (!drawing.current || e.pointerId !== activeId.current) return
     e.preventDefault()
     const ctx = canvasRef.current.getContext('2d')
     // Zwischenpunkte des Browsers mitnehmen, sonst wird ein schneller Strich eckig.
@@ -80,7 +85,12 @@ export default function TraceCanvas({ char }) {
     }
   }
 
-  const up = () => { drawing.current = false; last.current = null }
+  const up = e => {
+    if (e.pointerId !== activeId.current) return
+    drawing.current = false
+    last.current = null
+    activeId.current = null
+  }
 
   const clear = () => {
     const canvas = canvasRef.current

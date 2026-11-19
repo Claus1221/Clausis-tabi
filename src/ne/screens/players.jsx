@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { C, NE } from '../../theme.js'
 import { Btn } from '../../components/ui.jsx'
 import { XP_PER_KANA } from '../../lib/xp.js'
 import { SCRIPT_DATA } from '../data/script.js'
 import { speak, stopSpeaking, soundAvailable } from '../lib/speech.js'
 import { buildScriptQuiz, notesForLesson } from '../lib/scriptQuiz.js'
+import { playSequence } from '../lib/sequence.js'
 import TraceCanvas from '../components/TraceCanvas.jsx'
 
 // ─── Spieler für Yatra-Lektionen ──────────────────────────────────────────────
@@ -31,29 +32,58 @@ function useSound() {
   return ok
 }
 
+// Der ganze Satz steht einmal in der Einleitung; in den Schritten nur das stumme Zeichen.
 const NO_SOUND_HINT = 'Auf diesem Gerät gibt es noch keinen Nepali-Ton – die Umschrift zeigt dir die Aussprache.'
 
-// Anhören-Knopf mit drei Zuständen: prüfen (gesperrt), kein Ton (Hinweis statt Knopf),
+function NoSoundMark() {
+  return (
+    <span role="img" aria-label="kein Ton" title="kein Ton"
+      style={{ fontSize: 15, color: C.textMuted, opacity: 0.6 }}>🔇</span>
+  )
+}
+
+// Abspiel-Zustand eines Bausteins. Jeder Klick bekommt eine eigene Nummer (token):
+// nur die JÜNGSTE Wiedergabe darf `busy` zurücksetzen – sonst schaltete das späte
+// Auflösen einer abgelösten Ausgabe (stopSpeaking/überlappendes speak lösen normal
+// auf) die Anzeige der gerade laufenden ab. Beim Unmount (Schrittwechsel, Schließen)
+// wird die Nummer verbraucht: laufende Folgen brechen vor dem nächsten Text ab, und
+// es wird kein State mehr gesetzt.
+function usePlayback() {
+  const [busy, setBusy] = useState(null)
+  const token = useRef(0)
+  useEffect(() => () => { token.current++ }, [])
+  const play = (key, texts) => {
+    const my = ++token.current
+    setBusy(key)
+    playSequence(texts, speak, () => token.current !== my)
+      .then(() => { if (token.current === my) setBusy(null) })
+  }
+  return [busy, play]
+}
+
+// Anhören-Knopf mit drei Zuständen: prüfen (gesperrt), kein Ton (nur stummes Zeichen),
 // Ton (Knopf, solange gesprochen wird als „spricht…“ markiert).
 function ListenButton({ text, sound, label = 'Anhören' }) {
-  const [busy, setBusy] = useState(false)
-  if (sound === false) return <p style={{ fontSize: 12, color: C.textMuted, margin: '0 auto', maxWidth: 280, lineHeight: 1.5 }}>🔇 {NO_SOUND_HINT}</p>
+  const [busy, play] = usePlayback()
+  if (sound === false) return <NoSoundMark />
   const checking = sound === null
   return (
-    <button disabled={checking || busy}
-      onClick={() => { setBusy(true); speak(text).then(() => setBusy(false)) }}
+    <button disabled={checking || busy !== null}
+      onClick={() => play('x', [text])}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44,
         background: `${C.indigo}15`, border: `1px solid ${C.indigo}40`, color: C.indigo,
         borderRadius: 22, padding: '8px 18px', fontSize: 14, cursor: checking ? 'default' : 'pointer',
         opacity: checking ? 0.55 : 1,
       }}>
-      🔊 {checking ? 'Ton wird geprüft…' : busy ? 'spricht…' : label}
+      🔊 {checking ? 'Ton wird geprüft…' : busy !== null ? 'spricht…' : label}
     </button>
   )
 }
 
 // Ein Zeichen vorstellen: groß, Art, Umschrift, Anhören, Merkhilfe.
+// Die Umschrift (roman) steht hier IMMER, unabhängig von settings.showRoman: die Lesung
+// ist genau das, was Schrift-Lektionen lehren. Der Schalter gilt erst für Wörter und Sätze.
 function ShowStep({ ch, sound }) {
   const d = SCRIPT_DATA[ch]
   return (
@@ -96,11 +126,10 @@ function TraceStep({ ch }) {
 // Laut-Hinweis (behaucht/unbehaucht, dental/retroflex) mit Hörvergleich der Paare.
 // Ohne Ton bleiben die Paare als Schriftvergleich mit Umschrift stehen.
 function NoteStep({ note, pairs, sound }) {
-  const [busy, setBusy] = useState(null)
-  const play = (a, b, key) => {
-    setBusy(key)
-    speak(SCRIPT_DATA[a].say).then(() => speak(SCRIPT_DATA[b].say)).then(() => setBusy(null))
-  }
+  // Paar über playSequence: verlässt man den Schritt während des ersten Lauts, wird
+  // der zweite nicht mehr gestartet (Unmount verbraucht das Token).
+  const [busy, playKeys] = usePlayback()
+  const play = (a, b, key) => playKeys(key, [SCRIPT_DATA[a].say, SCRIPT_DATA[b].say])
   const tile = ch => (
     <div style={{ flex: 1, textAlign: 'center' }}>
       <div style={{ fontSize: 34, fontFamily: NE, color: C.sumi, lineHeight: 1.3 }}>{SCRIPT_DATA[ch].shown}</div>
@@ -131,7 +160,7 @@ function NoteStep({ note, pairs, sound }) {
           )
         })}
       </div>
-      {sound === false && <p style={{ fontSize: 12, color: C.textMuted, marginTop: 12, lineHeight: 1.5 }}>🔇 {NO_SOUND_HINT}</p>}
+      {sound === false && <p style={{ marginTop: 12 }}><NoSoundMark /></p>}
       {sound === true && <p style={{ fontSize: 12, color: C.textMuted, marginTop: 12 }}>🔊 spielt erst das linke, dann das rechte Zeichen.</p>}
     </div>
   )
@@ -216,6 +245,23 @@ export function ScriptLesson({ lesson, alreadyDone = false, onComplete, onClose 
   // Beim Schritt-Wechsel und beim Schließen nichts weiterreden lassen.
   useEffect(() => () => stopSpeaking(), [step])
 
+  // „Lektion abschließen“ liegt genau dort, wo nach dem Schließen die TabBar erscheint.
+  // Ein Doppeltipp träfe mit dem zweiten Tipp einen Tab. Daher: erster Tipp sperrt den
+  // Knopf, geschlossen wird erst nach einer Doppeltipp-Spanne (~350 ms) – bis dahin
+  // fängt das noch stehende Overlay den zweiten Tipp ab.
+  const [finishing, setFinishing] = useState(false)
+  const finishTimer = useRef(null)
+  useEffect(() => () => clearTimeout(finishTimer.current), [])
+  // Sperre über die Ref, nicht über den State: zwei Klicks im selben Render-Durchgang
+  // sähen beide noch finishing = false und riefen onComplete (XP!) doppelt.
+  const finishing0 = useRef(false)
+  const finish = () => {
+    if (finishing0.current) return
+    finishing0.current = true
+    setFinishing(true)
+    finishTimer.current = setTimeout(onComplete, 350)
+  }
+
   const cur = steps[step]
   const xp = chars.length * XP_PER_KANA
   const pct = Math.round((step / (steps.length - 1)) * 100)
@@ -298,7 +344,7 @@ export function ScriptLesson({ lesson, alreadyDone = false, onComplete, onClose 
       {cur.kind !== 'quiz' && (
         <div style={{ padding: '14px 20px', paddingBottom: 'max(14px, env(safe-area-inset-bottom))', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
           {cur.kind === 'done' ? (
-            <Btn onClick={onComplete} style={{ width: '100%', minHeight: 48 }}>Lektion abschließen ✓</Btn>
+            <Btn onClick={finish} disabled={finishing} style={{ width: '100%', minHeight: 48 }}>Lektion abschließen ✓</Btn>
           ) : (
             <Btn onClick={next} style={{ width: '100%', minHeight: 48 }}>{cur.kind === 'intro' ? 'Los geht’s →' : 'Weiter →'}</Btn>
           )}
