@@ -20,15 +20,17 @@ hinweg. So bleibt der Graph zyklenfrei und jede Datei ist isoliert verständlich
 ```
 main.jsx
   └─ AuthGate.jsx            (Login-Wand, Auth-Context)
-       └─ LangGate.jsx       (Sprachwahl nach dem Login, Sprach-Context; lädt lazy)
+       └─ LangGate.jsx       (Sprachwahl nach dem Login, Sprach-Context; lädt lazy;
+            │                 zeigt Schreibfehler der Sprachwahl als Banner)
             ├─ TabiApp.jsx   (Japanisch. Orchestrator: Header, TabBar, ProgressCtx-Provider,
-            │                 lazy-geladene Screens)
-            └─ ne/NepaliApp.jsx  (Nepali, s. „Zweig ne/" in §2)
-            └─ screens/      (ein Vollbild je Tab; default-Export, lazy)
-                 └─ components/   (geteilte UI-Bausteine)
-                      └─ lib/     (reine Logik: SRS, Dialog-Gating, Szene-SVG …)
-                           └─ data/    (reine Inhaltsdaten, kein React)
-                                └─ theme.js · state/ · useProgress.js · kanaStrokes.js
+            │   │             lazy-geladene Screens)
+            │   └─ screens/      (ein Vollbild je Tab; default-Export, lazy)
+            │        └─ components/   (geteilte UI-Bausteine)
+            │             └─ lib/     (reine Logik: SRS, Dialog-Gating, Szene-SVG …)
+            │                  └─ data/    (reine Inhaltsdaten, kein React)
+            │                       └─ theme.js · state/ · useProgress.js · kanaStrokes.js
+            └─ ne/NepaliApp.jsx  (Nepali, Geschwister von TabiApp; eigene Schichten
+                                  unter src/ne/, Importregel s. „Zweig ne/" in §2)
 ```
 
 Faustregel beim Importieren aus `src/<schicht>/datei`:
@@ -50,7 +52,7 @@ höheren Schicht importieren (außer Geschwister in `lib/` mit klarer Richtung, 
 | `firebase.js` | Firebase-Init; exportiert `auth`, `db`, `ADMIN_EMAILS`, `isConfigured`. `db` läuft mit persistentem Offline-Cache (IndexedDB, mehrere Tabs geteilt) – lesen/schreiben funktioniert auch offline, Sync folgt automatisch. |
 | `useProgress.js` | **Firestore-Hook + Fortschritts-Domäne**: `useProgress(uid, lang = 'ja', opts)` (live-Daten der gewählten Sprache + Schreib-Funktionen + `saveError`; Dokumentpfad über `progressPath` aus `lib/lang.js`), `DEFAULT_PROGRESS`, `emptyProgress` (was `reset()` schreibt), `progressView` (zeigt beim Sprachwechsel nie den Stand der anderen Sprache), `computeStats`, `dueKana`, `sm2`, `getSettings`, `localDate`, `addDays`, `SETTINGS_DEFAULTS`, `SRS_STAGE_BOUNDS`. Fortschritts-Felder u. a. `completedTalks` (gemeisterte freie Gespräche) und `extraPhrases` (aus Gesprächen übernommene Wendungen; `addPhrase` legt sie an UND plant sie als SRS-Karte ein). Schreibvorgänge laufen über das interne `safeWrite` (try/catch → `saveError`), damit ein echter Schreibfehler (Firestore-Regel, Quota) sichtbar wird statt den Fortschritt still zu verlieren. Unit-Tests: `useProgress.test.js`. |
 | `LangGate.jsx` | Nach dem Login: entscheidet per `useProfile`, welche App läuft. Neue Person ohne Lernstand → Auswahlbildschirm („Was möchtest du lernen?“, nur `selectableLangs(isAdmin)`); sonst `TabiApp` bzw. `ne/NepaliApp` (beide `React.lazy`, `key={lang}`). Stellt `useLang()` = `{ lang, setLang, langs, error }` bereit. |
-| `useProfile.js` | `useProfile(uid, isAdmin, onDenied)` → `{ lang, loading, setLang, error }`. Liest `users/{uid}/meta/profile` per `onSnapshot`, prüft einmalig per `getDoc`, ob `users/{uid}` existiert, und wendet `lib/lang.js: initialLang` an. Zeigt nie wegen eines langsamen oder fehlgeschlagenen Lesens die Auswahl. Nur `setLang` (ausdrückliche Wahl) schreibt `{ lang }`; der stille Standard nicht. Dev-Bypass: Sprache aus `?lang=`, nur im Speicher. |
+| `useProfile.js` | `useProfile(uid, isAdmin, onDenied)` → `{ lang, loading, setLang, error }`. Liest `users/{uid}/meta/profile` per `onSnapshot`, prüft einmalig per `getDoc`, ob `users/{uid}` existiert, und wendet `lib/lang.js: initialLang` an. Zeigt nie wegen eines langsamen oder fehlgeschlagenen Lesens die Auswahl. Nur `setLang` (ausdrückliche Wahl) schreibt `{ lang }`; der stille Standard nicht. Die Entscheidungstabelle steckt als reine Funktion in `lib/lang.js: resolveLang` (getestet); der Hook sammelt nur die Eingaben. Geräte-Hinweis: die aufgelöste Sprache steht in `localStorage` unter `tabi_lang_<uid>` und trägt nur, solange die Lesevorgänge noch laufen (Kaltstart ohne Netz); `setLang` lehnt nicht wählbare Sprachen ab. Dev-Bypass (kein `uid` oder keine `db`): Sprache aus `?lang=`, nur im Speicher. |
 | `accessStore.js` | Freigabeliste in Firestore (`allowed/<e-mail>`): `watchAllowed` (Live-Liste, nach E-Mail sortiert), `addAllowed`, `removeAllowed`. Nur der Admin darf schreiben (Firestore-Regeln). |
 | `kanaStrokes.js` | Generierte KanjiVG-Strichpfade: `HIRAGANA`, `KATAKANA`, `KANA_STROKES`, `STROKE_VIEWBOX`. (Generator: `scripts/gen-kana-strokes.mjs`.) |
 | `theme.js` | `C` (Farb-Token) · `JP` (japanischer Font-Stack) · `NE` (Devanagari-Font-Stack). |
@@ -90,6 +92,7 @@ Alles Nepalische liegt unter `src/ne/` mit denselben Schichten wie oben (derzeit
 | Datei | Exporte (Auswahl) | Abhängig von |
 |---|---|---|
 | `access.js` | `normalizeEmail`, `isValidEmail`, `isAdminEmail`, `accessState` (Admin/freigegeben/gesperrt/offline) | – |
+| `lang.js` | `LANGS`, `NE_PUBLIC`, `selectableLangs`, `progressPath`, `profilePath`, `initialLang`, `resolveLang` (Entscheidungstabelle von `useProfile`: Wahl > gelesener Stand > Geräte-Hinweis > laden) | – |
 | `xp.js` | `XP_PER_KANA/CARD/WORD/GRAMMAR/CHAPTER/DIALOG` | – |
 | `kanaStats.js` | `totalKanaCount`, `completedKanaList`, `completedKanaCount` | data/kana |
 | `speech.js` | `speak` (gibt ein Versprechen zurück: löst auf, wenn zu Ende gesprochen), `stopSpeaking`, `onSpeechState`, `speakItem`, `speakTokens`, `itemReading`, `copyText` | data/words, data/chapters, **lib/apiKey**, **lib/ttsCloud** |

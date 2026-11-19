@@ -1,4 +1,4 @@
-import { createContext, lazy, Suspense, useContext } from 'react'
+import { createContext, lazy, Suspense, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthGate.jsx'
 import { useProfile } from './useProfile.js'
 import { LANGS, selectableLangs } from './lib/lang.js'
@@ -24,7 +24,7 @@ function Splash({ text }) {
 }
 
 // ─── Auswahlbildschirm: nur für Personen ohne Lernstand und ohne Wahl ────────
-function Chooser({ langs, onPick, error }) {
+function Chooser({ langs, onPick }) {
   return (
     <div style={{
       maxWidth: 480, margin: '0 auto', minHeight: '100vh',
@@ -50,7 +50,6 @@ function Chooser({ langs, onPick, error }) {
           )
         })}
       </div>
-      {error && <p style={{ color: C.shu, fontSize: 12, marginTop: 16, maxWidth: 300 }}>{error}</p>}
     </div>
   )
 }
@@ -60,13 +59,29 @@ export function LangGate() {
   const { user, isAdmin, recheckAccess } = useAuth()
   const { lang, loading, setLang, error } = useProfile(user?.uid, isAdmin, recheckAccess)
   const langs = selectableLangs(isAdmin)
+  // Schreibfehler der Sprachwahl hier zeigen, nicht in den Apps: Nach der
+  // Wahl ersetzt die App den Auswahlbildschirm, und TabiApp kennt den Fehler nicht.
+  const [dismissed, setDismissed] = useState(null)
+  useEffect(() => { if (!error) setDismissed(null) }, [error])
+  const showError = error && dismissed !== error
 
   if (loading) return <Splash text="Lädt…" />
-  if (lang === null) return <Chooser langs={langs} onPick={setLang} error={error} />
+  if (lang === null) return <Chooser langs={langs} onPick={setLang} />
 
   const App = APPS[lang]
   return (
     <LangContext.Provider value={{ lang, setLang, langs, error }}>
+      {showError && (
+        <div role="alert" style={{
+          maxWidth: 480, margin: '0 auto', padding: '8px 16px',
+          background: '#f7e3df', borderBottom: `1px solid ${C.shu}40`,
+          fontSize: 12, color: C.shu, display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <span style={{ flex: 1 }}>⚠ {error} Die Wahl gilt nur auf diesem Gerät, bis das Speichern klappt.</span>
+          <button onClick={() => setDismissed(error)} aria-label="Hinweis schließen"
+            style={{ background: 'none', border: 'none', color: C.shu, fontSize: 16, cursor: 'pointer', lineHeight: 1 }}>×</button>
+        </div>
+      )}
       <Suspense fallback={<Splash text="Lädt…" />}>
         {/* key: beim Wechsel wird die App neu aufgebaut, nichts bleibt im Speicher */}
         <App key={lang} />

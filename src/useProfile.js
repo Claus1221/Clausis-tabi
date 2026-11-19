@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore'
 import { db } from './firebase'
-import { LANGS, initialLang, profilePath } from './lib/lang'
+import { LANGS, profilePath, resolveLang, selectableLangs } from './lib/lang'
 import { isDeniedError } from './useProgress'
 
 // Lokaler Dev-Bypass (kein uid): Sprache aus ?lang=ne, sonst Japanisch. Es wird
@@ -22,6 +22,16 @@ function devLang() {
 //
 // Geschrieben wird nur bei einer ausdrücklichen Wahl (setLang) – der stille
 // Standard für Bestandsnutzer wird NICHT gespeichert.
+// Geräte-Hinweis: zuletzt bekannte Sprache je Nutzer. Nur damit der Start ohne
+// Netz nicht auf das erste Profil-Lesen wartet; der echte Stand ersetzt ihn.
+const hintKey = (uid) => `tabi_lang_${uid}`
+function readHint(uid) {
+  try { return localStorage.getItem(hintKey(uid)) || null } catch { return null }
+}
+function writeHint(uid, lang) {
+  try { localStorage.setItem(hintKey(uid), lang) } catch { /* privater Modus o. ä. */ }
+}
+
 export function useProfile(uid, isAdmin, onDenied) {
   // Alles trägt die uid, zu der es gehört: so greift beim Nutzerwechsel nie ein
   // Rest des Vorgängers (gleiche Idee wie progressView in useProgress).
@@ -68,7 +78,8 @@ export function useProfile(uid, isAdmin, onDenied) {
   }, [uid])
 
   const setLang = async (lang) => {
-    if (!Object.prototype.hasOwnProperty.call(LANGS, lang)) return
+    // Nur Sprachen, die diese Person wählen darf: sonst keine Änderung, kein Schreiben.
+    if (!selectableLangs(isAdmin).includes(lang)) return
     if (!uid || !db) { setDevChoice(lang); return }
     setError(null)
     setChoice({ uid, lang }) // optimistisch: Wechsel ist sofort sichtbar
@@ -80,10 +91,21 @@ export function useProfile(uid, isAdmin, onDenied) {
     }
   }
 
-  if (!uid) return { lang: devChoice || devLang(), loading: false, setLang, error: null }
-  if (choice && choice.uid === uid) return { lang: choice.lang, loading: false, setLang, error }
-  const ready = profile && profile.uid === uid && hasJa && hasJa.uid === uid
-  if (!ready) return { lang: null, loading: true, setLang, error }
-  const lang = initialLang({ profileLang: profile.lang, hasJaProgress: hasJa.value, isAdmin })
-  return { lang, loading: false, setLang, error }
+  const live = !!(uid && db)
+  const profileReady = live && !!(profile && profile.uid === uid)
+  const existenceReady = live && !!(hasJa && hasJa.uid === uid)
+  const { lang, loading } = resolveLang({
+    isAdmin, profileReady, profileLang: profileReady ? profile.lang : null,
+    existenceReady, hasJaProgress: existenceReady ? hasJa.value : false,
+    choice: live && choice && choice.uid === uid ? choice.lang : null,
+    hint: live ? readHint(uid) : null,
+  })
+
+  // Aufgelöste Sprache als Hinweis merken (auch die Wahl). Hooks stehen vor dem
+  // frühen Return, damit ihre Reihenfolge immer gleich bleibt.
+  useEffect(() => { if (live && lang) writeHint(uid, lang) }, [uid, live, lang])
+
+  // Ohne Nutzer oder ohne Datenbank gibt es nichts zu lesen: wie der Dev-Bypass.
+  if (!live) return { lang: devChoice || devLang(), loading: false, setLang, error: null }
+  return { lang, loading, setLang, error }
 }

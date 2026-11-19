@@ -10,7 +10,7 @@ import { LANGS } from '../lib/lang.js'
 // ProgressCtx steht schon, damit die Kursinhalte (Plan B) direkt aufsetzen.
 export default function NepaliApp() {
   const { user, logout, recheckAccess } = useAuth()
-  const { setLang, langs, error } = useLang()
+  const { setLang, langs } = useLang()
   const progressApi = useProgress(user?.uid, 'ne', { onDenied: recheckAccess })
   const { progress, saveError } = progressApi
   const { level } = computeStats(progress)
@@ -68,7 +68,6 @@ export default function NepaliApp() {
       </div>
 
       {saveError && <div style={banner}>⚠ Speichern fehlgeschlagen – Fortschritt wird lokal gehalten, bitte Verbindung prüfen.</div>}
-      {error && <div style={banner}>⚠ {error}</div>}
 
       <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
         <Card>

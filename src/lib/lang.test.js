@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { selectableLangs, progressPath, profilePath, initialLang, NE_PUBLIC } from './lang.js'
+import { selectableLangs, progressPath, profilePath, initialLang, resolveLang, NE_PUBLIC } from './lang.js'
 
 describe('Pfade', () => {
   it('Japanisch bleibt im Wurzeldokument', () => expect(progressPath('u1', 'ja')).toEqual(['users', 'u1']))
@@ -23,4 +23,31 @@ describe('initialLang', () => {
   it('ne im Profil, aber für diese Person gesperrt → ja', () => {
     if (!NE_PUBLIC) expect(initialLang({ profileLang: 'ne', hasJaProgress: false, isAdmin: false })).toBe('ja')
   })
+})
+
+describe('resolveLang', () => {
+  const pending = { uid: 'u1', isAdmin: false, profileReady: false, profileLang: null, existenceReady: false, hasJaProgress: false, choice: null, hint: null }
+  const ready = { ...pending, profileReady: true, existenceReady: true }
+  it('beide Lesevorgänge offen, kein Hinweis → lädt', () =>
+    expect(resolveLang(pending)).toEqual({ lang: null, loading: true }))
+  it('Bestandsnutzer ohne Profil → ja', () =>
+    expect(resolveLang({ ...ready, hasJaProgress: true })).toEqual({ lang: 'ja', loading: false }))
+  it('neue Person, Admin, nichts gespeichert → Auswahl', () =>
+    expect(resolveLang({ ...ready, isAdmin: true })).toEqual({ lang: null, loading: false }))
+  it('ausdrückliche Wahl gilt sofort', () =>
+    expect(resolveLang({ ...pending, isAdmin: true, choice: 'ne' })).toEqual({ lang: 'ne', loading: false }))
+  it('ne als Wahl oder im Profil für Nicht-Admin wird ignoriert', () => {
+    if (NE_PUBLIC) return
+    expect(resolveLang({ ...pending, choice: 'ne' })).toEqual({ lang: null, loading: true })
+    expect(resolveLang({ ...ready, profileLang: 'ne', hasJaProgress: true })).toEqual({ lang: 'ja', loading: false })
+  })
+  it('fehlgeschlagene Existenzprüfung (als hasJaProgress true übergeben) → ja', () =>
+    expect(resolveLang({ ...ready, hasJaProgress: true })).toEqual({ lang: 'ja', loading: false }))
+  it('Hinweis + offene Lesevorgänge → diese Sprache, lädt nicht', () =>
+    expect(resolveLang({ ...pending, isAdmin: true, hint: 'ne' })).toEqual({ lang: 'ne', loading: false }))
+  it('Hinweis ne für Nicht-Admin wird ignoriert', () => {
+    if (!NE_PUBLIC) expect(resolveLang({ ...pending, hint: 'ne' })).toEqual({ lang: null, loading: true })
+  })
+  it('sind beide Lesevorgänge fertig, zählt der Hinweis nicht', () =>
+    expect(resolveLang({ ...ready, isAdmin: true, hint: 'ne' })).toEqual({ lang: null, loading: false }))
 })

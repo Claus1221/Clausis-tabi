@@ -45,3 +45,21 @@ export function initialLang({ profileLang, hasJaProgress, isAdmin }) {
   if (selectable.length === 1) return selectable[0]
   return null
 }
+
+// Die Entscheidungstabelle von useProfile als reine Funktion.
+// Vorrang: 1. ausdrückliche Wahl (sofort, wenn wählbar) · 2. sind Profil UND
+// Existenzprüfung gelesen, gelten die normalen Regeln (initialLang) · 3. solange
+// noch gelesen wird, trägt der Geräte-Hinweis (zuletzt bekannte Sprache), damit
+// ein Kaltstart ohne Netz nicht in "Lädt…" hängt · 4. sonst: laden.
+// Ein Hinweis zählt nie, wenn die Lesevorgänge fertig sind – dann entscheidet
+// der echte Stand. Nicht wählbare Sprachen werden überall ignoriert.
+// (uid wird hier nicht gebraucht: ohne uid entscheidet der Aufrufer selbst.)
+export function resolveLang({ isAdmin, profileReady, profileLang, existenceReady, hasJaProgress, choice, hint }) {
+  const selectable = selectableLangs(isAdmin)
+  if (choice && selectable.includes(choice)) return { lang: choice, loading: false }
+  if (profileReady && existenceReady) {
+    return { lang: initialLang({ profileLang, hasJaProgress, isAdmin }), loading: false }
+  }
+  if (hint && selectable.includes(hint)) return { lang: hint, loading: false }
+  return { lang: null, loading: true }
+}
