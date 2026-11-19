@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "audit": "node scripts/audit-examples.mjs",
     "audio": "node scripts/generate-audio.mjs",
+    "audio:ne": "node scripts/generate-audio-ne.mjs",
     "test": "vitest run"
   },
   "dependencies": {

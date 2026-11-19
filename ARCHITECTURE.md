@@ -68,6 +68,25 @@ Alles Nepalische liegt unter `src/ne/` mit denselben Schichten wie oben.
 | `ne/data/script.js` | `SCRIPT_DATA`, `SCRIPT_LESSONS` (14 Schrift-Lektionen `s1…s14`), `SCRIPT_NOTES` (Laut-Hinweise). Tests: `script.test.js`. |
 | `ne/imports.test.js` | Wächter der Importregel unten: liest alle Dateien unter `src/` als Text und prüft die Import-Spezifizierer (relative Pfade aufgelöst; aus `lib/claude.js` nur die erlaubten Namen; Pakete in `ne/` nur `react`, in Tests zusätzlich `vitest` und `node:*`). |
 
+**Nepali-Audio (Azure Speech) – Stand: noch nicht erzeugt, wartet auf einen Azure-Key.**
+Die Pipeline ist fertig und getestet, aber nie gelaufen; `public/audio-ne/` gibt es noch nicht.
+Der Kurs muss ohne Ton voll benutzbar sein.
+
+| Datei | Rolle |
+|---|---|
+| `scripts/lib/collect-ne.mjs` | `collectNeTexts(sources)` → `[Text, Rate][]`; reine Funktion auf Daten (`{ script, words, grammar, chapters, dialogs }`, fehlende Quellen erlaubt). Texte NFC, nur mit Devanagari (U+0900–U+097F), kein Text doppelt; Wort-Tempo `0.8` gewinnt über Satz-Tempo `1`. Bisher behandelt: nur `script` (gesprochen wird `say`). Tests: `collect-ne.test.mjs`. |
+| `scripts/generate-audio-ne.mjs` | Gegenstück zu `generate-audio.mjs`; Stimme `ne-NP-HemkalaNeural`, Dateiname = SHA1(`Stimme\|Tempo\|Text`)[0..16] + `.mp3`, Ausgabe `public/audio-ne/`, Manifest `public/audio-ne/manifest.json` = `{ [Text]: Dateiname }`. Importiert die Datenmodule und reicht sie an `collectNeTexts`. |
+
+Aufruf: `npm run audio:ne -- --dry-run` (zählen) · `--limit N` (Probelauf) · ohne Schalter
+(alles Fehlende generieren; braucht `AZURE_SPEECH_KEY` und `AZURE_SPEECH_REGION` aus der
+Umgebung oder `.env.local`, sonst Abbruch mit Exit 1 und Nennung der fehlenden Zeilen).
+`--check` (Pre-Commit-Hook, läuft nach dem japanischen Check): **ohne Manifest** nur Hinweis
+„Nepali-Audio noch nicht erzeugt (N Texte warten)“, Exit 0; **mit Manifest** streng – jeder
+Text braucht einen Eintrag auf den aktuellen Hash und die Datei, sonst Exit 1 und der Hook
+stößt `npm run audio:ne` an. Service Worker: eigene Routen für `/audio-ne/manifest.json`
+(NetworkFirst, `yatra-audio-manifest`) und `/audio-ne/*.mp3` (CacheFirst, `yatra-audio`);
+das Manifest ist aus dem Precache ausgenommen (siehe §7, self-contained `urlPattern`).
+
 Schemata (`ne/data/script.js`):
 ```js
 SCRIPT_DATA[char] = { roman, kind, tip, say, shown }

@@ -7,13 +7,31 @@
 #
 # Einrichtung nach frischem Clone (einmalig):  git config core.hooksPath .githooks
 
-node scripts/generate-audio.mjs --check && exit 0
+# Japanisch zuerst, Verhalten unverändert. Als Funktion, damit das frühere
+# „&& exit 0" nur diesen Teil beendet und danach der Nepali-Check noch läuft.
+check_ja() {
+  node scripts/generate-audio.mjs --check && return 0
 
-echo "→ Generiere fehlende Studio-Audios …"
-if ! npm run audio; then
-  echo "✗ Audio-Generierung fehlgeschlagen – Cloud-TTS-API aktiviert? Key in .env.local?"
+  echo "→ Generiere fehlende Studio-Audios …"
+  if ! npm run audio; then
+    echo "✗ Audio-Generierung fehlgeschlagen – Cloud-TTS-API aktiviert? Key in .env.local?"
+    echo "  Commit abgebrochen. (Notfall-Umgehung: git commit --no-verify)"
+    exit 1
+  fi
+  git add public/audio
+  echo "✓ Audios nachgeneriert und zum Commit hinzugefügt."
+}
+check_ja
+
+# Nepali (Azure Speech): ohne Manifest meldet --check nur „noch nicht erzeugt"
+# und endet mit 0; mit Manifest prüft es streng.
+node scripts/generate-audio-ne.mjs --check && exit 0
+
+echo "→ Generiere fehlende Nepali-Audios …"
+if ! npm run audio:ne; then
+  echo "✗ Nepali-Audio fehlgeschlagen – AZURE_SPEECH_KEY/AZURE_SPEECH_REGION in .env.local?"
   echo "  Commit abgebrochen. (Notfall-Umgehung: git commit --no-verify)"
   exit 1
 fi
-git add public/audio
-echo "✓ Audios nachgeneriert und zum Commit hinzugefügt."
+git add public/audio-ne
+echo "✓ Nepali-Audios nachgeneriert und zum Commit hinzugefügt."

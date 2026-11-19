@@ -48,7 +48,7 @@ export default defineConfig({
         // nach einer Audio-Regenerierung auf gelöschte Dateinamen-Hashes → 404 →
         // die App fällt für jedes Wort auf die System-TTS zurück (so geschehen
         // Juli 2026, Raten-Umstellung). Stattdessen unten NetworkFirst.
-        globIgnores: ['audio/manifest.json'],
+        globIgnores: ['audio/manifest.json', 'audio-ne/manifest.json'],
         navigateFallback: `${BASE}index.html`,
         // ACHTUNG: urlPattern-Funktionen werden als STRING in die sw.js
         // serialisiert – sie dürfen KEINE Variablen aus dieser Config-Datei
@@ -70,6 +70,20 @@ export default defineConfig({
             urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.includes('/audio/') && url.pathname.endsWith('.mp3'),
             handler: 'CacheFirst',
             options: { cacheName: 'tabi-audio', expiration: { maxEntries: 1000 } },
+          },
+          // Nepali (Yatra): eigene Regeln, denn die MP3-Regel oben prüft
+          // includes('/audio/') und greift für '/audio-ne/' nicht. Gleiche
+          // Gründe: Manifest immer frisch (NetworkFirst), MP3s einmal gehört →
+          // offline (CacheFirst).
+          {
+            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.endsWith('/audio-ne/manifest.json'),
+            handler: 'NetworkFirst',
+            options: { cacheName: 'yatra-audio-manifest', networkTimeoutSeconds: 4 },
+          },
+          {
+            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.includes('/audio-ne/') && url.pathname.endsWith('.mp3'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'yatra-audio', expiration: { maxEntries: 1000 } },
           },
         ],
       },
