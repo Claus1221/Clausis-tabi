@@ -21,7 +21,7 @@ const RAW = {
   // ── Vokale ──────────────────────────────────────────────────────────────
   // Nepali kennt bei i und u keinen Längenunterschied: इ/ई und उ/ऊ klingen gleich.
   // Bei a/ā ist der Unterschied die Klangfarbe, nicht die Länge.
-  अ: E('a', 'vowel', 'Eine „3“ mit Haken vor dem Stab – dumpfes, fast o-artiges a (wie das o in „Gott“, nur ungerundet); steckt in jedem Konsonanten'),
+  अ: E('a', 'vowel', 'Eine „3“ mit Haken vor dem Stab – dumpfes a, zwischen a und o; steckt in jedem Konsonanten'),
   आ: E('ā', 'vowel', 'Wie अ mit zweitem Stab – ein helles, offenes a wie in „Mann“; anders gefärbt als अ, nicht bloß länger'),
   इ: E('i', 'vowel', 'Ein Kringel mit Schwänzchen nach unten – i wie in „Kino“, kurz gesprochen; klingt genau wie ई'),
   ई: E('ī', 'vowel', 'Wie इ mit Häkchen obendrauf – klingt genauso wie इ (i wie in „Kino“); welches dasteht, ist reine Rechtschreibung'),
@@ -35,7 +35,7 @@ const RAW = {
 
   // ── Konsonanten: क-Reihe (hinten im Mund) ───────────────────────────────
   क: E('ka', 'consonant', 'Ein Stab mit Schlaufe links und Kringel rechts – „ka“ ohne Luftstoß, wie das k in „Skat“'),
-  ख: E('kha', 'consonant', 'Sieht aus wie र+व, aber beide Teile hängen unter EINEM Dach zusammen (anders als रव) – „kha“: k mit Luftstoß wie in „Kamm“'),
+  ख: E('kha', 'consonant', 'Sieht aus wie र und व nebeneinander, doch in ख sind die beiden Teile unten durch einen Strich verbunden, in रव („ra wa“) nicht – „kha“: k mit Luftstoß wie in „Kamm“'),
   ग: E('ga', 'consonant', 'Ein Galgen: Haken links, Stab rechts, Dach links offen – „ga“, stimmhaft wie in „Wagen“'),
   घ: E('gha', 'consonant', 'Eine Schale am Stab unter DURCHGEHENDEM Dach – „gha“: g mit hauchiger Stimme (Dach mit Lücke: ध)'),
   ङ: E('ṅa', 'consonant', 'Wie ड mit Punkt daneben – der Nasal „ng“ wie in „Gong“'),
@@ -72,10 +72,10 @@ const RAW = {
   य: E('ya', 'consonant', 'Ein Haken mit Schlaufe am Stab, Dach DURCHGEHEND – „ya“ wie „ja“ (mit Lücke im Dach: थ)'),
   र: E('ra', 'consonant', 'Nur ein kleiner Haken unter der Linie, kein Stab – „ra“, ein kurz getipptes r'),
   ल: E('la', 'consonant', 'Zwei Bögen übereinander am Stab – „la“ wie Leiter'),
-  व: E('wa', 'consonant', 'Ein Kästchen am Stab, innen LEER – am Wortanfang meist wie b, sonst wie engl. w in „water“ (mit Schrägstrich: ब)'),
+  व: E('wa', 'consonant', 'Ein Kästchen am Stab, innen LEER – meist wie b, auch im Wort (विदेश „bides“, धन्यवाद „dhanyabād“), in manchen Wörtern wie engl. w (स्वागत „swāgat“); mit Schrägstrich: ब'),
 
   // ── श bis ह (Zischlaute und h) ─────────────────────────────────────────
-  श: E('sha', 'consonant', 'Ein Kringel mit Querstrich am Stab, Dach unterbrochen – im Alltag meist wie s (शहर „sahar“, देश „des“); „sch“ nur in sorgfältiger Rede (श्री)'),
+  श: E('sha', 'consonant', 'Ein Kringel mit Querstrich am Stab, Dach unterbrochen – im Alltag meist wie s (शान्ति „sānti“ = Frieden, देश „des“); „sch“ nur in sorgfältiger Rede (श्री „shrī“)'),
   ष: E('sha', 'consonant', 'Wie प mit Schrägstrich durch das „U“ – wie श im Alltag meist s (भाषा klingt „bhāsā“)'),
   स: E('sa', 'consonant', 'Ein Haken mit Schlaufe und Querstrich am Stab – „sa“, scharfes s wie in „Bus“'),
   ह: E('ha', 'consonant', 'Ein Bogen mit Haken nach unten, kein Stab – „ha“ wie Haus'),
@@ -84,35 +84,35 @@ const RAW = {
   'ा': E('ā', 'matra', 'Ein Extrastab rechts – macht aus dem dumpfen a ein helles ā: का = „kā“', 'का'),
   'ि': E('i', 'matra', 'Stab VOR dem Konsonanten, der Bogen wölbt sich über ihn – steht vorn, klingt danach: कि = „ki“; klingt wie ी', 'कि'),
   'ी': E('ī', 'matra', 'Stab HINTER dem Konsonanten, der Bogen wölbt sich zurück über ihn – klingt genau wie ि: की = „ki“ (Umschrift kī)', 'की'),
-  'ु': E('u', 'matra', 'Ein kleines Häkchen, meist unten (bei र rechts: रु) – „u“: कु = „ku“; klingt wie ू', 'कु'),
-  'ू': E('ū', 'matra', 'Ein Häkchen, andersherum geschwungen als ु, meist unten (bei र rechts: रू) – klingt wie ु: कू = „ku“ (Umschrift kū)', 'कू'),
+  'ु': E('u', 'matra', 'Ein kleines Häkchen, meist unten (bei र rechts: रु „ru“) – „u“: कु = „ku“; klingt wie ू', 'कु'),
+  'ू': E('ū', 'matra', 'Ein Häkchen, andersherum geschwungen als ु, meist unten (bei र rechts: रू „rū“) – klingt wie ु: कू = „ku“ (Umschrift kū)', 'कू'),
   'े': E('e', 'matra', 'Ein schräger Strich oben auf dem Dach – „e“: के = „ke“', 'के'),
   'ै': E('ai', 'matra', 'Zwei schräge Striche oben – „ai“: कै = „kai“', 'कै'),
   'ो': E('o', 'matra', 'Extrastab ा plus Strich oben – „o“: को = „ko“', 'को'),
   'ौ': E('au', 'matra', 'Extrastab ा plus zwei Striche oben – „au“: कौ = „kau“', 'कौ'),
   'ृ': E('ri', 'matra', 'Ein Häkchen unten nach links – selten, „ri“: कृ = „kri“', 'कृ'),
   // Sonderfall र: das u-Zeichen sitzt rechts statt unten. Wichtig für Preise (रु. = Rupien).
-  'रु': E('ru', 'conjunct', 'Bei र sitzt das u-Zeichen RECHTS, nicht unten – रु = „ru“; रु. ist die Abkürzung für Rupien'),
-  'रू': E('rū', 'conjunct', 'Auch ū sitzt bei र rechts, anders geschwungen als bei रु – रू klingt ebenfalls „ru“'),
+  'रु': E('ru', 'matra', 'Bei र sitzt das u-Zeichen RECHTS, nicht unten – रु = „ru“; रु. ist die Abkürzung für Rupien'),
+  'रू': E('rū', 'matra', 'Auch ū sitzt bei र rechts, anders geschwungen als bei रु – रू klingt ebenfalls „ru“'),
 
   // ── Zusatzzeichen – gezeigt an क ────────────────────────────────────────
   'ं': E('ṃ', 'sign', 'Ein Punkt oben – ein n/m klingt mit: कं = „kaṃ“', 'कं'),
   'ँ': E('ṃ', 'sign', 'Mondsichel mit Punkt oben – der Vokal klingt durch die Nase: कँ = „kaṃ“', 'कँ'),
   'ः': E('ḥ', 'sign', 'Zwei Punkte rechts wie ein Doppelpunkt – ein kurzer Hauch „h“; selten', 'कः'),
-  '।': E('(Satzende)', 'sign', 'Ein senkrechter Strich am Satzende – der Punkt des Devanagari: यो के हो।'),
+  '।': E('(Satzende)', 'sign', 'Ein senkrechter Strich am Satzende – der Punkt des Devanagari: यो पानी हो। („yo pānī ho.“ = Das ist Wasser.)'),
   '्': E('(ohne a)', 'sign', 'Ein Strichlein schräg unten – nimmt dem Konsonanten sein a: क् = „k“; daraus entstehen die Halbformen', 'क्'),
 
   // ── Halbformen (nach dem Halant gelernt) ────────────────────────────────
-  'स्त': E('sta', 'conjunct', 'Halbes स (der Stab fehlt) direkt vor त – „sta“ wie in नमस्ते; der Halant steckt im fehlenden Stab'),
-  'न्य': E('nya', 'conjunct', 'Halbes न (der Stab fehlt) direkt vor य – „nya“ wie in धन्यवाद (danke)'),
+  'स्त': E('sta', 'conjunct', 'Halbes स (der Stab fehlt) direkt vor त – „sta“ wie in नमस्ते („namaste“); der Halant steckt im fehlenden Stab'),
+  'न्य': E('nya', 'conjunct', 'Halbes न (der Stab fehlt) direkt vor य – „nya“ wie in धन्यवाद („dhanyabād“ = danke)'),
 
   // ── Verbindungen ────────────────────────────────────────────────────────
   'क्ष': E('ksha', 'conjunct', 'क und ष zu einer eigenen Form verschmolzen – gesprochen „kchh“, oft nur „chh“ (क्षेत्री = „Chhetri“)'),
   'ज्ञ': E('gya', 'conjunct', 'ज und ञ verschmolzen – im Nepali gesprochen „gya“, nicht „jña“'),
-  'प्र': E('pra', 'conjunct', 'Ein Schrägstrich unten am Stab ist ein r NACH dem Konsonanten – „pra“ wie in प्रवेश (Eingang), प्रहरी (Polizei)'),
+  'प्र': E('pra', 'conjunct', 'Ein Schrägstrich unten am Stab ist ein r NACH dem Konsonanten – „pra“ wie in प्रवेश („prabes“ = Eingang), प्रहरी („prahari“ = Polizei)'),
   'त्र': E('tra', 'conjunct', 'Sonderform der r-Strich-Regel: त mit Schrägstrich unten – „tra“, das t ohne Luftstoß'),
-  'श्र': E('shra', 'conjunct', 'Eigene Form: der linke Teil von श wird zum Bogen, darunter der r-Strich – „shra“, wie in श्री'),
-  'र्म': E('rma', 'conjunct', 'र vor einem Konsonanten wird zum Häkchen OBEN auf dem nächsten Zeichen – र्म = „rma“, das r klingt zuerst (धर्म, मार्ग)'),
+  'श्र': E('shra', 'conjunct', 'Eigene Form: der linke Teil von श wird zum Bogen, darunter der r-Strich – „shra“, wie in श्री („shrī“)'),
+  'र्म': E('rma', 'conjunct', 'र vor einem Konsonanten wird zum Häkchen OBEN auf dem nächsten Zeichen – र्म = „rma“, das r klingt zuerst (धर्म „dharma“ = Religion, मार्ग „mārga“ = Straße, in Straßennamen)'),
 
   // ── Ziffern ─────────────────────────────────────────────────────────────
   '०': E('0', 'digit', 'Ein Kreis wie unsere Null – शून्य „shūnya“'),
@@ -128,6 +128,8 @@ const RAW = {
 }
 
 // say = shown, solange es kein Audio gibt (s. Kopfkommentar).
+// Beispielwörter in tips dürfen Zeichen späterer Lektionen enthalten – dann steht die
+// Umschrift direkt daneben, damit man sie trotzdem lesen kann.
 // Achtung: roman ist NICHT eindeutig (श/ष = „sha“, ं/ँ = „ṃ“) – ein Quiz darf nie zwei
 // Antwortoptionen mit gleichem roman anbieten.
 export const SCRIPT_DATA = Object.fromEntries(
@@ -164,13 +166,13 @@ export const SCRIPT_NOTES = [
   {
     id: 'aspiration',
     title: 'Behaucht oder unbehaucht',
-    text: 'Fast jeder Verschlusslaut hat einen Zwilling mit h in der Umschrift. Bei den stimmlosen (k/kh, c/ch, ṭ/ṭh, t/th, p/ph) ist es ein Luftstoß: unbehaucht klingt wie das p in „Spiel“, behaucht wie das p in „Post“ – halt eine Hand vor den Mund, beim behauchten spürst du die Luft. Bei घ झ ढ ध भ gibt es keinen Luftstoß, sondern eine hauchige Stimme direkt nach dem Laut – wie „g-h“ in „Burghof“, zusammengezogen. Der Unterschied ändert die Bedeutung.',
+    text: 'Fast jeder Verschlusslaut hat einen Zwilling mit h in der Umschrift. Bei den stimmlosen (k/kh, c/ch, ṭ/ṭh, t/th, p/ph) ist es ein Luftstoß: unbehaucht klingt wie das p in „Spiel“, behaucht wie das p in „Post“ – halt eine Hand vor den Mund, beim behauchten spürst du die Luft. Bei घ झ ढ ध भ gibt es keinen Luftstoß, sondern die Stimme läuft weiter und wird hauchig – wie ein stimmhaftes g, an das ein Seufzer gehängt ist. Diesen Laut gibt es im Deutschen nicht. Der Unterschied ändert die Bedeutung.',
     pairs: [['क', 'ख'], ['ग', 'घ'], ['च', 'छ'], ['ज', 'झ'], ['ट', 'ठ'], ['ड', 'ढ'], ['त', 'थ'], ['द', 'ध'], ['प', 'फ'], ['ब', 'भ']],
   },
   {
     id: 'retroflex',
     title: 'Dental oder retroflex',
-    text: 'Dental (त-Reihe): die Zungenspitze liegt an den oberen Schneidezähnen, ohne Luftstoß. Retroflex (ट-Reihe): die Zungenspitze klappt nach hinten an den Gaumen – das klingt dumpfer und härter. Im Deutschen gibt es den Unterschied nicht, im Nepali trennt er Wörter. Ausnahme: ण klingt im Nepali wie न – die Schreibung unterscheidet sie, die Aussprache nicht.',
+    text: 'Dental (त-Reihe): die Zungenspitze liegt an den oberen Schneidezähnen. Retroflex (ट-Reihe): die Zungenspitze klappt nach hinten an den Gaumen – das klingt dumpfer und härter. Im Deutschen gibt es den Unterschied nicht, im Nepali trennt er Wörter. Ausnahme: ण klingt im Nepali wie न – die Schreibung unterscheidet sie, die Aussprache nicht.',
     pairs: [['त', 'ट'], ['थ', 'ठ'], ['द', 'ड'], ['ध', 'ढ']],
   },
 ]
