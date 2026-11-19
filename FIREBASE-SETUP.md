@@ -148,6 +148,21 @@ Stimmt auch nur eine Zeile nicht, **nicht veröffentlichen** und nachfragen.
 **Schritt 3 – Veröffentlichen.**
 Tab **„Regeln"** → **Veröffentlichen**.
 
+*Alternative zum Einfügen von Hand:* Das Skript `scripts/deploy-rules.ps1` spielt
+`firestore.rules` direkt ein. Im Projektordner in PowerShell:
+
+```
+.\scripts\deploy-rules.ps1
+```
+
+Es meldet dich (beim ersten Mal im Browser, mit dem **privaten** Google-Konto) bei
+Firebase an, lässt die Regeln von Firebase auf Gültigkeit prüfen, fragt nach, ob
+Schritt 0 und 1 erledigt sind, und veröffentlicht erst dann. Mit
+`.\scripts\deploy-rules.ps1 -NurPruefen` wird nur geprüft und nichts geändert.
+Das Skript veröffentlicht nur die Regeln, nicht die App. Die Prüfliste aus
+Schritt 2 ersetzt es nicht – die prüft, ob die Regeln das Richtige tun; das
+Skript prüft nur, ob sie fehlerfrei geschrieben sind.
+
 **Schritt 4 – Erst danach die neue App deployen** (wie in Abschnitt 8).
 Diesen Branch erst nach Schritt 3 nach `main` mergen – jeder Push auf `main`
 deployt sofort.
