@@ -28,6 +28,23 @@ describe('SCRIPT_LESSONS', () => {
     expect(CONSONANTS).toHaveLength(33)
     for (const ch of [...DIGITS, ...CONSONANTS]) expect(all.has(ch), ch).toBe(true)
   })
+  it('was Reisende für Preise und Schilder brauchen, kommt vor', () => {
+    const all = new Set(SCRIPT_LESSONS.flatMap(l => l.chars))
+    // Reph (r oben), Rakar (r unten), u-Zeichen an र (रु. = Rupien), Danda
+    for (const ch of ['र्म', 'प्र', 'रु', 'रू', '।']) expect(all.has(ch), ch).toBe(true)
+  })
+  it('Halant kommt vor den Verbindungen dran (Halbformen erklären sich über ihn)', () => {
+    const at = ch => SCRIPT_LESSONS.findIndex(l => l.chars.includes(ch))
+    expect(at('्')).toBeLessThan(at('क्ष'))
+    const halfForms = Object.keys(SCRIPT_DATA).filter(ch => ch !== '्' && ch.includes('्'))
+    for (const ch of halfForms) {
+      const l = at(ch)
+      expect(l > at('्') || (l === at('्') && SCRIPT_LESSONS[l].chars.indexOf('्') < SCRIPT_LESSONS[l].chars.indexOf(ch)), ch).toBe(true)
+    }
+  })
+  it('Lektionen bleiben in einer Sitzung lernbar (≤ 7, nur die Ziffern 10)', () => {
+    for (const l of SCRIPT_LESSONS) expect(l.chars.length, l.id).toBeLessThanOrEqual(l.id === 's14' ? 10 : 7)
+  })
 })
 
 describe('SCRIPT_DATA', () => {
@@ -40,9 +57,9 @@ describe('SCRIPT_DATA', () => {
   it('jeder Schlüssel ist NFC', () => {
     for (const ch of Object.keys(SCRIPT_DATA)) expect(ch.normalize('NFC'), ch).toBe(ch)
   })
-  it('Vokalzeichen und Zusatzzeichen werden am Konsonanten gezeigt', () => {
+  it('Zeichen ohne eigene Basis (Matras, ं ँ ः ्) werden an einem Konsonanten gezeigt', () => {
     for (const [ch, d] of Object.entries(SCRIPT_DATA)) {
-      if (d.kind === 'matra' || d.kind === 'sign') expect(d.shown.includes(ch) && d.shown.length > 1, ch).toBe(true)
+      if (/^\p{M}$/u.test(ch)) expect(d.shown.includes(ch) && d.shown.length > 1, ch).toBe(true)
       else expect(d.shown, ch).toBe(ch)
     }
   })
@@ -60,5 +77,10 @@ describe('SCRIPT_NOTES', () => {
       expect(n.pairs.length, n.id).toBeGreaterThan(0)
       for (const [a, b] of n.pairs) { expect(SCRIPT_DATA[a], a).toBeDefined(); expect(SCRIPT_DATA[b], b).toBeDefined() }
     }
+  })
+  it('kein Übungspaar न/ण: im Nepali klingen beide gleich', () => {
+    const pairs = SCRIPT_NOTES.flatMap(n => n.pairs.map(p => p.join('')))
+    expect(pairs).not.toContain('नण')
+    expect(pairs).not.toContain('णन')
   })
 })

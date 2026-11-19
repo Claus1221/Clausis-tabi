@@ -64,11 +64,12 @@ Alles Nepalische liegt unter `src/ne/` mit denselben Schichten wie oben.
 | Datei | Rolle |
 |---|---|
 | `ne/NepaliApp.jsx` | Hülle mit Kopfzeile und `ProgressCtx` für Sprache `ne` (Kursinhalte folgen). |
-| `ne/lib/deva.js` | Reine Devanagari-Werkzeuge: `nfc` (jeder SRS-Karten-Schlüssel geht hier durch), `aksharas` (Schreibsilben: Verbund über Halant + Matra + Zusatzzeichen; Leer-/Satzzeichen und Ziffern fallen weg), `romanSyllables` (Vokalkerne, `ai`/`au` einfach), `romanFits` (Umschrift plausibel: `aksharas − stumme ≤ Kerne ≤ aksharas`; stumm = Silbe ohne Matra und ohne eigenständigen Vokal). Tests: `deva.test.js`. |
+| `ne/lib/deva.js` | Reine Devanagari-Werkzeuge: `nfc` (jeder SRS-Karten-Schlüssel geht hier durch), `aksharas` (Schreibsilben: Verbund über Halant + Matra + Zusatzzeichen; Leer-/Satzzeichen und Ziffern fallen weg), `romanSyllables` (Vokalkerne; nur `ai`/`au` ohne Längenstrich zählen einfach, `āu`/`jāū` sind zwei; ॐ und ऽ fallen in `aksharas` bewusst weg), `romanFits` (Umschrift plausibel: `aksharas − stumme ≤ Kerne ≤ aksharas`; stumm = Silbe ohne Matra und ohne eigenständigen Vokal). Tests: `deva.test.js`. |
 | `ne/data/script.js` | `SCRIPT_DATA`, `SCRIPT_LESSONS` (14 Schrift-Lektionen `s1…s14`), `SCRIPT_NOTES` (Laut-Hinweise). Tests: `script.test.js`. |
 | `ne/lib/speechPick.js` | Reine Auswahl der Sprachausgabe (kein `window`/`fetch`): `pickSource({ text, manifest, hasDeviceVoice })` → `mp3` \| `device` \| `none` (Text vorher NFC), `deviceMode(voices)` (`voice` \| `lang-only` bei leerer Liste \| `none`), `pickVoice(voices)` (`ne-NP` vor anderem `ne*`, lokal vor Netz, nie Hindi/andere Sprache), `isNepaliLang`, `watchdogMs`. Tests: `speechPick.test.js`. |
 | `ne/lib/speech.js` | Sprachausgabe im Browser, drei Stufen: **Studio-MP3** (Manifest `audio-ne/manifest.json`, einmal pro Sitzung geladen; 404/Fehler = leer, gemerkt) → **Nepali-Gerätestimme** (`ne-NP`, Rate 0,85; wartet bis 1,5 s auf `voiceschanged`; ist die Stimmenliste leer, wird es trotzdem nur mit `lang='ne-NP'` versucht – Android-Chrome, `deviceMode`; Liste ohne Nepali-Stimme → nie eine fremde) → **still**. `speak(text)` löst immer auf (Ende, Fehler, Watchdog `max(4 s, 400 ms × Zeichen)`; neuer Aufruf löst den laufenden auf), dazu `stopSpeaking`, `onSpeechState`, `canSpeak`, `soundAvailable()` (konservativ: Manifest mit Einträgen oder echte Nepali-Stimme, leere Liste = false; Hör-Aufgaben zeigen ohne Ton das Geschriebene). |
-| `ne/imports.test.js` | Wächter der Importregel unten: liest alle Dateien unter `src/` als Text und prüft die Import-Spezifizierer (relative Pfade aufgelöst; aus `lib/claude.js` nur die erlaubten Namen; Pakete in `ne/` nur `react`, in Tests zusätzlich `vitest` und `node:*`). |
+| `ne/importRules.js` | Regeln der Importregel unten als reine Funktion: `violations(files: { path, source }[])` → `{ path, specifier, reason }[]`, dazu `importsOf(source)` (kleiner Tokenizer: Kommentare fallen weg, Importtext in Zeichenketten zählt nicht) und `resolve`. Relative Pfade werden aufgelöst (auch das Verzeichnis `ne` selbst); aus `lib/claude.js` nur die erlaubten Namen; Pakete in `ne/` nur `react`, in Tests zusätzlich `vitest` und `node:*`; `import(…)` ohne festen String und `import.meta.glob` sind überall verboten. Bekannte Grenze: JSX-Text mit Apostroph liest sich bis Zeilenende wie ein String. |
+| `ne/imports.test.js` | Prüft `violations` an kleinen Dateien im Speicher (jeder Umgehungsweg muss auffallen, erlaubte Fälle nicht) und wendet sie dann auf alle Dateien unter `src/` an. |
 
 **Nepali-Audio (Azure Speech) – Stand: noch nicht erzeugt, wartet auf einen Azure-Key.**
 Die Pipeline ist fertig und getestet, aber nie gelaufen; `public/audio-ne/` gibt es noch nicht.
@@ -93,16 +94,22 @@ Schemata (`ne/data/script.js`):
 ```js
 SCRIPT_DATA[char] = { roman, kind, tip, say, shown }
 // kind: 'vowel' | 'consonant' | 'matra' | 'conjunct' | 'sign' | 'digit'
-// roman: Kurs-Umschrift; Konsonanten mit a ('ka'), Matras/Zeichen mit ihrem Beitrag ('ā', 'ṃ')
-// tip:   eine Zeile Deutsch, Form ↔ Laut; Verwechslungspaare grenzen sich ab
-// shown: was die Karte zeigt – Matras und Zusatzzeichen an क ('का'), sonst das Zeichen selbst
-// say:   Text für die Sprachausgabe (derzeit = shown, noch kein Audio)
-// Schlüssel sind NFC.
+// roman: Kurs-Umschrift, spiegelt die Schreibung (ī/ū, sh); Konsonanten mit a ('ka'),
+//        Matras/Zeichen mit ihrem Beitrag ('ā', 'ṃ'). NICHT eindeutig (श/ष 'sha', ं/ँ 'ṃ'):
+//        ein Quiz darf nie zwei Optionen mit gleichem roman anbieten.
+// tip:   eine Zeile Deutsch, Form ↔ Laut (was man hört, auch wo es von roman abweicht)
+// shown: was die Karte zeigt – kombinierende Zeichen (Matras, ं ँ ः ्) an क ('का'), sonst das Zeichen
+// say:   Text für die Sprachausgabe (derzeit = shown)
+// Schlüssel sind NFC. 79 Einträge: 11 Vokale, 33 Konsonanten, 10 Matras, 10 Verbindungen
+// (Halbformen, Reph र्म, Rakar प्र, रु/रू …), 5 Zusatzzeichen (inkl. Danda ।), 10 Ziffern.
 SCRIPT_LESSONS[] = { id: 's1', title, sub, chars: [char, …] }
-// s1–s2 Vokale · s3–s9 Konsonanten nach Lautgruppen · s10–s11 Matras ·
-// s12 Verbindungen · s13 Zusatzzeichen · s14 Ziffern ०–९; jedes Zeichen in genau einer Lektion
+// s1–s2 Vokale · s3–s9 Konsonanten nach Lautgruppen · s10–s11 Matras (s10 mit रु रू) ·
+// s12 Zusatzzeichen + Halant + erste Halbformen · s13 Verbindungen · s14 Ziffern ०–९;
+// jedes Zeichen in genau einer Lektion, höchstens 7 (Ziffern 10); Halant vor allen Verbindungen
 SCRIPT_NOTES[] = { id, title, text, pairs: [[char, char], …] }   // behaucht/unbehaucht, dental/retroflex
 ```
+Noch ungeprüfte Nepali-Aussagen (Aussprache, Formbeschreibungen) stehen in
+`docs/nepali-offene-pruefpunkte.md` – für die spätere Durchsicht durch eine Person, die Nepali kann.
 
 **Importregel:** `src/ne/**` darf nur den sprachneutralen Kern importieren: `theme.js`,
 `useProgress.js`, `state/ProgressContext.js`, `AuthGate.jsx`, `LangGate.jsx`,

@@ -6,11 +6,31 @@ describe('aksharas', () => {
   it('zwei Verbünde', () => expect(aksharas('क्षेत्र')).toEqual(['क्षे', 'त्र']))
   it('Nasalzeichen hängt an', () => expect(aksharas('तपाईं')).toEqual(['त', 'पा', 'ईं']))
   it('Leer- und Satzzeichen fallen weg', () => expect(aksharas('यो के हो?')).toEqual(['यो', 'के', 'हो']))
+  it('Halant-Kette', () => expect(aksharas('विश्वविद्यालय')).toEqual(['वि', 'श्व', 'वि', 'द्या', 'ल', 'य']))
+  it('Nukta zusammengesetzt und zerlegt ergibt dasselbe', () =>
+    expect(aksharas('ड़ी')).toEqual(aksharas('ड़ी')))
+  it('eigenständiger Vokal mit Anusvara', () => expect(aksharas('अंग')).toEqual(['अं', 'ग']))
+  it('Ziffern und Danda fallen weg', () => expect(aksharas('१०० रुपैयाँ।')).toEqual(['रु', 'पै', 'याँ']))
+  it('Latein und Devanagari gemischt', () => expect(aksharas('ATM मेसिन')).toEqual(['मे', 'सि', 'न']))
+  it('ZWJ/ZWNJ nach Halant halten den Verbund zusammen', () => {
+    expect(aksharas('क्‍ष')).toEqual(['क्‍ष'])
+    expect(aksharas('क्‌ष')).toEqual(['क्‌ष'])
+  })
+  it('ॐ und Avagraha ऽ fallen bewusst weg', () => expect(aksharas('ॐ सोऽहम्')).toEqual(['सो', 'ह', 'म्']))
 })
 describe('romanSyllables / romanFits', () => {
   it('zählt Vokalkerne', () => { expect(romanSyllables('namaste')).toBe(3); expect(romanSyllables('himāl')).toBe(2); expect(romanSyllables('paisā')).toBe(2) })
   it('passende Umschrift', () => { expect(romanFits('नमस्ते', 'namaste')).toBe(true); expect(romanFits('हिमाल', 'himāl')).toBe(true) })
   it('zu kurze oder zu lange Umschrift fällt auf', () => { expect(romanFits('हिमाल', 'hi')).toBe(false); expect(romanFits('हिमाल', 'himālayako')).toBe(false) })
+  it('nur ai/au ohne Längenstrich sind ein Kern; ā ī ū zählen einzeln', () => {
+    expect(romanSyllables('jāū')).toBe(2)
+    expect(romanSyllables('tapāīṃ')).toBe(3)
+    expect(romanSyllables('āu')).toBe(2)
+    expect(romanSyllables('paisā')).toBe(2)
+    expect(romanFits('जाऊ', 'jāū')).toBe(true)
+    expect(romanFits('आउ', 'āu')).toBe(true)
+    expect(romanFits('तपाईं', 'tapāīṃ')).toBe(true)
+  })
 })
 // Escapes, damit sichtbar bleibt, dass hier zwei verschiedene Byte-Folgen verglichen werden:
 // U+0958 (क़ als ein Zeichen) gegen क + Nukta U+093C.

@@ -23,6 +23,8 @@ const isMark = c => isMatra(c) || (c >= 0x0900 && c <= 0x0903) || c === 0x093A |
 // Zerlegt in Schreibsilben (Akshara): Konsonantenverbund (über Halant verbunden) bzw.
 // eigenständiger Vokal, samt Matra und Zusatzzeichen. Alles andere – Leerzeichen,
 // Satzzeichen, Danda, Ziffern, lateinische Buchstaben – trennt nur und fällt weg.
+// Bewusst auch ॐ (U+0950) und Avagraha ऽ (U+093D): kein Reise-Wortschatz, und als
+// eigene Silbe würden sie romanFits nur verfälschen.
 export function aksharas(text) {
   const out = []
   let cur = ''
@@ -49,11 +51,20 @@ export function aksharas(text) {
   return out
 }
 
-// Zahl der Vokalkerne einer Umschrift. Diakritika (ā ī ū ṃ ṭ …) werden abgestreift;
-// die Doppellaute ai und au sind EIN Kern (paisā = pai-sā).
+// Zahl der Vokalkerne einer Umschrift. Nur die Doppellaute ai und au OHNE Längenstrich
+// sind EIN Kern (paisā = pai-sā); ā ī ū sind eigene Kerne (jāū = jā-ū, tapāīṃ = ta-pā-īṃ).
+// Deshalb erst in Grundbuchstabe + Zeichen zerlegen, statt Diakritika vorher abzustreifen.
 export function romanSyllables(roman) {
-  const plain = String(roman).toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
-  return (plain.match(/ai|au|[aeiou]/g) || []).length
+  const letters = [...String(roman).toLowerCase().normalize('NFD').matchAll(/(\p{L})(\p{M}*)/gu)]
+    .map(m => ({ base: m[1], plain: m[2] === '' }))
+  let n = 0
+  for (let i = 0; i < letters.length; i++) {
+    if (!'aeiou'.includes(letters[i].base)) continue
+    n++
+    const next = letters[i + 1]
+    if (letters[i].base === 'a' && letters[i].plain && next && next.plain && (next.base === 'i' || next.base === 'u')) i++
+  }
+  return n
 }
 
 // Silbe ohne Matra und ohne eigenständigen Vokal: trägt nur das mitgesprochene a,
