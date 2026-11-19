@@ -178,7 +178,7 @@ export const GRAMMAR = [
     summary: 'Wo etwas ist, ob es da ist, wie es ist – im Unterschied zu हो',
     body: [
       { text: 'छ sagt, dass etwas DA ist oder WO es ist: झोलामा पासपोर्ट छ – „In der Tasche ist der Pass“ (oder: „gibt es einen Pass“). मेरो झोला कहाँ छ? – „Wo ist meine Tasche?“ Auch Zustände und Eigenschaften drückt छ aus: मेरो झोला ठूलो छ – „Meine Tasche ist groß“.' },
-      { h: 'छ oder हो? – der wichtigste Unterschied', text: 'Deutsch hat ein „ist“, Nepali zwei. Sagt der Satz, WAS etwas ist (danach kommt ein Nomen: „meine Tasche“, „ein Pass“), steht हो: यो मेरो झोला हो. Geht es darum, WO etwas ist, OB es das gibt oder WIE etwas ist (groß, teuer, gut), steht छ. Probe: Kann man „ist gleich …“ denken? Dann हो, sonst छ. (हो mit einer Eigenschaft gibt es auch – dann klingt es nach allgemeiner Feststellung. Für den Anfang gilt: Eigenschaft → छ.)' },
+      { h: 'छ oder हो? – der wichtigste Unterschied', text: 'Deutsch hat ein „ist“, Nepali zwei. Sagt der Satz, WAS etwas ist (danach kommt ein Nomen: „meine Tasche“, „ein Pass“), steht हो: यो मेरो झोला हो. Geht es darum, WO etwas ist, OB es das gibt oder WIE etwas ist (groß, teuer, gut), steht छ. Probe: Könnte statt „ist“ ein Gleichheitszeichen stehen (das = meine Tasche)? Dann हो, sonst छ. (हो mit einer Eigenschaft gibt es auch – dann klingt es nach allgemeiner Feststellung. Für den Anfang gilt: Eigenschaft → छ.)' },
       { h: 'Mit „ich“ und „Sie“', text: 'Mit म heißt es छु: म सन्चै छु. Zu तपाईं sagt man wieder हुनुहुन्छ – dieselbe höfliche Form wie bei हो: तपाईं सन्चै हुनुहुन्छ? Statt „ja“ wiederholt man oft einfach das Verb: छ? – छ।' },
       { h: 'Neue Wörter', text: 'झोला „Tasche, Beutel“ · पासपोर्ट „Reisepass“ · ठूलो „groß“.' },
     ],
@@ -285,7 +285,7 @@ export const GRAMMAR = [
     ],
     exercises: [
       E('यो तपाईं＿＿ टिकट हो?', 'को', ['को', 'मा', 'बाट'], 'Wessen Fahrkarte? → तपाईंको „Ihr(e)“.', 'Ist das Ihre Fahrkarte?', 'yo tapāīṃko ṭikaṭ ho?'),
-      E('यो ＿＿ झोला हो।', 'मेरो', ['मेरो', 'म', 'मलाई'], '„mein“ = मेरो (म + को, verschmolzen).', 'Das ist meine Tasche.', 'yo mero jholā ho.'),
+      E('यो ＿＿ झोला हो।', 'मेरो', ['मेरो', 'म', 'मलाई'], '„mein“ = मेरो – die Besitzform von म (nicht मको).', 'Das ist meine Tasche.', 'yo mero jholā ho.'),
       E('＿＿ पासपोर्ट दिनुहोस्।', 'तपाईंको', ['तपाईंको', 'तपाईंमा', 'तपाईंबाट'], 'Wessen Pass? → तपाईंको „Ihren“.', 'Ihren Pass, bitte.', 'tapāīṃko pāsporṭ dinuhos.'),
       E('यो उहाँ＿＿ झोला हो।', 'को', ['को', 'मा', 'बाट'], 'Wem gehört die Tasche? → उहाँको.', 'Das ist seine / ihre Tasche.', 'yo uhāṃko jholā ho.'),
       E('दिदी＿＿ चिया मीठो छ।', 'को', ['को', 'मा', 'बाट'], 'Wessen Tee? → दिदीको.', 'Didis Tee ist lecker.', 'didīko ciyā mīṭho cha.'),
