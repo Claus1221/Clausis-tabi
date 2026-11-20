@@ -10,12 +10,15 @@ import { CHAPTER_WORD } from '../data/chapters.js'
 import { GRAMMAR } from '../data/grammar.js'
 import { learnedItems, dueItems, srsEntry, itemInfo } from '../lib/learned.js'
 import { SRS_STAGES } from '../lib/srs.js'
+import { weekLearned } from '../lib/week.js'
 
 // ─── Fortschritt (Yatra) ──────────────────────────────────────────────────────
 // Gegenstück zu src/screens/fortschritt.jsx mit dem, was es im Nepali-Kurs heute gibt:
-// XP/Level/Streak, Woche, Level-Balken, XP-Verlauf, Kenntnisstufen der Karten mit
-// „fällig“-Sprung und der Stand von Schrift, Wörtern und Grammatik. Kapitel-Sterne und Abzeichen folgen, wenn
-// es Kapitel gibt. Zurücksetzen liegt in den Einstellungen (nur dort, eindeutig Nepali).
+// XP/Level/Streak, Woche (XP, aktive Tage und was neu gelernt wurde: Zeichen, Wörter,
+// Grammatik, Kapitel, Szenen), Level-Balken, XP-Verlauf, Kenntnisstufen der Karten mit
+// „fällig“-Sprung und der Stand von Schrift, Wörtern (mit Kapitel-Wörtern) und Grammatik.
+// Kapitel-Sterne stehen auf der Reise-Karte; Abzeichen gibt es im Nepali-Kurs (noch) nicht.
+// Zurücksetzen liegt in den Einstellungen (nur dort, eindeutig Nepali).
 
 const label = { fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1 }
 
@@ -31,8 +34,10 @@ export default function FortschrittScreen({ onReview }) {
   const periodTotal = buckets.reduce((a, b) => a + b.xp, 0)
   const maxXP = Math.max(1, ...buckets.map(b => b.xp))
 
-  // Der Verlaufszähler heißt `kana` (s. reise.jsx) – hier sind es Schriftzeichen.
+  // Tageszähler aus progress.history (gebucht beim ersten Abschluss, s. reise.jsx); der
+  // Zähler `kana` sind hier Schriftzeichen. weekLearned: nur Arten über 0.
   const week = weekSummary(progress)
+  const learnedThisWeek = weekLearned(week)
 
   // Kenntnisstufen über alle eingeplanten Karten des Lernstands – dieselbe Menge wie
   // die Stapel im Üben-Tab, damit „fällig“ hier und dort gleich ist.
@@ -82,17 +87,33 @@ export default function FortschrittScreen({ onReview }) {
       {/* Diese Woche */}
       <Card style={{ marginBottom: 16 }}>
         <div style={{ ...label, marginBottom: 10 }}>DIESE WOCHE</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, textAlign: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, textAlign: 'center' }}>
           {[
             [week.xp, 'XP'],
             [week.days, week.days === 1 ? 'aktiver Tag' : 'aktive Tage'],
-            [week.kana, week.kana === 1 ? 'neues Zeichen' : 'neue Zeichen'],
           ].map(([n, l]) => (
             <div key={l}>
               <div style={{ fontSize: 18, fontWeight: 700, color: n > 0 ? C.indigo : C.textMuted }}>{n}</div>
               <div style={{ fontSize: 10, color: C.textMuted }}>{l}</div>
             </div>
           ))}
+        </div>
+        {/* Neu gelernt: nur was es diese Woche wirklich gab; Wiederholen allein zählt hier nicht. */}
+        <div style={{ borderTop: `1px solid ${C.washiDark}`, marginTop: 10, paddingTop: 10, textAlign: 'center' }}>
+          {learnedThisWeek.length === 0 ? (
+            <div style={{ fontSize: 12, color: C.textMuted }}>Diese Woche noch nichts Neues gelernt.</div>
+          ) : (
+            <>
+              <div style={{ fontSize: 10, color: C.textMuted, marginBottom: 6 }}>NEU GELERNT</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>
+                {learnedThisWeek.map(({ n, label: l }) => (
+                  <span key={l} style={{ background: `${C.indigo}10`, borderRadius: 12, padding: '3px 10px', fontSize: 13, color: C.sumi }}>
+                    <strong style={{ color: C.indigo }}>{n}</strong> {l}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
         </div>
         <div style={{ fontSize: 12, color: C.textMuted, marginTop: 10, textAlign: 'center' }}>
           {week.xp === 0 ? 'Noch still diese Woche – die nächste Station wartet. 🌱'

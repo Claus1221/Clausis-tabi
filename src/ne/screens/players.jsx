@@ -1,19 +1,21 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { C, NE } from '../../theme.js'
 import { Btn, Card } from '../../components/ui.jsx'
 import { XP_PER_KANA, XP_PER_WORD, XP_PER_GRAMMAR } from '../../lib/xp.js'
 import { SCRIPT_DATA } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
-import { speak, stopSpeaking, soundAvailable } from '../lib/speech.js'
+import { stopSpeaking } from '../lib/speech.js'
 import { buildScriptQuiz, notesForLesson } from '../lib/scriptQuiz.js'
 import { buildWordQuiz } from '../lib/wordQuiz.js'
-import { feedbackColor } from '../lib/srs.js'
+import { choiceState } from '../lib/choice.js'
 import { KIND_LABEL, alone } from '../lib/learned.js'
 import { wordsBefore } from '../lib/path.js'
 import { NE_PATH } from '../data/path.js'
 import TraceCanvas from '../components/TraceCanvas.jsx'
-import { useSound, usePlayback, ListenButton, NoSoundMark, NO_SOUND_HINT } from '../components/sound.jsx'
-import { NeText, TappableSentence, useShowRoman } from '../components/text.jsx'
+import { useSound, usePlayback, useListenProbe, ListenButton, NoSoundMark, NoSoundBanner } from '../components/sound.jsx'
+import { NeText, TappableSentence } from '../components/text.jsx'
+import { Choice, ChoiceGrid } from '../components/Choice.jsx'
+import { LessonFrame, LessonDone, useFinishOnce } from '../components/lesson.jsx'
 import { GapDrill } from '../components/GapDrill.jsx'
 import { startDrill, answerDrill, currentDrill, drillDone } from '../lib/drillQueue.js'
 import { GrammarHead, GrammarExplain, GrammarExamples } from '../components/grammar.jsx'
@@ -22,7 +24,7 @@ import { GrammarHead, GrammarExplain, GrammarExamples } from '../components/gram
 // Gegenstück zu src/screens/players.jsx. Grundsatz: alles geht ohne Ton (Ton-Bausteine
 // in components/sound.jsx). Gelesen wird über die Umschrift.
 // ScriptLesson (Schrift), WordBlock (Wörter) und GrammarLesson (Grammatik) teilen Rahmen
-// und Abschluss-Muster (LessonFrame, useFinishOnce).
+// und Abschluss-Muster (LessonFrame, useFinishOnce, LessonDone aus components/lesson.jsx).
 
 // Ein Zeichen vorstellen: groß, Art, Umschrift, Anhören, Merkhilfe.
 // Die Umschrift (roman) steht hier IMMER, unabhängig von settings.showRoman: die Lesung
@@ -135,20 +137,12 @@ function QuizStep({ quiz, onFinish }) {
       <p style={{ color: C.textMuted, fontSize: 13, marginBottom: 8 }}>Kurzer Check · {qi + 1} / {quiz.length}</p>
       <div style={{ fontSize: 84, fontFamily: NE, color: C.sumi, lineHeight: 1.25, marginBottom: 12 }}>{cur.shown}</div>
       <p style={{ marginBottom: 14, fontWeight: 500 }}>{cur.prompt}</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-        {cur.options.map(o => {
-          const state = !revealed ? 'neutral' : o === cur.correct ? 'correct' : o === answer ? 'wrong' : 'neutral'
-          const col = state === 'correct' ? C.matcha : state === 'wrong' ? C.shu : C.washiDark
-          return (
-            <button key={o} onClick={() => choose(o)} disabled={revealed}
-              style={{
-                minHeight: 52, padding: '12px 6px', borderRadius: 10, border: `2px solid ${col}`,
-                background: state === 'neutral' ? '#fff' : `${col}20`,
-                fontSize: 18, fontWeight: 600, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
-              }}>{o}</button>
-          )
-        })}
-      </div>
+      {/* Die Lesung IST hier die Antwort – sie steht als Klartext, unabhängig vom Schalter. */}
+      <ChoiceGrid columns="1fr 1fr 1fr">
+        {cur.options.map(o => (
+          <Choice key={o} text={o} textSize={18} state={choiceState(o, answer, cur.correct)} disabled={revealed} onClick={() => choose(o)} />
+        ))}
+      </ChoiceGrid>
       {revealed && (
         <>
           <p style={{ marginTop: 14, color: answer === cur.correct ? C.matcha : C.shu, fontWeight: 600 }}>
@@ -161,77 +155,6 @@ function QuizStep({ quiz, onFinish }) {
             {isLast ? 'Check abschließen →' : 'Nächstes Zeichen →'}
           </Btn>
         </>
-      )}
-    </div>
-  )
-}
-
-// ─── Gemeinsamer Rahmen aller Yatra-Lektionen ────────────────────────────────
-
-// Abschluss-Muster für jede Lektion (Schrift, Wörter, später Grammatik …):
-// „… abschließen“ liegt genau dort, wo nach dem Schließen die TabBar erscheint. Ein
-// Doppeltipp träfe mit dem zweiten Tipp einen Tab. Daher: erster Tipp sperrt den Knopf,
-// geschlossen wird erst nach einer Doppeltipp-Spanne (~350 ms) – bis dahin fängt das noch
-// stehende Overlay den zweiten Tipp ab.
-// Gebucht wird dagegen SOFORT beim ersten Tipp (onComplete), verzögert ist nur das
-// Schließen (onClose): verschwindet die Lektion in der Spanne (Abmelden, Sprachwechsel,
-// ✕), geht kein Abschluss verloren – der Timer wird dann nur verworfen.
-// → [finishing (für disabled), finish]. Auch vom Kapitel-Spieler (chapter.jsx) benutzt.
-export function useFinishOnce(onComplete, onClose) {
-  const [finishing, setFinishing] = useState(false)
-  const finishTimer = useRef(null)
-  useEffect(() => () => clearTimeout(finishTimer.current), [])
-  // Sperre über die Ref, nicht über den State: zwei Klicks im selben Render-Durchgang
-  // sähen beide noch finishing = false und riefen onComplete (XP!) doppelt.
-  const locked = useRef(false)
-  const finish = () => {
-    if (locked.current) return
-    locked.current = true
-    setFinishing(true)
-    onComplete()
-    finishTimer.current = setTimeout(onClose, 350)
-  }
-  return [finishing, finish]
-}
-
-// Ein Aufruf je Erscheinen, auch bei Doppeltipp: der erste Aufruf gewinnt, jeder weitere
-// verpufft (Ref, nicht State – zwei Tipps im selben Render sähen sonst beide „frei“). Für
-// die Weiter-Knöpfe einmal beantworteter Aufgaben (chapter.jsx, dialog.jsx).
-export function useOnce(fn) {
-  const done = useRef(false)
-  return (...a) => { if (done.current) return; done.current = true; fn(...a) }
-}
-
-// Vollbild-Overlay: Kopf (✕ mit 44 px, Fortschrittsbalken, Schrittzähler, Titel),
-// scrollbarer Inhalt, Fußleiste (footer = null → keine, z. B. beim Quiz).
-export function LessonFrame({ title, step, total, onClose, footer, children }) {
-  // Ein einziger Schritt (Ziel-Station) ist schon das Ende → voller Balken.
-  const pct = total <= 1 ? 100 : Math.round((step / (total - 1)) * 100)
-  // Neuer Schritt beginnt oben – sonst bliebe nach einer langen Erklärung die Scroll-
-  // Position stehen und der nächste Schritt öffnete mitten im Inhalt.
-  const bodyRef = useRef(null)
-  useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0 }, [step])
-  return (
-    <div style={{ position: 'fixed', inset: 0, background: C.washi, display: 'flex', flexDirection: 'column', zIndex: 100 }}>
-      <div style={{ padding: '8px 16px 10px', background: '#fff', borderBottom: `1px solid ${C.washiDark}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button onClick={onClose} aria-label="Lektion schließen" style={{
-            width: 44, height: 44, marginLeft: -10, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted,
-          }}>✕</button>
-          <div style={{ flex: 1, height: 6, background: C.washiDark, borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${pct}%`, background: C.shu, borderRadius: 3, transition: 'width 0.3s' }} />
-          </div>
-          <span style={{ fontSize: 12, color: C.textMuted, minWidth: 40, textAlign: 'right' }}>{step + 1}/{total}</span>
-        </div>
-        <h3 style={{ fontSize: 14, color: C.indigo, margin: 0 }}>{title}</h3>
-      </div>
-
-      <div ref={bodyRef} style={{ flex: 1, overflow: 'auto', padding: 20 }}>{children}</div>
-
-      {footer && (
-        <div style={{ padding: '14px 20px', paddingBottom: 'max(14px, env(safe-area-inset-bottom))', background: '#fff', borderTop: `1px solid ${C.washiDark}` }}>
-          {footer}
-        </div>
       )}
     </div>
   )
@@ -282,11 +205,7 @@ export function ScriptLesson({ lesson, alreadyDone = false, onComplete, onClose 
           {chars.length} neue Zeichen. Zu jedem siehst du Umschrift und Merkhilfe, dann malst du es nach.
           Am Ende kommt ein kurzer Check.
         </p>
-        {sound === false && (
-          <div style={{ background: `${C.indigo}12`, borderRadius: 10, padding: 12, fontSize: 13, color: C.indigo, lineHeight: 1.5 }}>
-            🔇 {NO_SOUND_HINT}
-          </div>
-        )}
+        <NoSoundBanner sound={sound} />
       </div>
     )
   } else if (cur.kind === 'show') {
@@ -299,15 +218,7 @@ export function ScriptLesson({ lesson, alreadyDone = false, onComplete, onClose 
     content = <QuizStep quiz={quiz} onFinish={r => { setScore(r); next() }} />
   } else {
     content = (
-      <div style={{ textAlign: 'center', padding: '8px 0' }}>
-        <div style={{ fontSize: 56, marginBottom: 8 }}>🎉</div>
-        <h2 style={{ fontSize: 26, fontFamily: NE, color: C.matcha, marginBottom: 4 }}>धेरै राम्रो!</h2>
-        <p style={{ color: C.textMuted, marginBottom: 12 }}>Sehr gut gemacht!</p>
-        {alreadyDone ? (
-          <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>Schon abgeschlossen – diese Runde bringt keine neuen XP.</p>
-        ) : (
-          <p style={{ fontSize: 22, fontWeight: 700, color: C.shu, marginBottom: 12 }}>+{xp} XP</p>
-        )}
+      <LessonDone xp={xp} alreadyDone={alreadyDone}>
         {score !== null && <p style={{ marginBottom: 8 }}>Check: <strong>{score} / {quiz.length}</strong> richtig</p>}
         <p style={{ lineHeight: 1.6, marginBottom: 14 }}>Diese Zeichen kommen in deinen Wiederholungen wieder:</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -317,7 +228,7 @@ export function ScriptLesson({ lesson, alreadyDone = false, onComplete, onClose 
             </span>
           ))}
         </div>
-      </div>
+      </LessonDone>
     )
   }
 
@@ -391,11 +302,7 @@ export function GrammarLesson({ topic, alreadyDone = false, onComplete, onClose 
       <>
         <GrammarHead topic={topic} />
         <GrammarExplain topic={topic} sound={sound} />
-        {sound === false && (
-          <div style={{ background: `${C.indigo}12`, borderRadius: 10, padding: 12, fontSize: 13, color: C.indigo, lineHeight: 1.5, marginTop: 14 }}>
-            🔇 {NO_SOUND_HINT}
-          </div>
-        )}
+        <NoSoundBanner sound={sound} style={{ marginTop: 14 }} />
       </>
     )
   } else if (cur.kind === 'examples') {
@@ -412,21 +319,13 @@ export function GrammarLesson({ topic, alreadyDone = false, onComplete, onClose 
     content = <GrammarDrillStep topic={topic} sound={sound} onFinish={(r, n) => { setScore([r, n]); next() }} />
   } else {
     content = (
-      <div style={{ textAlign: 'center', padding: '8px 0' }}>
-        <div style={{ fontSize: 56, marginBottom: 8 }}>🎉</div>
-        <h2 style={{ fontSize: 26, fontFamily: NE, color: C.matcha, marginBottom: 4 }}>धेरै राम्रो!</h2>
-        <p style={{ color: C.textMuted, marginBottom: 12 }}>Sehr gut gemacht!</p>
-        {alreadyDone ? (
-          <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>Schon abgeschlossen – diese Runde bringt keine neuen XP.</p>
-        ) : (
-          <p style={{ fontSize: 22, fontWeight: 700, color: C.shu, marginBottom: 12 }}>+{XP_PER_GRAMMAR} XP</p>
-        )}
+      <LessonDone xp={XP_PER_GRAMMAR} alreadyDone={alreadyDone}>
         {score && <p style={{ marginBottom: 8 }}>Beim ersten Versuch richtig: <strong>{score[0]} / {score[1]}</strong></p>}
         <p style={{ lineHeight: 1.6, marginBottom: 10 }}>Dieses Thema kommt in deinen Wiederholungen als Lückensatz wieder:</p>
         <div style={{ display: 'inline-block', background: `${C.matcha}20`, borderRadius: 10, padding: '6px 14px', fontSize: 16, color: C.sumi, lineHeight: 1.5 }}>
           {topic.title}
         </div>
-      </div>
+      </LessonDone>
     )
   }
 
@@ -476,38 +375,23 @@ const WORD_PROMPT = {
 
 // Quiz am Blockende (Fragen aus lib/wordQuiz.js). Einmal beim Betreten gebaut – mit dem
 // Ton-Stand von diesem Moment: Hörfragen gibt es nur, wenn Ton sicher da ist (true, nicht
-// „wird geprüft“). Je Hörfrage wird der Ton beim Zeigen neu geprüft: ist er inzwischen weg
-// (Stimme entladen, Manifest nicht erreichbar), steht sofort die Bedeutung da und die Frage
-// wird zu „Bedeutung sehen → Nepali wählen“ – nie ein Knopf, der nichts tut. Mit Ton lässt
-// sich die Bedeutung trotzdem einblenden.
-// Nepali-Optionen zeigen immer Devanagari, die Umschrift nur nach Schalter.
+// „wird geprüft“). Je Hörfrage wird der Ton beim Zeigen neu geprüft (useListenProbe, wie
+// die Hör-Aufgabe im Kapitel): ist er inzwischen weg (Stimme entladen, Manifest nicht
+// erreichbar), steht sofort die Bedeutung da und die Frage wird zu „Bedeutung sehen →
+// Nepali wählen“ – nie ein Knopf, der nichts tut. Solange geprüft wird oder man nichts
+// gehört hat, lässt sich die Bedeutung jederzeit einblenden.
+// Nepali-Optionen zeigen immer Devanagari, die Umschrift nur nach Schalter (Choice).
 function WordQuizStep({ block, earlier, sound, onFinish }) {
-  const showRoman = useShowRoman()
   const [quiz] = useState(() => buildWordQuiz(block, { earlier, sound: sound === true }))
   const [qi, setQi] = useState(0)
   const [answer, setAnswer] = useState(null) // gewählter Index
   const [right, setRight] = useState(0)
-  const [showMeaning, setShowMeaning] = useState(false) // Hörfrage: Bedeutung eingeblendet
-  const [qSound, setQSound] = useState(null) // Ton-Stand der aktuellen Hörfrage
   const cur = quiz[qi]
   const revealed = answer !== null
   const isLast = qi === quiz.length - 1
-
-  // Hörfrage: Ton prüfen, dann einmal vorlesen – oder ohne Ton die Bedeutung zeigen.
-  // Beim Wechsel/Schließen verstummen; eine späte Antwort der Prüfung wirkt nicht mehr.
-  useEffect(() => {
-    let live = true
-    setQSound(null)
-    if (cur?.kind === 'listen') {
-      soundAvailable().then(ok => {
-        if (!live) return
-        setQSound(!!ok)
-        if (ok) speak(cur.word.dev)
-        else setShowMeaning(true)
-      })
-    }
-    return () => { live = false; stopSpeaking() }
-  }, [qi]) // eslint-disable-line
+  // Nur Hörfragen prüfen den Ton; key = Frage-Nummer, jede Frage beginnt neu.
+  const probe = useListenProbe(cur?.kind === 'listen' ? cur.word.dev : null, qi)
+  const qSound = probe.sound
 
   const choose = i => {
     if (revealed) return
@@ -518,7 +402,6 @@ function WordQuizStep({ block, earlier, sound, onFinish }) {
     if (isLast) { onFinish(right, quiz.length); return }
     setQi(qi + 1)
     setAnswer(null)
-    setShowMeaning(false)
   }
   const nepaliOptions = cur.kind !== 'meaning'
 
@@ -537,10 +420,10 @@ function WordQuizStep({ block, earlier, sound, onFinish }) {
             {qSound === false && <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 4 }}><NoSoundMark /> Gerade kein Ton – wähle nach der Bedeutung:</div>}
             {/* Ausweg, falls der Ton doch nicht kommt: die Bedeutung, nie die Umschrift –
                 sonst wäre die Frage nur über die Umschrift lösbar. */}
-            {showMeaning ? (
+            {probe.shown ? (
               <div style={{ fontSize: 17, fontWeight: 600, color: C.sumi }}>{cur.word.de}</div>
-            ) : !revealed && qSound === true && (
-              <button onClick={() => setShowMeaning(true)}
+            ) : probe.canReveal(revealed) && (
+              <button onClick={probe.reveal}
                 style={{ minHeight: 44, background: 'none', border: 'none', color: C.indigo, fontSize: 13, textDecoration: 'underline', cursor: 'pointer' }}>
                 Nichts gehört? Bedeutung zeigen
               </button>
@@ -551,27 +434,12 @@ function WordQuizStep({ block, earlier, sound, onFinish }) {
       <p style={{ marginBottom: 12, fontWeight: 500 }}>{WORD_PROMPT[cur.kind === 'listen' && qSound === false ? 'word' : cur.kind]}</p>
 
       {/* Bedeutungen (oft lang) einspaltig, Nepali-Wörter zweispaltig. */}
-      <div style={{ display: 'grid', gridTemplateColumns: nepaliOptions ? '1fr 1fr' : '1fr', gap: 8 }}>
-        {cur.options.map((o, i) => {
-          const fb = feedbackColor(!revealed ? 'neutral' : i === cur.correct ? 'correct' : i === answer ? 'wrong' : 'neutral')
-          return (
-            <button key={o.dev} onClick={() => choose(i)} disabled={revealed}
-              style={{
-                minHeight: 52, padding: '8px 10px', borderRadius: 10, border: `2px solid ${fb.border}`, background: fb.bg,
-                color: C.sumi, cursor: revealed ? 'default' : 'pointer', textAlign: 'center',
-              }}>
-              {nepaliOptions ? (
-                <>
-                  <span style={{ display: 'block', fontFamily: NE, fontSize: 24, lineHeight: 1.3 }}>{o.dev}</span>
-                  {showRoman && <span style={{ display: 'block', fontSize: 12, color: C.indigo }}>{o.roman}</span>}
-                </>
-              ) : (
-                <span style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.35 }}>{o.de}</span>
-              )}
-            </button>
-          )
-        })}
-      </div>
+      <ChoiceGrid columns={nepaliOptions ? '1fr 1fr' : '1fr'}>
+        {cur.options.map((o, i) => (
+          <Choice key={o.dev} state={choiceState(i, answer, cur.correct)} disabled={revealed} onClick={() => choose(i)}
+            {...(nepaliOptions ? { dev: o.dev, roman: o.roman, size: 24 } : { text: o.de })} />
+        ))}
+      </ChoiceGrid>
 
       {revealed && (
         <>
@@ -636,11 +504,7 @@ export function WordBlock({ block, alreadyDone = false, onComplete, onClose }) {
           sehen, was es heißt. Am Ende kommt ein kurzer Check.
         </p>
         {chips('#fff')}
-        {sound === false && (
-          <div style={{ background: `${C.indigo}12`, borderRadius: 10, padding: 12, fontSize: 13, color: C.indigo, lineHeight: 1.5, marginTop: 16 }}>
-            🔇 {NO_SOUND_HINT}
-          </div>
-        )}
+        <NoSoundBanner sound={sound} style={{ marginTop: 16 }} />
       </div>
     )
   } else if (cur.kind === 'word') {
@@ -649,19 +513,11 @@ export function WordBlock({ block, alreadyDone = false, onComplete, onClose }) {
     content = <WordQuizStep block={block} earlier={earlier} sound={sound} onFinish={(r, n) => { setScore([r, n]); next() }} />
   } else {
     content = (
-      <div style={{ textAlign: 'center', padding: '8px 0' }}>
-        <div style={{ fontSize: 56, marginBottom: 8 }}>🎉</div>
-        <h2 style={{ fontSize: 26, fontFamily: NE, color: C.matcha, marginBottom: 4 }}>धेरै राम्रो!</h2>
-        <p style={{ color: C.textMuted, marginBottom: 12 }}>Sehr gut gemacht!</p>
-        {alreadyDone ? (
-          <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>Schon abgeschlossen – diese Runde bringt keine neuen XP.</p>
-        ) : (
-          <p style={{ fontSize: 22, fontWeight: 700, color: C.shu, marginBottom: 12 }}>+{xp} XP</p>
-        )}
+      <LessonDone xp={xp} alreadyDone={alreadyDone}>
         {score && <p style={{ marginBottom: 8 }}>Check: <strong>{score[0]} / {score[1]}</strong> richtig</p>}
         <p style={{ lineHeight: 1.6, marginBottom: 14 }}>Diese Wörter kommen in deinen Wiederholungen wieder:</p>
         {chips(`${C.matcha}20`)}
-      </div>
+      </LessonDone>
     )
   }
 

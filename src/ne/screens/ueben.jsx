@@ -7,7 +7,9 @@ import { UebenHead, UebenEmpty, UebenDone } from '../../components/ueben.jsx'
 import { startSession, rateCard, currentCard, isFinished } from '../lib/reviewQueue.js'
 import { SCRIPT_DATA } from '../data/script.js'
 import { learnedItems, itemInfo, dueItems, alone, srsEntry } from '../lib/learned.js'
-import { SRS_RATINGS, feedbackColor } from '../lib/srs.js'
+import { SRS_RATINGS } from '../lib/srs.js'
+import { choiceState } from '../lib/choice.js'
+import { Choice, ChoiceGrid } from '../components/Choice.jsx'
 import { pickDrill, topicForKey, GRAMMAR_QUALITY } from '../lib/grammarSrs.js'
 import { GapDrill } from '../components/GapDrill.jsx'
 import { buildScriptQuiz, isReadable, shuffle } from '../lib/scriptQuiz.js'
@@ -332,20 +334,13 @@ function PracticeQuiz({ mode, onClose }) {
         )}
       </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        {cur.options.map((roman, i) => {
-          const fb = feedbackColor(!revealed ? 'neutral' : i === okIdx ? 'correct' : i === answer ? 'wrong' : 'neutral')
-          const label = charOptions ? SCRIPT_DATA[cur.optionChars[i]].shown : roman
-          return (
-            <button key={i} onClick={() => choose(i)} disabled={revealed}
-              style={{
-                minHeight: 56, padding: '10px 6px', borderRadius: 10, border: `2px solid ${fb.border}`, background: fb.bg,
-                fontSize: charOptions ? 30 : 18, fontFamily: charOptions ? NE : 'inherit', lineHeight: 1.2,
-                fontWeight: 600, color: C.sumi, cursor: revealed ? 'default' : 'pointer',
-              }}>{label}</button>
-          )
-        })}
-      </div>
+      {/* Zeichen als Devanagari (ohne Umschrift – die ist hier die Frage), Lesungen als Klartext. */}
+      <ChoiceGrid columns="1fr 1fr">
+        {cur.options.map((roman, i) => (
+          <Choice key={i} state={choiceState(i, answer, okIdx)} disabled={revealed} onClick={() => choose(i)}
+            {...(charOptions ? { dev: SCRIPT_DATA[cur.optionChars[i]].shown, size: 30 } : { text: roman, textSize: 18 })} />
+        ))}
+      </ChoiceGrid>
 
       {revealed && (
         <>

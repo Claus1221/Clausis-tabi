@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { C, NE } from '../../theme.js'
 import { Btn, Card } from '../../components/ui.jsx'
-import { feedbackColor } from '../lib/srs.js'
+import { choiceState } from '../lib/choice.js'
 import { shuffle } from '../lib/scriptQuiz.js'
 import { readingOf } from '../lib/readings.js'
 import { solved } from '../data/grammar.js'
 import { stopSpeaking } from '../lib/speech.js'
 import { ListenButton } from './sound.jsx'
 import { useShowRoman } from './text.jsx'
+import { Choice, ChoiceGrid } from './Choice.jsx'
 
 // ─── Lückensatz (Grammatik) ───────────────────────────────────────────────────
 // Gegenstück zu src/components/grammarDrill.jsx: ein Nepali-Satz mit Lücke ＿＿, darunter
@@ -72,23 +73,12 @@ export function GapDrill({ ex, onDone, sound, head = null, nextLabel = 'Weiter �
         )}
       </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8 }}>
-        {options.map(o => {
-          const fb = feedbackColor(!revealed ? 'neutral' : o === ex.a ? 'correct' : o === ans ? 'wrong' : 'neutral')
-          const r = showRoman ? readOption(o) : ''
-          return (
-            <button key={o} onClick={() => !revealed && setAns(o)} disabled={revealed}
-              aria-label={revealed ? `${o}${o === ex.a ? ' – richtig' : o === ans ? ' – falsch' : ''}` : o}
-              style={{
-                minHeight: 56, padding: '6px 8px', borderRadius: 10, border: `2px solid ${fb.border}`, background: fb.bg,
-                color: C.sumi, cursor: revealed ? 'default' : 'pointer', textAlign: 'center',
-              }}>
-              <span style={{ display: 'block', fontFamily: NE, fontSize: 24, lineHeight: 1.3 }}>{o}</span>
-              {r && <span style={{ display: 'block', fontSize: 12, color: C.indigo }}>{r}</span>}
-            </button>
-          )
-        })}
-      </div>
+      <ChoiceGrid columns="repeat(auto-fill, minmax(130px, 1fr))">
+        {options.map(o => (
+          <Choice key={o} dev={o} roman={readOption(o)} size={24} state={choiceState(o, ans, ex.a)} disabled={revealed}
+            onClick={() => setAns(o)} ariaLabel={revealed ? `${o}${o === ex.a ? ' – richtig' : o === ans ? ' – falsch' : ''}` : o} />
+        ))}
+      </ChoiceGrid>
 
       {revealed && (
         <>

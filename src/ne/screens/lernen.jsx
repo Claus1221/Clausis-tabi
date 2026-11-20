@@ -4,8 +4,9 @@ import { ProgressCtx } from '../../state/ProgressContext.js'
 import { Btn, Card, LibSheet } from '../../components/ui.jsx'
 import { SCRIPT_DATA, SCRIPT_LESSONS, SCRIPT_NOTES } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
+import { CHAPTERS, CHAPTER_BY_ID } from '../data/chapters.js'
 import { KIND_LABEL, alone } from '../lib/learned.js'
-import { useSound, ListenButton, NO_SOUND_HINT } from '../components/sound.jsx'
+import { useSound, ListenButton, NoSoundBanner } from '../components/sound.jsx'
 import { TappableSentence, useShowRoman } from '../components/text.jsx'
 import { GrammarHead, GrammarExplain, GrammarExamples } from '../components/grammar.jsx'
 import { GRAMMAR_ORDER, GRAMMAR_BY_ID } from '../data/grammar.js'
@@ -15,11 +16,13 @@ import { stopSpeaking } from '../lib/speech.js'
 
 // ─── Lernen (Yatra): Bibliothek zum Nachschlagen ──────────────────────────────
 // Gegenstück zu src/screens/lernen.jsx (Kana-Tafel, WordLibrary, GrammarLibrary):
-// umschaltbar zwischen Zeichen, Wörtern und Grammatik, alles frei einsehbar (keine
-// Sperren, kein XP – gelernt wird auf der Reise; erledigte Lektionen/Blöcke/Themen tragen
-// ein ✓). Zeichen antippen öffnet ein Blatt mit großer Form, Umschrift, Merkhilfe, Ton
+// umschaltbar zwischen Zeichen, Wörtern und Grammatik, frei einsehbar (kein XP – gelernt
+// wird auf der Reise; erledigte Lektionen/Blöcke/Kapitel/Themen tragen ein ✓). Einzige
+// Sperre: die Wörter eines Kapitels öffnen sich erst mit dem Kapitel (sie gehören zur
+// Geschichte). Zeichen antippen öffnet ein Blatt mit großer Form, Umschrift, Merkhilfe, Ton
 // (falls vorhanden) und den Laut-Hinweisen, in denen das Zeichen vorkommt; ein Wort öffnet
-// Bedeutung, Umschrift und Beispielsatz; ein Thema Erklärung und Beispiele.
+// Bedeutung, Umschrift und Beispielsatz (Kapitel-Wörter: Hinweis); ein Thema Erklärung und
+// Beispiele.
 
 const sectionLabel = { fontSize: 11, color: C.shu, fontWeight: 700, letterSpacing: 1, margin: '18px 0 8px' }
 
@@ -105,56 +108,109 @@ function NotesSheet({ onClose }) {
 
 
 // Ein Wort im Detail. Die Umschrift steht hier immer (wer nachschlägt, will sie sehen –
-// wie beim Antippen im Satz); der Schalter gilt für die Liste.
-function WordSheet({ word, block, sound, onClose }) {
+// wie beim Antippen im Satz); der Schalter gilt für die Liste. source = woher das Wort
+// stammt (Wortblock bzw. Kapitel). Wortblock-Wörter haben einen Beispielsatz, Kapitel-Wörter
+// stattdessen manchmal einen Hinweis (note) aus der Geschichte.
+function WordSheet({ word, source, sound, onClose }) {
   useEffect(() => () => stopSpeaking(), [])
   return (
     <LibSheet title={`${word.dev} · ${word.roman}`} onClose={onClose}>
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.indigo, textTransform: 'uppercase' }}>
-          Wort <span style={{ color: C.textMuted }}>· {block.theme} {block.title}</span>
+          Wort <span style={{ color: C.textMuted }}>· {source}</span>
         </div>
         <div style={{ fontSize: 52, fontFamily: NE, color: C.sumi, lineHeight: 1.35 }}>{word.dev}</div>
         <div style={{ fontSize: 20, fontWeight: 700, color: C.indigo }}>{word.roman}</div>
         <div style={{ fontSize: 18, color: C.sumi, margin: '6px 0 12px', lineHeight: 1.45 }}>{word.de}</div>
         {sound !== false && <ListenButton text={word.dev} sound={sound} />}
       </div>
-      <Card style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>BEISPIELSATZ</div>
-        <TappableSentence dev={word.ex.dev} roman={word.ex.roman} tokens={word.ex.tokens} sound={sound} />
-        <div style={{ fontSize: 15, color: C.indigo, marginTop: 8, lineHeight: 1.45 }}>„{word.ex.de}“</div>
-      </Card>
+      {word.ex && (
+        <Card style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>BEISPIELSATZ</div>
+          <TappableSentence dev={word.ex.dev} roman={word.ex.roman} tokens={word.ex.tokens} sound={sound} />
+          <div style={{ fontSize: 15, color: C.indigo, marginTop: 8, lineHeight: 1.45 }}>„{word.ex.de}“</div>
+        </Card>
+      )}
+      {word.note && (
+        <div style={{ background: `${C.shu}10`, borderRadius: 10, padding: 12, marginBottom: 18 }}>
+          <p style={{ fontSize: 14, color: C.sumi, lineHeight: 1.55, margin: 0 }}>💡 {word.note}</p>
+        </div>
+      )}
       <Btn onClick={onClose} variant="ghost" style={{ width: '100%', minHeight: 48 }}>Schließen</Btn>
     </LibSheet>
   )
 }
 
-// Alle Wörter nach Block, wie die japanische WordLibrary frei einsehbar.
-function WordList({ done, onPick }) {
+// Abschnitte der Wörterliste in PFAD-Reihenfolge: Wortblöcke und Kapitel (mit ihren intro-
+// Wörtern), so wie man sie auf der Reise trifft. Ein Block, der (noch) nicht im Pfad steht,
+// kommt ans Ende – die Bibliothek verschweigt kein Wort.
+function wordSections() {
+  const blocks = Object.fromEntries(WORD_BLOCKS.map(b => [b.id, b]))
+  const out = []
+  for (const n of NE_PATH) {
+    if (n.type === 'word' && blocks[n.id]) out.push({ kind: 'block', block: blocks[n.id] })
+    if (n.type === 'chapter' && CHAPTER_BY_ID[n.id]) out.push({ kind: 'chapter', chapter: CHAPTER_BY_ID[n.id] })
+  }
+  for (const b of WORD_BLOCKS) if (!out.some(s => s.block === b)) out.push({ kind: 'block', block: b })
+  return out
+}
+
+const wordRow = { display: 'flex', alignItems: 'center', gap: 12, width: '100%', minHeight: 56, textAlign: 'left',
+  background: '#fff', border: '1px solid rgba(33,31,27,0.05)', borderRadius: 12,
+  boxShadow: 'var(--shadow-card)', padding: '8px 14px', marginBottom: 8 }
+
+// Alle Wörter nach Block bzw. Kapitel. Wortblöcke sind wie die japanische WordLibrary frei
+// einsehbar. Kapitel-Wörter gehören zur Geschichte: bis das Kapitel geschafft ist, stehen sie
+// grau und lassen sich nicht öffnen (kein Knopf, der nichts tut – nur eine Zeile).
+function WordList({ doneBlocks, doneChapters, onPick }) {
   const showRoman = useShowRoman()
-  return WORD_BLOCKS.map(b => (
-    <div key={b.id}>
-      <div style={sectionLabel}>
-        {b.theme} {b.title.toUpperCase()}
-        {done.includes(b.id) && <span style={{ color: C.matcha, marginLeft: 6 }}>✓</span>}
+  const row = (w, open, onOpen) => {
+    const inner = (
+      <>
+        <span style={{ flexShrink: 0, maxWidth: '50%' }}>
+          <span style={{ display: 'block', fontSize: 24, fontFamily: NE, color: open ? C.sumi : C.textMuted, lineHeight: 1.35 }}>{w.dev}</span>
+          {showRoman && <span style={{ display: 'block', fontSize: 12, color: open ? C.indigo : C.textMuted }}>{w.roman}</span>}
+        </span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: open ? C.sumi : C.textMuted, lineHeight: 1.4 }}>{w.de}</span>
+        <span style={{ fontSize: 16, color: C.textMuted }}>{open ? '›' : '🔒'}</span>
+      </>
+    )
+    return open ? (
+      <button key={w.dev} onClick={onOpen} aria-label={`${w.dev}, ${w.de} – Details öffnen`} style={{ ...wordRow, cursor: 'pointer' }}>{inner}</button>
+    ) : (
+      <div key={w.dev} style={{ ...wordRow, opacity: 0.6, boxShadow: 'none' }}>{inner}</div>
+    )
+  }
+  return wordSections().map(s => {
+    if (s.kind === 'block') {
+      const b = s.block
+      return (
+        <div key={b.id}>
+          <div style={sectionLabel}>
+            {b.theme} {b.title.toUpperCase()}
+            {doneBlocks.includes(b.id) && <span style={{ color: C.matcha, marginLeft: 6 }}>✓</span>}
+          </div>
+          {b.words.map(w => row(w, true, () => onPick(w, `${b.theme} ${b.title}`)))}
+        </div>
+      )
+    }
+    const c = s.chapter
+    const open = doneChapters.includes(c.id)
+    const n = CHAPTERS.indexOf(c) + 1
+    const words = c.steps.filter(st => st.kind === 'intro')
+    if (!words.length) return null
+    return (
+      <div key={c.id}>
+        <div style={sectionLabel}>
+          📖 KAPITEL {n} · {c.title.toUpperCase()}
+          {open
+            ? <span style={{ color: C.matcha, marginLeft: 6 }}>✓</span>
+            : <span style={{ color: C.textMuted, fontWeight: 500, letterSpacing: 0, marginLeft: 6 }}>öffnet sich mit dem Kapitel</span>}
+        </div>
+        {words.map(w => row(w, open, () => onPick(w, `📖 ${c.title}`)))}
       </div>
-      {b.words.map(w => (
-        <button key={w.dev} onClick={() => onPick(w, b)} aria-label={`${w.dev}, ${w.de} – Details öffnen`}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 12, width: '100%', minHeight: 56, textAlign: 'left',
-            background: '#fff', border: '1px solid rgba(33,31,27,0.05)', borderRadius: 12,
-            boxShadow: 'var(--shadow-card)', padding: '8px 14px', marginBottom: 8, cursor: 'pointer',
-          }}>
-          <span style={{ flexShrink: 0, maxWidth: '50%' }}>
-            <span style={{ display: 'block', fontSize: 24, fontFamily: NE, color: C.sumi, lineHeight: 1.35 }}>{w.dev}</span>
-            {showRoman && <span style={{ display: 'block', fontSize: 12, color: C.indigo }}>{w.roman}</span>}
-          </span>
-          <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: C.sumi, lineHeight: 1.4 }}>{w.de}</span>
-          <span style={{ fontSize: 16, color: C.textMuted }}>›</span>
-        </button>
-      ))}
-    </div>
-  ))
+    )
+  })
 }
 
 // Ein Grammatik-Thema zum Nachlesen: Erklärung, neue Wörter, Beispiele zum Antippen –
@@ -259,12 +315,13 @@ export default function LernenScreen() {
   const sound = useSound()
   const [view, setView] = useState('zeichen') // 'zeichen' | 'woerter' | 'grammatik'
   const [sel, setSel] = useState(null)        // Zeichen
-  const [selWord, setSelWord] = useState(null) // { word, block }
+  const [selWord, setSelWord] = useState(null) // { word, source }
   const [selTopic, setSelTopic] = useState(null) // Grammatik-Thema
   const [notesOpen, setNotesOpen] = useState(false)
   const done = progress.completedLessons || []
   const doneBlocks = progress.completedWordBlocks || []
   const doneGrammar = progress.completedGrammar || []
+  const doneChapters = progress.completedChapters || []
   // Offene Station der Reise – ist sie ein Grammatik-Thema, steht es nicht als „kommt noch“ da.
   const openNode = NE_PATH[stationStates(NE_PATH, progress).indexOf('current')]
   const currentGrammar = openNode?.type === 'grammar' ? openNode.id : null
@@ -275,21 +332,18 @@ export default function LernenScreen() {
     <div style={{ padding: '16px 16px 0' }}>
       {sel && <CharSheet ch={sel} sound={sound} onClose={() => setSel(null)} />}
       {notesOpen && <NotesSheet onClose={() => setNotesOpen(false)} />}
-      {selWord && <WordSheet word={selWord.word} block={selWord.block} sound={sound} onClose={() => setSelWord(null)} />}
+      {selWord && <WordSheet word={selWord.word} source={selWord.source} sound={sound} onClose={() => setSelWord(null)} />}
       {selTopic && <GrammarSheet topic={selTopic} sound={sound} onClose={() => setSelTopic(null)} />}
       <h2 style={{ fontSize: 20, color: C.indigo, marginBottom: 4 }}>
         Bibliothek <span style={{ fontFamily: NE }}>पढाइ</span>
       </h2>
       <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 14, lineHeight: 1.5 }}>
-        Alle Zeichen, Wörter und Grammatik-Themen zum Nachschlagen – ohne Sperren, ohne Druck. Tippe
-        etwas an für Umschrift, Bedeutung{sound ? ' und Ton' : ''}. Gelernt wird auf der Reise.
+        Alle Zeichen, Wörter und Grammatik-Themen zum Nachschlagen – ohne Druck. Tippe
+        etwas an für Umschrift, Bedeutung{sound ? ' und Ton' : ''}. Gelernt wird auf der Reise; die Wörter
+        aus der Geschichte öffnen sich mit ihrem Kapitel.
       </p>
       {/* Ohne Ton steht der Hinweis hier einmal ausgeschrieben; im Blatt nur 🔇. */}
-      {sound === false && (
-        <div style={{ background: `${C.indigo}12`, borderRadius: 10, padding: 12, fontSize: 13, color: C.indigo, lineHeight: 1.5, marginBottom: 14 }}>
-          🔇 {NO_SOUND_HINT}
-        </div>
-      )}
+      <NoSoundBanner sound={sound} style={{ marginBottom: 14 }} />
 
       {/* Umschalter wie in der japanischen Bibliothek (dort Kana/Wörter/…). */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
@@ -304,7 +358,7 @@ export default function LernenScreen() {
         ))}
       </div>
 
-      {view === 'woerter' && <WordList done={doneBlocks} onPick={(word, block) => setSelWord({ word, block })} />}
+      {view === 'woerter' && <WordList doneBlocks={doneBlocks} doneChapters={doneChapters} onPick={(word, source) => setSelWord({ word, source })} />}
       {view === 'zeichen' && <CharTable done={done} onPick={setSel} onNotes={() => setNotesOpen(true)} />}
       {view === 'grammatik' && <GrammarList done={doneGrammar} current={currentGrammar} onPick={setSelTopic} />}
     </div>

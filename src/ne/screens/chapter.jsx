@@ -4,31 +4,29 @@ import { Btn, Card, Stars } from '../../components/ui.jsx'
 import { ProgressCtx } from '../../state/ProgressContext.js'
 import { XP_PER_CHAPTER } from '../../lib/xp.js'
 import { CHAPTERS } from '../data/chapters.js'
-import { speak, stopSpeaking, soundAvailable } from '../lib/speech.js'
+import { stopSpeaking } from '../lib/speech.js'
 import { shuffle } from '../lib/scriptQuiz.js'
-import { feedbackColor } from '../lib/srs.js'
+import { choiceState } from '../lib/choice.js'
 import { isTask, chapterStars, chapterReading, journeySummary } from '../lib/chapters.js'
 import { isNodeDone } from '../lib/path.js'
-import { useSound, ListenButton, NoSoundMark, NO_SOUND_HINT } from '../components/sound.jsx'
-import { NeText, TappableSentence, useShowRoman } from '../components/text.jsx'
+import { useSound, useListenProbe, ListenButton, NoSoundMark, NoSoundBanner } from '../components/sound.jsx'
+import { NeText, TappableSentence } from '../components/text.jsx'
+import { Choice, ChoiceGrid } from '../components/Choice.jsx'
 import { GapDrill, GAP } from '../components/GapDrill.jsx'
 import { BuildStep } from '../components/BuildStep.jsx'
-import { LessonFrame, useFinishOnce, useOnce } from './players.jsx'
+import { LessonFrame, LessonDone, useFinishOnce, useOnce, stepLabel as label } from '../components/lesson.jsx'
 
 // ─── Geschichts-Kapitel, Tagebuch und Ziel ────────────────────────────────────
 // Gegenstück zu ChapterPlayer/StoryJournal in src/screens/reise.jsx. Eigene Datei statt
 // players.jsx: die sieben Schritt-Arten bringen fünf Aufgaben-Bausteine mit, players.jsx
-// wäre sonst über 1000 Zeilen. Rahmen und Abschluss-Muster (LessonFrame, useFinishOnce)
-// kommen aus players.jsx – es gibt sie nur einmal.
+// wäre sonst über 1000 Zeilen. Rahmen und Abschluss-Muster (LessonFrame, useFinishOnce,
+// LessonDone) kommen aus components/lesson.jsx – es gibt sie nur einmal.
 //
 // Grundsätze wie überall im Zweig: alles geht ohne Ton (Hör-Aufgaben zeigen dann den Text),
 // Umschrift bei Sätzen nur mit settings.showRoman, Antworten werden getippt. Jede Aufgabe
 // wird EINMAL beantwortet: danach Rückmeldung, Auflösung (Übersetzung, Umschrift) und ein
 // eigener „Weiter“-Knopf, der onDone(richtig?) genau einmal ruft (Ref-Sperre wie GapDrill).
 
-const label = text => (
-  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.indigo, textAlign: 'center', marginBottom: 6 }}>{text}</div>
-)
 const verdict = ok => (
   <p style={{ margin: '14px 0 0', fontWeight: 600, color: ok ? C.matcha : C.shu }}>{ok ? '✓ Richtig!' : '✗ Leider nicht.'}</p>
 )
@@ -65,45 +63,29 @@ function IntroStep({ step, sound }) {
   )
 }
 
-// Deutsche Antwort-Optionen (Hör-Aufgabe) bzw. Stimmt/Stimmt-nicht: einspaltig, 52 px.
+// Deutsche Antwort-Optionen (Hör-Aufgabe) bzw. Stimmt/Stimmt-nicht: Klartext, einspaltig.
 function ChoiceButtons({ options, picked, correct, onPick, render = o => o, columns = '1fr' }) {
   const revealed = picked !== null
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: columns, gap: 8 }}>
-      {options.map((o, i) => {
-        const fb = feedbackColor(!revealed ? 'neutral' : o === correct ? 'correct' : o === picked ? 'wrong' : 'neutral')
-        return (
-          <button key={i} onClick={() => !revealed && onPick(o)} disabled={revealed}
-            style={{
-              minHeight: 52, padding: '8px 12px', borderRadius: 10, border: `2px solid ${fb.border}`, background: fb.bg,
-              color: C.sumi, cursor: revealed ? 'default' : 'pointer', textAlign: 'center', fontSize: 15, fontWeight: 600, lineHeight: 1.35,
-            }}>{render(o)}</button>
-        )
-      })}
-    </div>
+    <ChoiceGrid columns={columns}>
+      {options.map((o, i) => (
+        <Choice key={i} text={render(o)} state={choiceState(o, picked, correct)} disabled={revealed} onClick={() => onPick(o)} />
+      ))}
+    </ChoiceGrid>
   )
 }
 
-// „Was wurde gesagt?“ Ton wird beim Zeigen geprüft (wie die Hörfrage im Wort-Quiz): mit Ton
-// einmal vorlesen; ohne Ton steht der Nepali-Satz sofort geschrieben da und die Frage wird
-// zur Leseaufgabe. Solange der Ton noch geprüft wird oder man nichts gehört hat, lässt sich
-// der Text jederzeit einblenden – nie ein Knopf, der nichts tut, nie eine Sackgasse.
+// „Was wurde gesagt?“ Ton wird beim Zeigen geprüft (useListenProbe, wie die Hörfrage im
+// Wort-Quiz): mit Ton einmal vorlesen; ohne Ton steht der Nepali-Satz sofort geschrieben da
+// und die Frage wird zur Leseaufgabe. Solange der Ton noch geprüft wird oder man nichts
+// gehört hat, lässt sich der Text jederzeit einblenden – nie ein Knopf, der nichts tut,
+// nie eine Sackgasse.
 function AudioStep({ step, onDone, nextLabel }) {
   const [options] = useState(() => shuffle(step.options))
   const [picked, setPicked] = useState(null)
-  const [qSound, setQSound] = useState(null)
-  const [showText, setShowText] = useState(false)
+  const probe = useListenProbe(step.say)
+  const qSound = probe.sound
   const done = useOnce(onDone)
-  useEffect(() => {
-    let live = true
-    soundAvailable().then(ok => {
-      if (!live) return
-      setQSound(!!ok)
-      if (ok) speak(step.say)
-      else setShowText(true)
-    })
-    return () => { live = false; stopSpeaking() }
-  }, []) // eslint-disable-line
   const revealed = picked !== null
   const reading = qSound === false
 
@@ -113,10 +95,10 @@ function AudioStep({ step, onDone, nextLabel }) {
       <Card style={{ minHeight: 110, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: 12 }}>
         {qSound !== false && <div style={{ marginBottom: 8 }}><ListenButton text={step.say} sound={qSound} label="Nochmal anhören" quiet /></div>}
         {reading && <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6 }}><NoSoundMark /> Gerade kein Ton – lies den Satz:</div>}
-        {showText || revealed ? (
+        {probe.shown || revealed ? (
           <NeText dev={step.say} roman={step.sayRoman} size={26} align="center" />
         ) : (
-          <button onClick={() => setShowText(true)}
+          <button onClick={probe.reveal}
             style={{ minHeight: 44, background: 'none', border: 'none', color: C.indigo, fontSize: 13, textDecoration: 'underline', cursor: 'pointer' }}>
             Nichts gehört? Satz zeigen
           </button>
@@ -139,7 +121,6 @@ function AudioStep({ step, onDone, nextLabel }) {
 // Frage und die Bedeutung JEDER Option erscheinen erst nach dem Antippen (vorher wäre das
 // die Lösung) – dann ist alles lesbar, auch die Ablenker.
 function DialogStep({ step, sound, onDone, nextLabel }) {
-  const showRoman = useShowRoman()
   const [options] = useState(() => shuffle(step.options))
   const [picked, setPicked] = useState(null)
   const done = useOnce(onDone)
@@ -156,23 +137,15 @@ function DialogStep({ step, sound, onDone, nextLabel }) {
         {revealed && <div style={{ fontSize: 15, color: C.indigo, marginTop: 6 }}>„{step.lineDe}“</div>}
       </Card>
       <p style={{ margin: '0 0 12px', fontWeight: 500, textAlign: 'center' }}>Was antwortest du?</p>
-      <div style={{ display: 'grid', gap: 8 }}>
+      <ChoiceGrid>
         {options.map(o => {
-          const fb = feedbackColor(!revealed ? 'neutral' : o === step.answer ? 'correct' : o === picked ? 'wrong' : 'neutral')
           const meta = step.optionsMeta[o] || {}
           return (
-            <button key={o} onClick={() => !revealed && setPicked(o)} disabled={revealed}
-              style={{
-                minHeight: 52, padding: '8px 12px', borderRadius: 10, border: `2px solid ${fb.border}`, background: fb.bg,
-                color: C.sumi, cursor: revealed ? 'default' : 'pointer', textAlign: 'left',
-              }}>
-              <span style={{ display: 'block', fontFamily: NE, fontSize: 21, lineHeight: 1.35 }}>{o}</span>
-              {showRoman && meta.roman && <span style={{ display: 'block', fontSize: 12, color: C.indigo }}>{meta.roman}</span>}
-              {revealed && meta.de && <span style={{ display: 'block', fontSize: 13, color: C.textMuted, marginTop: 2 }}>{meta.de}</span>}
-            </button>
+            <Choice key={o} dev={o} roman={meta.roman} de={meta.de} showDe={revealed} align="left"
+              state={choiceState(o, picked, step.answer)} disabled={revealed} onClick={() => setPicked(o)} />
           )
         })}
-      </div>
+      </ChoiceGrid>
       {revealed && (
         <>
           {verdict(picked === step.answer)}
@@ -217,14 +190,6 @@ function TfStep({ step, sound, onDone, nextLabel }) {
   )
 }
 
-const doneHead = (
-  <>
-    <div style={{ fontSize: 56, marginBottom: 8 }}>🎉</div>
-    <h2 style={{ fontSize: 26, fontFamily: NE, color: C.matcha, marginBottom: 4 }}>धेरै राम्रो!</h2>
-    <p style={{ color: C.textMuted, marginBottom: 12 }}>Sehr gut gemacht!</p>
-  </>
-)
-
 // Kapitel: Einleitung → Schritte der Geschichte → Abschluss mit Sternen (lib/chapters.js:
 // 3 = fehlerfrei, 2 = höchstens zwei Fehler, 1 = geschafft). Vergibt selbst nichts:
 // onComplete(sterne) (Reise-Screen) bucht XP, Sterne (bester Stand) und plant die neuen
@@ -263,11 +228,7 @@ export function ChapterPlayer({ chapter, alreadyDone = false, onComplete, onClos
           Lies die Geschichte, lerne {newWords.length} neue Wörter und löse unterwegs kleine Aufgaben.
           Tippe ein Nepali-Wort an, um zu sehen, was es heißt.
         </p>
-        {sound === false && (
-          <div style={{ background: `${C.indigo}12`, borderRadius: 10, padding: 12, fontSize: 13, color: C.indigo, lineHeight: 1.5 }}>
-            🔇 {NO_SOUND_HINT} Hör-Aufgaben zeigen dir dann den Satz zum Lesen.
-          </div>
-        )}
+        <NoSoundBanner sound={sound} extra="Hör-Aufgaben zeigen dir dann den Satz zum Lesen." />
       </div>
     )
   } else if (cur.kind === 'story') {
@@ -288,24 +249,23 @@ export function ChapterPlayer({ chapter, alreadyDone = false, onComplete, onClos
     content = <BuildStep key={step} step={cur} sound={sound} onDone={answer} nextLabel={nextLabel} />
   } else {
     content = (
-      <div style={{ textAlign: 'center', padding: '8px 0' }}>
-        {doneHead}
-        <div style={{ marginBottom: 6 }}><Stars count={stars} max={3} size={30} gap={4} /></div>
-        <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>
-          {stars === 3 ? 'Alle Aufgaben beim ersten Mal richtig.' : stars === 2 ? 'Fast fehlerfrei – höchstens zwei Fehler.' : 'Geschafft! Spiel das Kapitel noch einmal für mehr Sterne.'}
-        </p>
-        {alreadyDone ? (
-          <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>Schon abgeschlossen – diese Runde bringt keine neuen XP (bessere Sterne zählen trotzdem).</p>
-        ) : (
-          <p style={{ fontSize: 22, fontWeight: 700, color: C.shu, marginBottom: 12 }}>+{XP_PER_CHAPTER} XP</p>
-        )}
+      <LessonDone xp={XP_PER_CHAPTER} alreadyDone={alreadyDone}
+        alreadyNote="Schon abgeschlossen – diese Runde bringt keine neuen XP (bessere Sterne zählen trotzdem)."
+        before={(
+          <>
+            <div style={{ marginBottom: 6 }}><Stars count={stars} max={3} size={30} gap={4} /></div>
+            <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>
+              {stars === 3 ? 'Alle Aufgaben beim ersten Mal richtig.' : stars === 2 ? 'Fast fehlerfrei – höchstens zwei Fehler.' : 'Geschafft! Spiel das Kapitel noch einmal für mehr Sterne.'}
+            </p>
+          </>
+        )}>
         <p style={{ lineHeight: 1.6, marginBottom: 14 }}>Diese Wörter kommen in deinen Wiederholungen wieder:</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
           {newWords.map(w => (
             <span key={w.dev} style={{ fontSize: 20, fontFamily: NE, background: `${C.matcha}20`, borderRadius: 10, padding: '2px 10px', lineHeight: 1.5 }}>{w.dev}</span>
           ))}
         </div>
-      </div>
+      </LessonDone>
     )
   }
 
@@ -337,9 +297,7 @@ export function ChapterDiary({ onClose }) {
         <h3 style={{ fontSize: 15, color: C.indigo, margin: 0 }}>📖 Deine Geschichte</h3>
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
-        {sound === false && done.length > 0 && (
-          <div style={{ background: `${C.indigo}12`, borderRadius: 10, padding: 12, fontSize: 13, color: C.indigo, lineHeight: 1.5, marginBottom: 16 }}>🔇 {NO_SOUND_HINT}</div>
-        )}
+        {done.length > 0 && <NoSoundBanner sound={sound} style={{ marginBottom: 16 }} />}
         {done.length === 0 ? (
           <div style={{ textAlign: 'center', color: C.textMuted, marginTop: 40 }}>
             <div style={{ fontSize: 44, marginBottom: 12 }}>📖</div>

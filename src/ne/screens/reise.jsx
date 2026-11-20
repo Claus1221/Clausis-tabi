@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useContext } from 'react'
 import { C, NE } from '../../theme.js'
 import { ProgressCtx } from '../../state/ProgressContext.js'
 import { Btn, Stars } from '../../components/ui.jsx'
-import { XP_PER_KANA, XP_PER_WORD, XP_PER_GRAMMAR, XP_PER_CHAPTER, XP_PER_DIALOG } from '../../lib/xp.js'
+import { XP_PER_KANA, XP_PER_WORD, XP_PER_GRAMMAR, XP_PER_CHAPTER } from '../../lib/xp.js'
 import { NE_PATH, GOAL_ID } from '../data/path.js'
 import { SCRIPT_LESSONS } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
@@ -13,6 +13,7 @@ import { nfc } from '../lib/deva.js'
 import { isNodeDone, nodeMeta, stationStates } from '../lib/path.js'
 import { wordKey } from '../lib/learned.js'
 import { chapterSrsKeys } from '../lib/chapters.js'
+import { bookDialog } from '../lib/dialog.js'
 import { buildBackdrop, roadPath, startFlags, STATE_PALETTE } from '../lib/scene.jsx'
 import { ScriptLesson, WordBlock, GrammarLesson } from './players.jsx'
 import { ChapterPlayer, ChapterDiary, GoalScreen } from './chapter.jsx'
@@ -124,12 +125,11 @@ export default function ReiseScreen() {
   if (active?.type === 'dialog') {
     const dialog = DIALOG_BY_ID[active.id]
     const already = active.wasDone // Stand beim Öffnen, Begründung wie oben
-    // Szene: XP und Zähler `scenes` nur beim ersten Abschluss. Nichts einplanen – die
-    // Antwortsätze haben (noch) keinen Karten-Schlüssel (learned.js kennt Zeichen, Wörter,
-    // Grammatik); ihre Wörter sind über Wortblöcke und Themen ohnehin im Plan.
+    // Szene: gebucht wie im Üben (bookDialog in lib/dialog.js – XP und Zähler `scenes` nur
+    // beim ersten Abschluss, nichts einplanen).
     return (
       <DialogPlay dialog={dialog} alreadyDone={already} onClose={() => setActive(null)}
-        onComplete={() => { if (!already) completeDialog(dialog.id, XP_PER_DIALOG, { scenes: 1 }) }} />
+        onComplete={() => bookDialog(completeDialog, dialog, already)} />
     )
   }
 

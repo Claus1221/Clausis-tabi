@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { C } from '../../theme.js'
-import { speak, soundAvailable } from '../lib/speech.js'
+import { speak, stopSpeaking, soundAvailable } from '../lib/speech.js'
 import { playSequence } from '../lib/sequence.js'
+import { noSoundHint, PROBE_START, probeResult, offerReveal } from '../lib/soundRules.js'
+// Kreis-Import mit text.jsx (das ListenButton nutzt) ist unschädlich: beide Seiten nutzen
+// das andere Modul erst beim Rendern, nie beim Laden.
+import { useShowRoman } from './text.jsx'
 
 // Ton-Bausteine für alle Yatra-Screens (Lektion, Lernen, Üben) – eine einzige Fassung.
 // Grundsatz: heute gibt es auf den meisten Geräten keinen Nepali-Ton (kein Studio-Audio,
@@ -19,9 +23,48 @@ export function useSound() {
   return ok
 }
 
-// Der ganze Satz steht je Screen einmal ausgeschrieben (Lektions-Einleitung, Kopf der
-// Bibliothek); an den einzelnen Stellen nur das stumme Zeichen.
-export const NO_SOUND_HINT = 'Auf diesem Gerät gibt es noch keinen Nepali-Ton – die Umschrift zeigt dir die Aussprache.'
+// Der ganze Hinweis steht je Screen einmal ausgeschrieben (Lektions-Einleitung, Kopf der
+// Bibliothek …); an den einzelnen Stellen nur das stumme Zeichen. Nur wenn sicher kein Ton
+// da ist (sound === false). Der Text folgt dem Umschrift-Schalter (lib/soundRules.js):
+// ist sie aus, sagt er, wo man sie einschaltet. extra = Satz dazu (z. B. was Hör-Aufgaben
+// dann tun), style = Abstände der jeweiligen Stelle.
+export function NoSoundBanner({ sound, extra = '', style }) {
+  const showRoman = useShowRoman()
+  if (sound !== false) return null
+  return (
+    <div style={{ background: `${C.indigo}12`, borderRadius: 10, padding: 12, fontSize: 13, color: C.indigo, lineHeight: 1.5, ...style }}>
+      🔇 {noSoundHint(showRoman)}{extra ? ` ${extra}` : ''}
+    </div>
+  )
+}
+
+// Hör-Aufgabe (Kapitel „Was wurde gesagt?“, Hörfrage im Wort-Quiz): beim Zeigen den Ton
+// prüfen, mit Ton einmal vorlesen, ohne Ton das Geschriebene sofort einblenden (die Aufgabe
+// wird zur Leseaufgabe). text = null → keine Hör-Aufgabe, nichts wird geprüft. key = neue
+// Aufgabe (Standard: der Text) – dann beginnt die Probe von vorn. Beim Wechsel/Schließen
+// verstummen; eine späte Antwort der Prüfung wirkt nicht mehr.
+// → { sound: null|true|false, shown, reveal, canReveal(answered) } – Regeln in lib/soundRules.js.
+export function useListenProbe(text, key = text) {
+  const [probe, setProbe] = useState(PROBE_START)
+  useEffect(() => {
+    let live = true
+    setProbe(PROBE_START)
+    if (text) {
+      soundAvailable().then(ok => {
+        if (!live) return
+        setProbe(s => probeResult(s, ok))
+        if (ok) speak(text)
+      })
+    }
+    return () => { live = false; stopSpeaking() }
+  }, [key]) // eslint-disable-line
+  return {
+    sound: probe.sound,
+    shown: probe.shown,
+    reveal: () => setProbe(s => ({ ...s, shown: true })),
+    canReveal: answered => offerReveal(probe, answered),
+  }
+}
 
 export function NoSoundMark() {
   return (

@@ -6,13 +6,15 @@ import { XP_PER_DIALOG } from '../../lib/xp.js'
 import { DIALOGS } from '../data/dialogs.js'
 import { stopSpeaking } from '../lib/speech.js'
 import { shuffle } from '../lib/scriptQuiz.js'
-import { feedbackColor } from '../lib/srs.js'
+import { choiceState } from '../lib/choice.js'
 import {
   dialogGate, sceneOpen, explainMissing, warmupPhrases, warmupOptions, startWarmup, answerWarmup, warmupDone, firstTryScore,
+  bookDialog,
 } from '../lib/dialog.js'
-import { useSound, ListenButton, NO_SOUND_HINT } from '../components/sound.jsx'
-import { NeText, TappableSentence, useShowRoman } from '../components/text.jsx'
-import { LessonFrame, useFinishOnce, useOnce } from './players.jsx'
+import { useSound, ListenButton, NoSoundBanner } from '../components/sound.jsx'
+import { NeText, TappableSentence } from '../components/text.jsx'
+import { Choice, ChoiceGrid } from '../components/Choice.jsx'
+import { LessonFrame, LessonDone, useFinishOnce, useOnce, stepLabel as label } from '../components/lesson.jsx'
 
 // ─── Gesprächs-Szenen: Spieler und Übersicht ──────────────────────────────────
 // Gegenstück zu DialogPlay/SceneWarmup in src/screens/players.jsx und DialogHub in
@@ -26,28 +28,6 @@ import { LessonFrame, useFinishOnce, useOnce } from './players.jsx'
 // erst nach der richtigen Antwort – vorher wären sie die Lösung (die Wörter der Zeile lassen
 // sich antippen). Eine falsche Antwort zeigt nur IHRE Bedeutung als kurze Erklärung, dann
 // versucht man es noch einmal.
-
-const label = text => (
-  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.indigo, textAlign: 'center', marginBottom: 6 }}>{text}</div>
-)
-
-// Nepali-Antwort als Knopf: Devanagari groß, Umschrift nur mit Schalter, Bedeutung nur
-// wenn `de` übergeben wird (nach der Auflösung).
-function OptionButton({ dev, roman, de, state = 'neutral', disabled, onClick }) {
-  const showRoman = useShowRoman()
-  const fb = feedbackColor(state)
-  return (
-    <button onClick={onClick} disabled={disabled}
-      style={{
-        minHeight: 52, padding: '8px 12px', borderRadius: 10, border: `2px solid ${fb.border}`, background: fb.bg,
-        color: C.sumi, cursor: disabled ? 'default' : 'pointer', textAlign: 'left', width: '100%',
-      }}>
-      <span style={{ display: 'block', fontFamily: NE, fontSize: 21, lineHeight: 1.35 }}>{dev}</span>
-      {showRoman && roman && <span style={{ display: 'block', fontSize: 12, color: C.indigo }}>{roman}</span>}
-      {de && <span style={{ display: 'block', fontSize: 13, color: C.textMuted, marginTop: 2 }}>„{de}“</span>}
-    </button>
-  )
-}
 
 // Aufwärmen, Teil 1: alle Sätze auf einen Blick – Nepali (Wörter antippbar), Umschrift nach
 // Schalter, Bedeutung, Anhören nur mit Ton. Neue Wendungen der Szene stehen zuerst und sind
@@ -96,13 +76,13 @@ function WarmupQuestion({ list, idx, again, sound, onDone, nextLabel }) {
         {again && <div style={{ fontSize: 11, color: C.shu, fontWeight: 600, marginBottom: 2 }}>🔁 nochmal</div>}
         <div style={{ fontSize: 18, fontWeight: 600, color: C.sumi, lineHeight: 1.45 }}>„{right.de}“</div>
       </Card>
-      <div style={{ display: 'grid', gap: 8 }}>
+      {/* Nur die falsch gewählte Wendung zeigt ihre Bedeutung – als kurze Erklärung. */}
+      <ChoiceGrid>
         {options.map(o => (
-          <OptionButton key={o} dev={o} roman={byDev(o).roman} disabled={revealed} onClick={() => !revealed && setPicked(o)}
-            de={revealed && o === picked && !ok ? byDev(o).de : undefined}
-            state={!revealed ? 'neutral' : o === right.dev ? 'correct' : o === picked ? 'wrong' : 'neutral'} />
+          <Choice key={o} dev={o} roman={byDev(o).roman} de={byDev(o).de} showDe={revealed && o === picked && !ok} align="left"
+            state={choiceState(o, picked, right.dev)} disabled={revealed} onClick={() => setPicked(o)} />
         ))}
-      </div>
+      </ChoiceGrid>
       {revealed && (
         <>
           <p style={{ margin: '14px 0 0', fontWeight: 600, color: ok ? C.matcha : C.shu }}>
@@ -151,18 +131,18 @@ function TurnStep({ turn, emoji, sound, hint, onDone, nextLabel }) {
         </div>
       )}
       <p style={{ margin: '0 0 12px', fontWeight: 500, textAlign: 'center' }}>{turn.npc ? 'Was antwortest du?' : 'Was sagst du?'}</p>
-      <div style={{ display: 'grid', gap: 8 }}>
+      {/* Hier darf man weiterprobieren: Zustand je Option statt choiceState (eine Wahl). */}
+      <ChoiceGrid>
         {options.map(o => {
           const meta = turn.optionsMeta[o] || {}
           const isWrong = wrong.includes(o)
           return (
-            <OptionButton key={o} dev={o} roman={meta.roman}
-              de={solved || isWrong ? meta.de : undefined}
+            <Choice key={o} dev={o} roman={meta.roman} de={meta.de} showDe={solved || isWrong} align="left"
               state={o === turn.answer && solved ? 'correct' : isWrong ? 'wrong' : 'neutral'}
               disabled={solved || isWrong} onClick={() => pick(o)} />
           )
         })}
-      </div>
+      </ChoiceGrid>
       {!solved && last && (
         <p role="status" style={{ margin: '12px 0 0', fontSize: 14, color: C.shu, lineHeight: 1.5 }}>
           ✗ „{turn.optionsMeta[last]?.de}“ passt hier nicht. Versuch es noch einmal.
@@ -232,9 +212,7 @@ export function DialogPlay({ dialog, alreadyDone = false, onComplete, onClose })
           🧤 Zuerst wärmst du dich auf: die {P} Wendungen, die du gleich brauchst – lesen, verstehen, einmal wiedererkennen.
           Dann spielst du die Szene und tippst jeweils die passende, höfliche Antwort an.
         </div>
-        {sound === false && (
-          <div style={{ background: `${C.indigo}12`, borderRadius: 10, padding: 12, fontSize: 13, color: C.indigo, lineHeight: 1.5 }}>🔇 {NO_SOUND_HINT}</div>
-        )}
+        <NoSoundBanner sound={sound} />
         {/* Wer die Szene schon gemeistert hat, darf das Aufwärmen überspringen. */}
         {alreadyDone && (
           <Btn variant="ghost" onClick={() => setPhase('play')} style={{ width: '100%', minHeight: 48, marginTop: 12 }}>Direkt in die Szene</Btn>
@@ -255,16 +233,8 @@ export function DialogPlay({ dialog, alreadyDone = false, onComplete, onClose })
       onDone={answerTurn} nextLabel={turn + 1 < T ? 'Weiter →' : 'Zum Abschluss →'} />
   } else {
     content = (
-      <div style={{ textAlign: 'center', padding: '8px 0' }}>
-        <div style={{ fontSize: 56, marginBottom: 8 }}>🎉</div>
-        <h2 style={{ fontSize: 26, fontFamily: NE, color: C.matcha, marginBottom: 4 }}>धेरै राम्रो!</h2>
-        <p style={{ color: C.textMuted, marginBottom: 12 }}>Szene geschafft!</p>
-        <p style={{ fontSize: 14, color: C.sumi, marginBottom: 12 }}>{score} von {T} Antworten beim ersten Versuch richtig.</p>
-        {alreadyDone ? (
-          <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>Schon abgeschlossen – diese Runde bringt keine neuen XP.</p>
-        ) : (
-          <p style={{ fontSize: 22, fontWeight: 700, color: C.shu, marginBottom: 12 }}>+{XP_PER_DIALOG} XP</p>
-        )}
+      <LessonDone xp={XP_PER_DIALOG} alreadyDone={alreadyDone} sub="Szene geschafft!"
+        before={<p style={{ fontSize: 14, color: C.sumi, marginBottom: 12 }}>{score} von {T} Antworten beim ersten Versuch richtig.</p>}>
         <p style={{ lineHeight: 1.6, marginBottom: 10 }}>Diese Sätze kannst du jetzt sagen:</p>
         <div style={{ display: 'grid', gap: 6, textAlign: 'left' }}>
           {list.filter(p => p.tokens).map(p => (
@@ -274,7 +244,7 @@ export function DialogPlay({ dialog, alreadyDone = false, onComplete, onClose })
             </div>
           ))}
         </div>
-      </div>
+      </LessonDone>
     )
     footer = <Btn onClick={finish} disabled={finishing} style={{ width: '100%', minHeight: 48 }}>Szene abschließen ✓</Btn>
   }
@@ -289,15 +259,15 @@ export function DialogPlay({ dialog, alreadyDone = false, onComplete, onClose })
 // Übersicht im Üben: alle Szenen in Pfad-Reihenfolge. Offen ist, was gespielt wurde, oder
 // eine Szene, deren Station auf der Karte nicht mehr gesperrt ist UND deren Antwortsätze man
 // sagen kann (sceneOpen) – nichts außer der Reihe. Gesperrt: die fehlenden Wörter mit
-// Bedeutung und lehrender Station (explainMissing), sonst „kommt auf der Reise noch“. Abschluss bucht wie auf der Reise (onComplete des
-// Aufrufers: completedDialogs, XP nur beim ersten Mal).
+// Bedeutung und lehrender Station (explainMissing), sonst „kommt auf der Reise noch“.
+// Abschluss bucht wie auf der Reise (bookDialog: completedDialogs, XP nur beim ersten Mal).
 export function DialogHub({ onClose }) {
   const { progress, completeDialog } = useContext(ProgressCtx)
   const [active, setActive] = useState(null) // { dialog, wasDone }
   if (active) {
     const { dialog, wasDone } = active
     return <DialogPlay dialog={dialog} alreadyDone={wasDone} onClose={() => setActive(null)}
-      onComplete={() => { if (!wasDone) completeDialog(dialog.id, XP_PER_DIALOG, { scenes: 1 }) }} />
+      onComplete={() => bookDialog(completeDialog, dialog, wasDone)} />
   }
   const done = progress.completedDialogs || []
   const doneCount = DIALOGS.filter(d => done.includes(d.id)).length
