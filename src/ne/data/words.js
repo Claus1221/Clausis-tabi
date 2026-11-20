@@ -19,7 +19,8 @@
 // Sätze: gesprochenes Standard-Nepali (Kathmandu), höflich (तपाईं, Bitten auf -नुहोस्),
 // 3–6 Wörter, nur aus Wörtern dieses und früherer Blöcke plus einer Handvoll
 // Funktionswörter (हो, छ, छैन, होइन, म, मेरो, यो, त्यो, के, कति, र, -मा, -को, -लाई, -बाट,
-// चाहिन्छ, दिनुहोस्, जानुहोस्, जान्छ, हुन्छ …). Der Wort-Audit (scripts/audit-ne.mjs) meldet den Rest.
+// चाहिन्छ, दिनुहोस्, जानुहोस्, जान्छ, हुन्छ …; die Liste steht in src/ne/lib/functionWords.js).
+// Der Wort-Audit (npm run audit:ne) meldet den Rest.
 //
 // Die Zahlen 1–10 sind ein Block für sich (nw2): man lernt sie zusammen, wie die Ziffern
 // in s14. Ihre Sätze kommen deshalb ohne Geldwörter aus (Ziffern lesen, kleine Summen).
