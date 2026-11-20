@@ -11,7 +11,7 @@ const ROMAN_EXCEPTIONS = {}
 
 // Eigennamen der Geschichte: antippbar (mit Bedeutung „Name“), aber kein Lernwort – sie
 // werden nie per intro vorgestellt und gelten deshalb im Wortschatz-Test als bekannt.
-const PROPER_NAMES = ['आशा', 'नेपाल', 'माछापुच्छ्रे']
+const PROPER_NAMES = ['आशा', 'माछापुच्छ्रे']
 
 const IDS = ['nc1', 'nc2', 'nc3', 'nc4', 'nc5', 'nc6', 'nc7', 'nc8', 'nc9', 'nc10']
 // Verbindliche Reihenfolge aus dem Lernpfad (path-order.md), fest verdrahtet: was VOR einem
@@ -222,7 +222,7 @@ describe('Kapitelwörter', () => {
     for (const k of Object.keys(CHAPTER_WORD)) expect(isNfc(k), k).toBe(true)
   })
   it('chapterWords liefert die intro-Wörter eines Kapitels', () => {
-    expect(chapterWords(CHAPTER_BY_ID.nc1)).toEqual(['भिसा', 'पर्यटक', 'पहिलो पटक', 'त्यहाँ'].map(nfc))
+    expect(chapterWords(CHAPTER_BY_ID.nc1)).toEqual(['भिसा', 'पर्यटक', 'नेपाल', 'पहिलो पटक', 'त्यहाँ'].map(nfc))
     for (const c of CHAPTERS) expect(chapterWords(c)).toEqual(c.steps.filter(s => s.kind === 'intro').map(s => nfc(s.dev)))
   })
   it('kein intro-Wort ist schon Wortblock-, Grammatik- oder Funktionswort oder ein anderes Kapitelwort', () => {
@@ -306,6 +306,11 @@ const TAUGHT_CHUNKS = {
   'मलाई': 'nw3: धन्यवाद, मलाई चाहिँदैन।',
   'मैले': 'nw1: मैले बुझिनँ।',
 }
+// Wörter, die nur zufällig wie Stamm + Anhängsel aussehen – sonst gilt die Prüfung auch für
+// intro-Wörter (ein Kapitel darf keine Grammatik als „neues Wort“ einschmuggeln).
+const COINCIDENTAL = {
+  'जम्मा': 'nc3 „insgesamt“ – endet nur zufällig auf ‑मा',
+}
 // Vergangenheitsformen (ng12): ‑एँ (गएँ, थाकेँ), verneint ‑इनँ (बुझिनँ), ‑यो (भयो, खानुभयो).
 const isPast = w => /(ेँ|एँ|िनँ)$/u.test(w) || (w.endsWith('यो') && !['यो', 'त्यो'].includes(w))
 
@@ -313,7 +318,6 @@ describe('Grammatik-Reihenfolge', () => {
   it('keine Nachstellung, Vergangenheit oder ‑नुहोस्-Bitte vor ihrem Thema (außer gelehrten Brocken)', () => {
     const blocks = Object.fromEntries(WORD_BLOCKS.map(b => [b.id, b]))
     const passed = new Set(), blockWords = new Set(), fw = functionWordSet()
-    const grammarWords = new Set(Object.values(GRAMMAR_NEW_WORDS).flat().map(w => nfc(w.dev)))
     for (const id of COURSE) {
       if (!id.startsWith('nc')) {
         passed.add(id)
@@ -321,13 +325,14 @@ describe('Grammatik-Reihenfolge', () => {
         continue
       }
       CHAPTER_BY_ID[id].steps.forEach((s, i) => {
-        for (const text of allNepali(s)) for (const w of wordsOf(text)) {
+        // Auch das intro-Wort selbst wird geprüft, nicht nur seine Verwendungen.
+        const texts = s.kind === 'intro' ? [s.dev] : allNepali(s)
+        for (const text of texts) for (const w of wordsOf(text)) {
           const need = Object.entries(SUFFIX_TOPIC)
             .filter(([suf, topic]) => w.length > suf.length && w.endsWith(suf) && !passed.has(topic)).map(([, t]) => t)
           if (!passed.has('ng12') && isPast(w)) need.push('ng12')
           if (!passed.has('ng11') && w.endsWith('नुहोस्')) need.push('ng11')
-          // Ein Wort, das selbst Lernwort ist (जम्मा endet nur zufällig auf ‑मा), ist kein Anhängsel-Fall.
-          const ok = !need.length || w in TAUGHT_CHUNKS || blockWords.has(w) || fw.has(w) || w in CHAPTER_WORD || grammarWords.has(w)
+          const ok = !need.length || w in TAUGHT_CHUNKS || w in COINCIDENTAL || blockWords.has(w) || fw.has(w)
           expect(ok, `${id}#${i} „${text}“: ${w} braucht ${need.join(', ')}`).toBe(true)
         }
       })

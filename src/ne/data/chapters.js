@@ -90,6 +90,7 @@ const DHERAI = ['धेरै', 'dherai', 'sehr, viel']
 const THAMEL = ['थमेल', 'thamel', 'Thamel (Viertel in Kathmandu)']
 const KASARI = ['कसरी', 'kasarī', 'wie (auf welche Weise)']
 const JANE = ['जाने', 'jāne', '(zu) gehen']
+const JANE_WIR = ['जाने', 'jāne', '(zu) gehen – umgangssprachlich: „gehen wir …“']
 const DAL = ['दाल', 'dāl', 'Linsen(suppe)']
 const BHAT = ['भात', 'bhāt', 'Reis (gekocht)']
 const MITHO = ['मीठो', 'mīṭho', 'lecker']
@@ -126,7 +127,6 @@ const PARCHA = ['पर्छ', 'parcha', 'fällt (मन पर्छ: gefällt
 const PARCHA_F = ['पर्छ', 'parcha', 'fällt']
 const PANI_W = ['पानी', 'pānī', 'Wasser']
 const PANI_RAIN = ['पानी', 'pānī', 'Wasser (hier: Regen)']
-const JANE_WIR = ['जाने', 'jāne', '(zu) gehen – hier: gehen wir']
 const BISTARAI = ['बिस्तारै', 'bistārai', 'langsam']
 const MAILE = ['मैले', 'maile', 'ich (Handelnder; म + ले)']
 const BUJHEN = ['बुझेँ', 'bujheṃ', 'habe verstanden']
@@ -147,7 +147,6 @@ const BATO = ['बाटो', 'bāṭo', 'Weg']
 const YAHAN = ['यहाँ', 'yahāṃ', 'hier']
 const JADO = ['जाडो', 'jāḍo', 'kalt (Wetter)']
 const HIMAL = ['हिमाल', 'himāl', 'Schneeberg(e)']
-const NAMASTE_ = NAMASTE
 // Eigennamen
 const NEPAL = ['नेपाल', 'nepāl', 'Nepal']
 const MACHA = ['माछापुच्छ्रे', 'māchāpucchre', 'Machhapuchhre (Berg bei Pokhara)']
@@ -160,7 +159,7 @@ const TAL = ['ताल', 'tāl', 'See']
 const BADAL = ['बादल', 'bādal', 'Wolke(n)']
 const DUNGA = ['डुङ्गा', 'ḍuṅgā', 'Boot']
 const DEKHINCHA = ['देखिन्छ', 'dekhincha', 'ist zu sehen, man sieht']
-const PARMIT = ['पर्मिट', 'parmiṭ', 'Genehmigung, Permit']
+const PARMIT = ['परमिट', 'paramiṭ', 'Genehmigung, Permit']
 const SHUBH = ['शुभ', 'shubh', 'glücklich, gut (in शुभ यात्रा)']
 const YATRA = ['यात्रा', 'yātrā', 'Reise']
 const SIMDHI = ['सिँढी', 'siṃḍhī', 'Treppe, Stufen']
@@ -191,8 +190,9 @@ export const CHAPTERS = [
       story('Er blättert in deinem Pass und fragt: „Sind Sie Tourist(in)?“',
         L('तपाईं पर्यटक हुनुहुन्छ?', 'tapāīṃ paryaṭak hunuhuncha?', TAPAIN, PARYATAK, HUNUHUNCHA, Q)),
       gap('हजुर, म पर्यटक ', 'हुँ', '।', ['हो', 'हुँ', 'हुनुहुन्छ'], 'Ja, ich bin Tourist(in).', 'hajur, ma paryaṭak huṃ.'),
+      intro('नेपाल', 'nepāl', 'Nepal'),
       intro('पहिलो पटक', 'pahilo paṭak', 'das erste Mal', 'पहिलो heißt „erste(r)“, पटक „Mal“. Reisende werden das ständig gefragt.'),
-      dialog(['पहिलो पटक हो?', 'pahilo paṭak ho?', 'Ist es das erste Mal (in Nepal)?'], [
+      dialog(['नेपाल पहिलो पटक हो?', 'nepāl pahilo paṭak ho?', 'Sind Sie zum ersten Mal in Nepal? (wörtl. „Nepal – erstes Mal?“)'], [
         ['म सन्चै छु, धन्यवाद।', 'ma sancai chu, dhanyabād.', 'Mir geht es gut, danke.'],
         ['हजुर, पहिलो पटक हो।', 'hajur, pahilo paṭak ho.', 'Ja, es ist das erste Mal.'],
         ['यो मेरो झोला हो।', 'yo mero jholā ho.', 'Das ist meine Tasche.'],
@@ -203,8 +203,8 @@ export const CHAPTERS = [
         'Mit diesem Satz hat der Beamte nach deinem Rückflugticket gefragt.', false),
       story('Mit deinem Gepäck gehst du durch den Ausgang hinaus ins Freie. Hinter einer Absperrung warten viele Menschen mit Namensschildern – auf einem steht deiner. Eine junge Frau hält es hoch; ihre Familie führt das kleine Gästehaus in Thamel, in dem du ein Zimmer gebucht hast. Sie strahlt: „Hallo, ich bin Asha.“ Und dann kommt die Frage, die du schon kennst.',
         L('नमस्ते, म आशा हुँ।', 'namaste, ma āshā huṃ.', NAMASTE, COMMA, MA, ASHA, HUN, DANDA)),
-      audio('पहिलो पटक हो?', 'pahilo paṭak ho?', 'Ist es das erste Mal?', 'Ist es das erste Mal?',
-        ['Sind Sie Tourist(in)?', 'Ist es das erste Mal?', 'Ist das Ihre Tasche?']),
+      audio('नेपाल पहिलो पटक हो?', 'nepāl pahilo paṭak ho?', 'Sind Sie zum ersten Mal in Nepal?', 'Sind Sie zum ersten Mal in Nepal?',
+        ['Sind Sie Tourist(in)?', 'Sind Sie zum ersten Mal in Nepal?', 'Ist das Ihre Tasche?']),
       dialog(['यो तपाईंको झोला हो?', 'yo tapāīṃko jholā ho?', 'Ist das Ihre Tasche?'], [
         ['तपाईंलाई सन्चै छ?', 'tapāīṃlāī sancai cha?', 'Geht es Ihnen gut?'],
         ['हजुर, म पर्यटक हुँ।', 'hajur, ma paryaṭak huṃ.', 'Ja, ich bin Tourist(in).'],
@@ -212,7 +212,7 @@ export const CHAPTERS = [
       ], 2),
       build('म जर्मन पर्यटक हुँ।', 'ma jarman paryaṭak huṃ.', 'Ich bin deutsche Touristin / deutscher Tourist.',
         ['म', 'जर्मन', 'पर्यटक', 'हुँ'], ['पर्यटक', 'हुँ', 'म', 'भिसा', 'जर्मन', 'हो']),
-      intro('त्यहाँ', 'tyahāṃ', 'dort, dort drüben', 'Gegenstück zu यहाँ „hier“: त्यहाँ छ – „ist dort“.'),
+      intro('त्यहाँ', 'tyahāṃ', 'dort, dort drüben', 'त्यहाँ छ – „ist dort“.'),
       story('Du fragst Asha nach einem Taxi. Sie zeigt über den Vorplatz zum Parkplatz: „Dort drüben.“ (wörtl. „ist dort“)',
         L('त्यहाँ छ।', 'tyahāṃ cha.', TYAHAN, CHA, DANDA)),
       tf('त्यहाँ छ।', 'tyahāṃ cha.', 'Dort drüben. (wörtl. „ist dort“)',
@@ -303,7 +303,7 @@ export const CHAPTERS = [
         L('दिदी, जम्मा कति हो?', 'didī, jammā kati ho?', DIDI, COMMA, JAMMA, KATI, HO, Q)),
       audio('जम्मा छ सय रुपैयाँ।', 'jammā cha say rupaiyāṃ.', 'Insgesamt sechshundert Rupien. (छ heißt hier „sechs“)', 'Insgesamt sechshundert Rupien.',
         ['Insgesamt neunhundert Rupien.', 'Insgesamt sechshundert Rupien.', 'Insgesamt sechstausend Rupien.']),
-      story('Du greifst nach deinem Geldbeutel, aber Asha schiebt ihn lächelnd zurück – heute will sie zahlen. „Lassen Sie nur, ich habe Geld dabei.“'),
+      story('Du greifst nach deinem Geldbeutel, aber Asha schiebt ihn lächelnd zurück: „Lassen Sie nur, ich habe Geld dabei.“'),
       tf('मसँग पैसा छ।', 'masaṃga paisā cha.', 'Ich habe Geld (dabei).',
         'Mit diesem Satz sagt Asha, dass sie kein Geld dabeihat und du zahlen sollst.', false),
       story('Asha bezahlt – heute lädt sie dich ein. Auf dem Heimweg erzählt sie von Boudhanath, der großen Stupa im Osten der Stadt. Morgen willst du hin.'),
@@ -342,11 +342,11 @@ export const CHAPTERS = [
       ], 1),
       intro('माथि', 'māthi', 'oben, hinauf', 'Für Stockwerke, Dachterrassen und Berghänge.'),
       story('Asha zeigt auf eine Dachterrasse über einem der Cafés: „Gehen wir hinauf?“',
-        L('माथि जाने?', 'māthi jāne?', MATHI, JANE, Q)),
+        L('माथि जाने?', 'māthi jāne?', MATHI, JANE_WIR, Q)),
       tf('यहाँ माथि चिया मीठो छ।', 'yahāṃ māthi ciyā mīṭho cha.', 'Hier oben ist der Tee gut.',
         'Asha sagt, hier oben ist der Tee kalt.', false),
       story('Von oben siehst du die ganze Kuppel, die Augen auf dem Turm, dahinter die Hügel des Tals. Asha zieht dich auf: „Zu Fuß zurück nach Thamel?“ Du lachst – lieber den Bus. Dann erzählt sie von Pokhara, eine lange Busfahrt weiter westlich, und von den Bergen dahinter. Du rührst in deinem Tee und überlegst.',
-        L('थमेल हिँडेर जाने?', 'thamel hiṃḍer jāne?', THAMEL, HINDER, JANE, Q)),
+        L('थमेल हिँडेर जाने?', 'thamel hiṃḍer jāne?', THAMEL, HINDER, JANE_WIR, Q)),
     ],
   },
   {
@@ -387,7 +387,7 @@ export const CHAPTERS = [
       story('Am späten Nachmittag rollt der Bus in Pokhara ein – fast ein ganzer Tag ist vergangen. Die Wirtin einer kleinen Lodge nahe am See fragt: „Sind Sie mit dem Bus gekommen?“',
         L('बसमा आउनुभयो?', 'basmā āunubhayo?', BAS, MAA, AUNUBHAYO, Q)),
       gap('हजुर, म बसमा ', 'आएँ', '।', ['खाएँ', 'आएँ', 'आउनुभयो'], 'Ja, ich bin mit dem Bus gekommen.', 'hajur, ma basmā āeṃ.'),
-      story('Dein Zimmer hat einen kleinen Balkon. Über dem See siehst du nur Wolken – noch. Ashas Bruder will morgen vorbeikommen.'),
+      story('Dein Zimmer hat einen kleinen Balkon. Über dem See siehst du nur Wolken – noch. Ashas Bruder ist noch mit einer Gruppe in den Bergen; in zwei Tagen ist er zurück.'),
     ],
   },
   {
@@ -433,15 +433,15 @@ export const CHAPTERS = [
     steps: [
       story('Zwei Tage später bringt euch ein Jeep aus Pokhara hinaus bis dorthin, wo der Trekkingweg beginnt. Ashas Bruder bleibt in Pokhara, er hat eine eigene Gruppe. Asha schultert ihren Rucksack: „Heute bin ich Ihr Guide.“',
         L('आज म तपाईंको गाइड हुँ।', 'āj ma tapāīṃko gāiḍ huṃ.', AAJ, MA, TAPAIN, KO, GAID, HUN, DANDA)),
-      intro('पर्मिट', 'parmiṭ', 'Genehmigung, Trekking-Permit', 'Für das Annapurna-Schutzgebiet braucht man eine Genehmigung; an Kontrollposten unterwegs zeigt man sie vor.'),
-      dialog(['पर्मिट र पासपोर्ट दिनुहोस्।', 'parmiṭ ra pāsporṭ dinuhos.', 'Genehmigung und Pass, bitte. (am Kontrollposten)'], [
-        ['हजुर, यो मेरो पर्मिट हो।', 'hajur, yo mero parmiṭ ho.', 'Ja, das ist meine Genehmigung.'],
-        ['मलाई पर्मिट मन पर्दैन।', 'malāī parmiṭ man pardaina.', 'Ich mag keine Genehmigungen.'],
-        ['होइन, म पर्मिट हुँ।', 'hoina, ma parmiṭ huṃ.', 'Nein, ich bin eine Genehmigung.'],
+      intro('परमिट', 'paramiṭ', 'Genehmigung, Trekking-Permit', 'Aus dem Englischen; gesprochen meist „parmit“. Für das Annapurna-Schutzgebiet braucht man eine Genehmigung; an Kontrollposten unterwegs zeigt man sie vor.'),
+      dialog(['परमिट र पासपोर्ट दिनुहोस्।', 'paramiṭ ra pāsporṭ dinuhos.', 'Genehmigung und Pass, bitte. (am Kontrollposten)'], [
+        ['हजुर, यो मेरो परमिट हो।', 'hajur, yo mero paramiṭ ho.', 'Ja, das ist meine Genehmigung.'],
+        ['मलाई परमिट मन पर्दैन।', 'malāī paramiṭ man pardaina.', 'Ich mag keine Genehmigungen.'],
+        ['होइन, म परमिट हुँ।', 'hoina, ma paramiṭ huṃ.', 'Nein, ich bin eine Genehmigung.'],
       ], 0),
       intro('शुभ यात्रा', 'shubh yātrā', 'Gute Reise!', 'शुभ „glücklich, gut“, यात्रा „Reise“ – der feste Wunsch zum Aufbruch.'),
       story('Der Beamte stempelt und gibt alles zurück: „Die Genehmigung ist in Ordnung. Gute Reise!“',
-        L('पर्मिट ठीक छ। शुभ यात्रा।', 'parmiṭ ṭhīk cha. shubh yātrā.', PARMIT, THIK, CHA, DANDA, SHUBH, YATRA, DANDA)),
+        L('परमिट ठीक छ। शुभ यात्रा।', 'paramiṭ ṭhīk cha. shubh yātrā.', PARMIT, THIK, CHA, DANDA, SHUBH, YATRA, DANDA)),
       tf('शुभ यात्रा।', 'shubh yātrā.', 'Gute Reise!',
         'Der Beamte wünscht dir eine gute Reise.', true),
       story('Der Weg führt an Dörfern und Terrassenfeldern vorbei, über Hängebrücken und durch Wald. Und dann: Stufen. Steinstufen, Hunderte, hinauf und immer weiter hinauf.'),
@@ -449,7 +449,7 @@ export const CHAPTERS = [
       story('Asha lacht über dein Gesicht: „Auf diesem Weg gibt es viele Stufen.“',
         L('यो बाटोमा धेरै सिँढी छ।', 'yo bāṭomā dherai siṃḍhī cha.', YO, BATO, MAA, DHERAI, SIMDHI, CHA, DANDA)),
       gap('बाटो धेरै ', 'उकालो', ' छ।', ['सस्तो', 'उकालो', 'पिरो'], 'Der Weg geht steil bergauf.', 'bāṭo dherai ukālo cha.'),
-      intro('थाकेँ', 'thākeṃ', 'ich bin müde (wörtl. „ich bin ermüdet“)', 'Gebildet wie गएँ: थाक्‑ + ‑एँ. Gemeint ist: Ich bin jetzt müde.'),
+      intro('थाकेँ', 'thākeṃ', 'ich bin müde (wörtl. „ich bin ermüdet“)', 'Gebildet wie खाएँ oder बुझेँ: थाक्‑ + ‑एँ. Gemeint ist: Ich bin jetzt müde.'),
       dialog(['तपाईं ठीक हुनुहुन्छ?', 'tapāīṃ ṭhīk hunuhuncha?', 'Geht es Ihnen gut?'], [
         ['हजुर, मलाई भात चाहिँदैन।', 'hajur, malāī bhāt cāhiṃdaina.', 'Ja, ich brauche keinen Reis.'],
         ['म अलि थाकेँ। बिस्तारै जानुहोस्।', 'ma ali thākeṃ. bistārai jānuhos.', 'Ich bin etwas müde. Gehen Sie bitte langsam.'],
@@ -465,13 +465,13 @@ export const CHAPTERS = [
         'Mit diesem Satz sagst du: Ich bin überhaupt nicht müde.', false),
       build('आज घाम छ, जाडो छैन।', 'āj ghām cha, jāḍo chaina.', 'Heute scheint die Sonne, es ist nicht kalt.',
         ['आज', 'घाम', 'छ', 'जाडो', 'छैन'], ['जाडो', 'आज', 'हिउँ', 'छ', 'घाम', 'हो', 'छैन'],
-        [['आज', 'जाडो', 'छैन', 'घाम', 'छ']]),
+        [['आज', 'जाडो', 'छैन', 'घाम', 'छ'], ['जाडो', 'छैन', 'आज', 'घाम', 'छ']]),
       story('Am späten Nachmittag erreicht ihr ein Dorf mit ein paar Lodges. Asha telefoniert kurz mit ihrem Bruder und erzählt stolz: Alles läuft gut. Deine Beine sind schwer, aber du lächelst.'),
     ],
   },
   {
     id: 'nc8', title: 'Im Teehaus', place: 'Eine Lodge am Trekkingweg',
-    summary: 'Ein Zimmer für die Nacht, eine Decke mehr, Dal Bhat am Ofen – und die Wirtin sagt Regen voraus.',
+    summary: 'Ein Zimmer für die Nacht, eine warme Decke, Dal Bhat am Ofen – und die Wirtin sagt Regen voraus.',
     steps: [
       story('Die Lodge ist ein Steinhaus mit Holzbänken und kleinen Zimmern. Hier schlafen Wanderer, abends wird gekocht, morgens geht es weiter.'),
       intro('लज', 'laj', 'Lodge, Teehaus (Unterkunft am Trekkingweg)', 'Auf den Trekkingrouten schläft und isst man in einfachen Lodges, oft „Teehaus“ genannt.'),
@@ -483,9 +483,9 @@ export const CHAPTERS = [
         ['होइन, मलाई कोठा मन पर्छ।', 'hoina, malāī koṭhā man parcha.', 'Nein, mir gefällt das Zimmer.'],
       ], 0),
       intro('कम्बल', 'kambal', 'Decke (Wolldecke)', 'Nachts wird es in den Bergen kalt; in den Lodges gibt es dicke Decken.'),
-      story('Das Zimmer ist einfach: zwei Betten, eine Decke, ein kleines Fenster. Es ist kalt. Du fragst die Wirtin: „Didi, ich brauche noch eine Decke.“',
-        L('दिदी, मलाई थप कम्बल चाहिन्छ।', 'didī, malāī thap kambal cāhincha.', DIDI, COMMA, MA, LAI, THAP, KAMBAL, CAHINCHA, DANDA)),
-      gap('हजुर, कम्बल कोठामा ', 'छ', '।', ['हो', 'छ', 'छु'], 'Ja, eine Decke liegt im Zimmer.', 'hajur, kambal koṭhāmā cha.'),
+      story('Das Zimmer ist einfach: zwei Betten, ein kleines Fenster. Schon am Abend wird es kalt. Du fragst die Wirtin: „Didi, gibt es eine Decke?“',
+        L('दिदी, कम्बल छ?', 'didī, kambal cha?', DIDI, COMMA, KAMBAL, CHA, Q)),
+      gap('हजुर, कम्बल कोठामा ', 'छ', '।', ['हो', 'छ', 'छु'], 'Ja, die Decke ist im Zimmer.', 'hajur, kambal koṭhāmā cha.'),
       intro('आगो', 'āgo', 'Feuer', 'Abends wärmt in vielen Lodges ein Ofen den Speiseraum.'),
       intro('बस्नुहोस्', 'basnuhos', 'setzen Sie sich (höfliche Bitte)', 'Von बस्‑ „sitzen, bleiben“ – gebildet wie जानुहोस्.'),
       story('Im Speiseraum sitzen alle um den Ofen: Wanderer aus vielen Ländern, Träger, Guides. Asha macht dir Platz: „Setzen Sie sich hier, nah ans Feuer.“',
@@ -508,12 +508,12 @@ export const CHAPTERS = [
     ],
   },
   {
-    id: 'nc9', title: 'Schlechtes Wetter, Hilfe holen', place: 'Auf dem Weg im Regen',
+    id: 'nc9', title: 'Schlechtes Wetter, Hilfe holen', place: 'Auf dem Weg, unter Regenwolken',
     summary: 'Nasse Stufen, ein umgeknickter Fuß, Hilfe aus dem Dorf und ein Nachmittag am Ofen.',
     steps: [
-      story('Am Morgen trommelt Regen aufs Dach. Asha hat ihre Regenjacke schon an: „Heute regnet es. Wir gehen langsam.“',
+      story('Am Morgen ist der Himmel grau, die Wolken hängen tief. Noch ist es trocken, aber Asha packt die Regenjacken obenauf: „Heute wird es regnen. Wir gehen langsam.“',
         L('आज पानी पर्छ। बिस्तारै जाने।', 'āj pānī parcha. bistārai jāne.', AAJ, PANI_RAIN, PARCHA_F, DANDA, BISTARAI, JANE_WIR, DANDA)),
-      story('Die Steinstufen sind nass und glatt. Auf dem Weg nach unten rutschst du aus und knickst um. Du setzt dich auf eine Stufe.'),
+      story('Im Nebel sind die Steinstufen feucht und glatt. Auf dem Weg nach unten rutschst du aus und knickst um. Du setzt dich auf eine Stufe.'),
       intro('खुट्टा', 'khuṭṭā', 'Fuß, Bein'),
       intro('दुख्छ', 'dukhcha', 'tut weh', 'Was weh tut, steht davor: खुट्टा दुख्छ – „der Fuß tut weh“.'),
       story('Du verziehst das Gesicht: „Mein Fuß tut weh.“',
@@ -525,7 +525,7 @@ export const CHAPTERS = [
       ], 1),
       story('Asha kniet sich hin, ruhig und genau, so wie ihr Bruder es ihr gezeigt hat. Der Knöchel ist etwas geschwollen, aber du kannst auftreten. Nichts gebrochen – nur umgeknickt.'),
       tf('मेरो खुट्टा अलि दुख्छ।', 'mero khuṭṭā ali dukhcha.', 'Mein Fuß tut ein bisschen weh.',
-        'Mit diesem Satz sagst du: Mein Fuß tut ein bisschen weh.', true),
+        'Der Satz sagt: Der Schmerz ist leicht, nicht stark.', true),
       intro('मद्दत', 'maddat', 'Hilfe', 'Wie bei चाहिन्छ üblich mit ‑लाई: मलाई मद्दत चाहिन्छ – „ich brauche Hilfe“.'),
       story('Ein Mann aus dem Dorf kommt mit einem Regenschirm den Weg herauf. Asha spricht ihn an: „Wir brauchen Hilfe. Gibt es hier in der Nähe eine Lodge?“',
         L('दाइ, हामीलाई मद्दत चाहिन्छ। यहाँ नजिक लज छ?', 'dāi, hāmīlāī maddat cāhincha. yahāṃ najik laj cha?', DAI, COMMA, HAMI, LAI, MADDAT, CAHINCHA, DANDA, YAHAN, NAJIK, LAJ, CHA, Q)),
@@ -537,13 +537,13 @@ export const CHAPTERS = [
       intro('पर्खनुहोस्', 'parkhanuhos', 'warten Sie (höfliche Bitte)'),
       story('Langsam, auf Asha gestützt, humpelst du bis ins Dorf. In der Lodge setzt sie dich an den Ofen: „Setzen Sie sich hier und warten Sie.“ Dann ruft sie ihren Bruder an.',
         L('यहाँ बस्नुहोस् र पर्खनुहोस्।', 'yahāṃ basnuhos ra parkhanuhos.', YAHAN, BASNUHOS, RA, PARKHANUHOS, DANDA)),
-      gap('पानी पर्छ, यहाँ ', 'पर्खनुहोस्', '।', ['बोल्नुहोस्', 'पर्खनुहोस्', 'खाएँ'], 'Es regnet, warten Sie hier.', 'pānī parcha, yahāṃ parkhanuhos.'),
+      gap('पानी पर्छ, यहाँ ', 'पर्खनुहोस्', '।', ['बोल्नुहोस्', 'पर्खनुहोस्', 'खाएँ'], 'Es wird regnen, warten Sie hier.', 'pānī parcha, yahāṃ parkhanuhos.'),
       dialog(['तातो चिया चाहिन्छ?', 'tāto ciyā cāhincha?', 'Möchten Sie heißen Tee?'], [
         ['हजुर, एउटा चिया दिनुहोस्, धन्यवाद।', 'hajur, euṭā ciyā dinuhos, dhanyabād.', 'Ja, einen Tee bitte, danke.'],
         ['होइन, मलाई तातो चिया चाहिन्छ।', 'hoina, malāī tāto ciyā cāhincha.', 'Nein, ich möchte heißen Tee. (widersprüchlich)'],
         ['मैले खुट्टा खाएँ।', 'maile khuṭṭā khāeṃ.', 'Ich habe einen Fuß gegessen.'],
       ], 0),
-      story('Ashas Bruder bleibt am Telefon ruhig: kühlen, hochlegen, heute ausruhen. Am Nachmittag hört der Regen auf, und dein Fuß fühlt sich schon besser an. Wenn es geht, sagt Asha, steigt ihr morgen vor Sonnenaufgang zum Aussichtspunkt über dem Dorf – langsam. „Morgen früh um fünf.“',
+      story('Ashas Bruder bleibt am Telefon ruhig: kühlen, hochlegen, heute ausruhen. Kurz darauf prasselt der Regen aufs Dach – ihr sitzt im Trockenen. Am Nachmittag hört er auf, und dein Fuß fühlt sich schon besser an. Wenn es geht, sagt Asha, steigt ihr morgen vor Sonnenaufgang zum Aussichtspunkt über dem Dorf – langsam. „Morgen früh um fünf.“',
         L('भोलि बिहान पाँच बजे।', 'bholi bihān pāṃc baje.', BHOLI, BIHAN, N5, BAJE, DANDA)),
     ],
   },
@@ -560,12 +560,12 @@ export const CHAPTERS = [
         ['मलाई कम्बल मन पर्छ।', 'malāī kambal man parcha.', 'Ich mag Decken.'],
         ['खुट्टा ठीक छ, धन्यवाद।', 'khuṭṭā ṭhīk cha, dhanyabād.', 'Dem Fuß geht es gut, danke.'],
       ], 2),
-      story('Oben auf dem Aussichtspunkt warten schon viele Menschen, eingepackt in Jacken und Mützen. Im Osten wird der Himmel grau, dann blassrosa.'),
+      story('Oben auf dem Aussichtspunkt warten schon viele Menschen, eingepackt in Jacken und Mützen. Noch ist alles dunkel.'),
       intro('उज्यालो', 'ujyālo', 'hell; Licht'),
-      story('Asha flüstert: „Langsam wird es hell.“',
+      story('Asha flüstert: „Bald wird es langsam hell.“',
         L('बिस्तारै उज्यालो हुन्छ।', 'bistārai ujyālo huncha.', BISTARAI, UJYALO, HUNCHA_W, DANDA)),
       intro('सुन्दर', 'sundar', 'schön, wunderschön', 'Etwas feierlicher als राम्रो.'),
-      story('Dann trifft das erste Sonnenlicht die Gipfel: erst orange, dann golden, dann weiß. Der ganze Kamm leuchtet, und mittendrin ragt der Machhapuchhre auf. Du flüsterst: „Die Berge sind wunderschön.“',
+      story('Im Osten wird der Himmel grau, dann blassrosa. Dann trifft das erste Sonnenlicht die Gipfel: erst orange, dann golden, dann weiß. Der ganze Kamm leuchtet, und mittendrin ragt der Machhapuchhre auf. Du flüsterst: „Die Berge sind wunderschön.“',
         L('हिमाल धेरै सुन्दर छ।', 'himāl dherai sundar cha.', HIMAL, DHERAI, SUNDAR, CHA, DANDA)),
       audio('हिमालमा घाम छ, धेरै सुन्दर छ।', 'himālmā ghām cha, dherai sundar cha.', 'Auf den Bergen liegt Sonne – wunderschön.', 'Auf den Bergen liegt Sonne – wunderschön.',
         ['Die Berge sind in Wolken, schade.', 'Auf den Bergen liegt Sonne – wunderschön.', 'Auf den Bergen ist es dunkel und kalt.']),
