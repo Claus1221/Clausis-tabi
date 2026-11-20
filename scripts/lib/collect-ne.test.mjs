@@ -117,6 +117,29 @@ describe('collectNeTexts', () => {
     for (const x of ['म जर्मन हुँ।', 'सस्तो', 'महँगो', 'पर्यटक', '।']) expect(t.some(([y]) => y === x), x).toBe(false)
   })
 
+  // Szenen im Format von src/ne/data/dialogs.js (nur die gelesenen Felder). Gesammelt wird,
+  // was der Szenen-Spieler anhören lässt.
+  const dialogs = [{
+    id: 'nd1',
+    newPhrases: [{ dev: 'कति भयो', roman: 'kati bhayo', de: 'x' }],
+    turns: [
+      { npc: 'नमस्ते, कहाँ जाने?', npcTokens: [{ t: 'नमस्ते', r: 'namaste', de: 'Hallo' }, { t: ',' }, { t: 'कहाँ', r: 'kahāṃ', de: 'wo' }, { t: 'जाने', r: 'jāne', de: 'gehen' }, { t: '?' }],
+        options: ['थमेल जानुहोस्।', 'म जर्मन हुँ।'], answer: 'थमेल जानुहोस्।',
+        answerTokens: [{ t: 'थमेल', r: 'thamel', de: 'Thamel' }, { t: 'जानुहोस्', r: 'jānuhos', de: 'fahren Sie' }, { t: '।' }] },
+      { npc: '', npcTokens: [], options: ['दिदी, कति भयो?', 'यो मेरो होइन।'], answer: 'दिदी, कति भयो?',
+        answerTokens: [{ t: 'दिदी', r: 'didī', de: 'Didi' }, { t: ',' }, { t: 'कति', r: 'kati', de: 'wie viel' }, { t: 'भयो', r: 'bhayo', de: 'ist geworden' }, { t: '?' }] },
+    ],
+  }]
+  it('Szenen: NPC-Zeile und Antwortsatz mit Satz-Tempo; Tokens und neue Wendungen mit Wort-Tempo', () => {
+    const t = collectNeTexts({ dialogs })
+    for (const x of ['नमस्ते, कहाँ जाने?', 'थमेल जानुहोस्।', 'दिदी, कति भयो?']) expect(t, x).toContainEqual([x, RATE_SENTENCE])
+    for (const w of ['नमस्ते', 'कहाँ', 'जाने', 'थमेल', 'जानुहोस्', 'दिदी', 'भयो', 'कति भयो']) expect(t, w).toContainEqual([w, RATE_WORD])
+  })
+  it('Szenen: falsche Optionen, Satzzeichen und die leere NPC-Zeile nie', () => {
+    const t = collectNeTexts({ dialogs })
+    for (const x of ['म जर्मन हुँ।', 'यो मेरो होइन।', ',', '?', '']) expect(t.some(([y]) => y === x), x).toBe(false)
+  })
+
   it('fehlende Quellen sind erlaubt', () => {
     expect(collectNeTexts({})).toEqual([])
   })

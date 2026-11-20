@@ -24,6 +24,7 @@ import { SCRIPT_DATA } from '../src/ne/data/script.js'
 import { WORD_BLOCKS } from '../src/ne/data/words.js'
 import { GRAMMAR, GRAMMAR_NEW_WORDS } from '../src/ne/data/grammar.js'
 import { CHAPTERS } from '../src/ne/data/chapters.js'
+import { DIALOGS } from '../src/ne/data/dialogs.js'
 import { collectNeTexts } from './lib/collect-ne.mjs'
 
 const VOICE = 'ne-NP-HemkalaNeural'
@@ -31,9 +32,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const OUT_DIR = join(ROOT, 'public', 'audio-ne')
 const MANIFEST = join(OUT_DIR, 'manifest.json')
 
-// Hier fließen alle vorhandenen Datenquellen ein; spätere Tasks reichen ihre
-// Module (chapters, dialogs) nach.
-const collectTexts = () => collectNeTexts({ script: SCRIPT_DATA, words: WORD_BLOCKS, grammar: GRAMMAR, grammarNewWords: GRAMMAR_NEW_WORDS, chapters: CHAPTERS })
+// Hier fließen alle Datenquellen ein (neue Module reichen sich hier nach).
+const collectTexts = () => collectNeTexts({ script: SCRIPT_DATA, words: WORD_BLOCKS, grammar: GRAMMAR, grammarNewWords: GRAMMAR_NEW_WORDS, chapters: CHAPTERS, dialogs: DIALOGS })
 
 // Rate ist Teil des Hashs: Stimmen-/Tempo-Wechsel macht den Bestand veraltet.
 const fileFor = (text, rate) => createHash('sha1').update(`${VOICE}|${rate}|${text}`).digest('hex').slice(0, 16) + '.mp3'

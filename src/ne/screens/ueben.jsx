@@ -14,11 +14,13 @@ import { buildScriptQuiz, isReadable, shuffle } from '../lib/scriptQuiz.js'
 import { speak, stopSpeaking } from '../lib/speech.js'
 import { useSound, ListenButton } from '../components/sound.jsx'
 import { TappableSentence, useShowRoman } from '../components/text.jsx'
+import { DialogHub } from './dialog.jsx'
+import { DIALOGS } from '../data/dialogs.js'
 
 // ─── Üben (Yatra) ─────────────────────────────────────────────────────────────
 // Gegenstück zu src/screens/ueben.jsx: Wiederholen fälliger Karten (SRS – Schriftzeichen
-// und Wörter als Karteikarte, Grammatik als Lückensatz), Fleiß-Runde über alles Gelernte
-// und drei Erkennen-Arten (nur Zeichen).
+// und Wörter als Karteikarte, Grammatik als Lückensatz), Fleiß-Runde über alles Gelernte,
+// drei Erkennen-Arten (nur Zeichen) und die Szenen-Übersicht (DialogHub in dialog.jsx).
 // Alles geht ohne Ton: Hören ist eine Zusatz-Art, nie die einzige, und auch dort lässt
 // sich das Geschriebene einblenden. Karten-Schlüssel kommen aus learned.js (NFC).
 
@@ -374,9 +376,11 @@ export default function UebenScreen({ initialMode, onConsumeInitial }) {
   if (mode === 'lesen' || mode === 'finden') return <PracticeQuiz mode={mode} onClose={close} />
   // Ein Sprung nach „Hören“ ohne Ton (veralteter Zustand) fällt auf „Finden“ zurück.
   if (mode === 'hoeren') return <PracticeQuiz mode={sound ? 'hoeren' : 'finden'} onClose={close} />
+  if (mode === 'szenen') return <DialogHub onClose={close} />
 
   const learnedCount = learnedItems(progress).length
   const dueCount = dueItems(progress).length
+  const scenesDone = DIALOGS.filter(d => (progress.completedDialogs || []).includes(d.id)).length
 
   const tile = ({ id, icon, title, sub, color, disabled }) => (
     <button key={id} onClick={() => !disabled && setMode(id)} disabled={disabled}
@@ -438,6 +442,11 @@ export default function UebenScreen({ initialMode, onConsumeInitial }) {
           id: 'hoeren', icon: '👂', title: 'Hören', color: '#1A7A6E', disabled: !sound,
           sub: sound === null ? 'Ton wird geprüft…' : sound ? 'Hören → Zeichen wählen' : '🔇 Auf diesem Gerät noch kein Nepali-Ton',
         })}
+      </div>
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, margin: '18px 0 8px' }}>GESPRÄCHE</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+        {tile({ id: 'szenen', icon: '💬', title: 'Szenen', sub: `${scenesDone} / ${DIALOGS.length} geschafft – wiederholen`, color: C.indigo })}
       </div>
     </div>
   )

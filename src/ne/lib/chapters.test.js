@@ -6,8 +6,9 @@ import { GRAMMAR } from '../data/grammar.js'
 import { nfc, romanFits } from './deva.js'
 import { wordKey } from './learned.js'
 import {
-  TASK_KINDS, isTask, chapterSrsKeys, chapterStars, isBuildCorrect, chapterReading, journeySummary, GOAL_ID,
+  TASK_KINDS, isTask, chapterSrsKeys, chapterStars, isBuildCorrect, canCheckBuild, chapterReading, journeySummary, GOAL_ID,
 } from './chapters.js'
+import { GOAL_ID as PATH_GOAL_ID } from '../data/path.js'
 
 const nc1 = CHAPTER_BY_ID.nc1
 const allSteps = CHAPTERS.flatMap(c => c.steps)
@@ -94,6 +95,32 @@ describe('isBuildCorrect', () => {
       const accepted = [s.answer, ...(s.alsoAccept || [])].some(a => a.join(' ') === rev.join(' '))
       if (!accepted) expect(isBuildCorrect(s, rev), s.dev).toBe(false)
     }
+  })
+})
+
+describe('canCheckBuild – „Prüfen“ erst, wenn so viele Stücke liegen wie die Antwort hat', () => {
+  const step = { answer: ['म', 'पर्यटक', 'हुँ'], alsoAccept: [['पर्यटक', 'म', 'हुँ']] }
+  it('zu wenige oder zu viele Stücke → gesperrt; genau so viele → frei', () => {
+    expect(canCheckBuild(step, 0)).toBe(false)
+    expect(canCheckBuild(step, 2)).toBe(false)
+    expect(canCheckBuild(step, 3)).toBe(true)
+    expect(canCheckBuild(step, 4)).toBe(false)
+  })
+  it('jede echte Satzbau-Aufgabe: alsoAccept hat dieselbe Länge (Umstellungen derselben Stücke)', () => {
+    for (const s of allSteps.filter(x => x.kind === 'build')) {
+      for (const a of s.alsoAccept || []) expect(a.length, s.dev).toBe(s.answer.length)
+      expect(canCheckBuild(s, s.answer.length)).toBe(true)
+    }
+  })
+  it('kaputte Eingabe stürzt nicht', () => {
+    expect(canCheckBuild({}, 0)).toBe(false)
+  })
+})
+
+describe('GOAL_ID', () => {
+  it('kommt aus data/path.js (lib/path.js braucht dafür nicht die Kapitel-Logik)', () => {
+    expect(GOAL_ID).toBe(PATH_GOAL_ID)
+    expect(GOAL_ID).toBe('goal')
   })
 })
 

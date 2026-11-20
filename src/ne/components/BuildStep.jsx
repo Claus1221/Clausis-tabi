@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { C, NE } from '../../theme.js'
 import { Btn, Card } from '../../components/ui.jsx'
 import { shuffle } from '../lib/scriptQuiz.js'
-import { isBuildCorrect, chapterReading } from '../lib/chapters.js'
+import { isBuildCorrect, canCheckBuild, chapterReading } from '../lib/chapters.js'
 import { stopSpeaking } from '../lib/speech.js'
 import { ListenButton } from './sound.jsx'
 import { useShowRoman } from './text.jsx'
@@ -11,7 +11,8 @@ import { useShowRoman } from './text.jsx'
 // Eigenes Nepali-Gegenstück zum japanischen BuildStep: die deutsche Bedeutung steht oben,
 // darunter legt man den Satz aus Stücken (antippen = anhängen). Ein gelegtes Stück antippen
 // nimmt es zurück, „Zurück“ nimmt das letzte. Geprüft wird EINMAL (isBuildCorrect: answer
-// oder eine alsoAccept-Reihenfolge); danach steht der richtige Satz mit Umschrift (nach
+// oder eine alsoAccept-Reihenfolge), und zwar erst, wenn so viele Stücke liegen wie die Antwort
+// hat (canCheckBuild); danach steht der richtige Satz mit Umschrift (nach
 // Schalter) da, Anhören nur mit Ton. „Weiter“ ruft onDone(richtig?) genau einmal (Ref-Sperre
 // wie GapDrill). Ohne Ton voll lösbar – es gibt nichts zu hören, nur zu legen.
 //
@@ -30,7 +31,9 @@ export function BuildStep({ step, sound, onDone, nextLabel = 'Weiter →' }) {
   const put = i => { if (!checked && !placed.includes(i)) setPlaced(p => [...p, i]) }
   const take = i => { if (!checked) setPlaced(p => p.filter(x => x !== i)) }
   const undo = () => { if (!checked) setPlaced(p => p.slice(0, -1)) }
-  const check = () => { if (!checked && placed.length) setResult(isBuildCorrect(step, placed.map(i => step.tiles[i]))) }
+  // Prüfbar erst mit vollständigem Satz (canCheckBuild): ein halber Satz wäre ein verschenkter Versuch.
+  const ready = canCheckBuild(step, placed.length)
+  const check = () => { if (!checked && ready) setResult(isBuildCorrect(step, placed.map(i => step.tiles[i]))) }
   const finish = () => {
     if (doneRef.current) return
     doneRef.current = true
@@ -73,7 +76,7 @@ export function BuildStep({ step, sound, onDone, nextLabel = 'Weiter →' }) {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <Btn variant="ghost" onClick={undo} disabled={!placed.length} style={{ flex: 1, minHeight: 48 }}>↶ Zurück</Btn>
-            <Btn onClick={check} disabled={!placed.length} style={{ flex: 2, minHeight: 48 }}>Prüfen</Btn>
+            <Btn onClick={check} disabled={!ready} style={{ flex: 2, minHeight: 48 }}>Prüfen</Btn>
           </div>
         </>
       )}

@@ -6,9 +6,8 @@
 //
 // Reihenfolge VERBINDLICH (Controller-Entscheidung, path-order.md): jede Station darf nur
 // benutzen, was VOR ihr im Pfad liegt (plus Funktionswörter des Audits) – das prüft
-// `npm run audit:ne`. Der Pfad steht schon vollständig da, auch Kapitel, Szenen und Ziel,
-// deren Daten erst spätere Tasks bringen: eine Station ohne Daten überspringt die Karte
-// still (nodeMeta null), und sie hält die Stationen dahinter nicht auf (lib/path.js).
+// `npm run audit:ne`. Eine Station ohne Daten (etwa aus einer neueren Version) überspringt
+// die Karte still (nodeMeta null), und sie hält die Stationen dahinter nicht auf (lib/path.js).
 //
 // Didaktik: Welt 1–3 die Schrift (Vokale und erste Konsonanten-Reihen, übrige Konsonanten,
 // alles was Zeichen verbindet samt Ziffern) – erst wer alle Zeichen lesen kann, liest
@@ -17,6 +16,11 @@
 //
 // theme = Kulisse der Welt (lib/scene.jsx): tal | huegel | see | berge.
 // Devanagari in Überschriften nur dort, wo die App den Namen schon führt (काठमाडौं).
+
+// ID der Ziel-Station. Steht hier (nicht in lib/chapters.js), damit lib/path.js sie ohne die
+// Kapitel-Logik (learned.js, useProgress, alle Daten) kennt; lib/chapters.js reicht sie weiter.
+export const GOAL_ID = 'goal'
+
 export const NE_PATH = [
   { world: 'काठमाडौं', sub: 'Ankommen', theme: 'tal' },
   { type: 'script', id: 's1' },
@@ -82,5 +86,5 @@ export const NE_PATH = [
   { type: 'dialog', id: 'nd6' },   // Szene: Im Teehaus
   { type: 'chapter', id: 'nc9' },  // Schlechtes Wetter, Hilfe holen
   { type: 'chapter', id: 'nc10' }, // Sonnenaufgang am Aussichtspunkt
-  { type: 'goal', id: 'goal' },    // Ziel-Station
+  { type: 'goal', id: GOAL_ID },   // Ziel-Station
 ]

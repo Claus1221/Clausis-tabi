@@ -4,6 +4,7 @@ import { SCRIPT_LESSONS } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
 import { GRAMMAR, GRAMMAR_ORDER } from '../data/grammar.js'
 import { CHAPTERS } from '../data/chapters.js'
+import { DIALOGS } from '../data/dialogs.js'
 import { isNodeDone, nodeMeta, nextOpenIndex, stationStates, wordsBefore } from './path.js'
 
 const stations = NE_PATH.filter(n => !n.world)
@@ -12,6 +13,7 @@ const EMPTY = { completedLessons: [] }
 const BEFORE_GOAL = {
   completedLessons: SCRIPT_LESSONS.map(l => l.id), completedWordBlocks: WORD_BLOCKS.map(b => b.id),
   completedGrammar: GRAMMAR.map(g => g.id), completedChapters: CHAPTERS.map(c => c.id),
+  completedDialogs: DIALOGS.map(d => d.id),
 }
 const ALL_DONE = { ...BEFORE_GOAL, completedChapters: [...BEFORE_GOAL.completedChapters, 'goal'] }
 const wordIds = new Set(WORD_BLOCKS.map(b => b.id))
@@ -20,11 +22,10 @@ describe('NE_PATH', () => {
   it('beginnt mit einer Welt-Überschrift', () => {
     expect(NE_PATH[0].world).toBeTruthy()
   })
-  // Szenen haben heute noch keine Daten in der Karte – sie fallen still weg.
   it('jede Station mit Daten hat nodeMeta ≠ null (Titel + Zeichen)', () => {
     const grammarIds = new Set(GRAMMAR.map(g => g.id))
     const withData = n => n.type === 'script' || (n.type === 'word' && wordIds.has(n.id)) || (n.type === 'grammar' && grammarIds.has(n.id))
-      || n.type === 'chapter' || n.type === 'goal'
+      || n.type === 'chapter' || n.type === 'dialog' || n.type === 'goal'
     for (const n of stations.filter(withData)) {
       const m = nodeMeta(n)
       expect(m, `${n.type}:${n.id}`).not.toBeNull()
@@ -92,6 +93,21 @@ describe('NE_PATH', () => {
   it('Kapitel-Station: Titel des Kapitels; Ziel-Station: eigener Titel', () => {
     for (const c of CHAPTERS) expect(nodeMeta({ type: 'chapter', id: c.id })).toMatchObject({ title: c.title })
     expect(nodeMeta({ type: 'goal', id: 'goal' }).title).toBeTruthy()
+  })
+  it('jede Szene genau einmal im Pfad, in der Reihenfolge von DIALOGS; Station: Titel und Emoji der Szene', () => {
+    expect(stations.filter(n => n.type === 'dialog').map(n => n.id)).toEqual(DIALOGS.map(d => d.id))
+    for (const d of DIALOGS) expect(nodeMeta({ type: 'dialog', id: d.id })).toEqual({ title: d.title, glyph: d.emoji })
+  })
+  it('Szenen zählen auf der Karte: nach nc2 ist nd1 offen, erledigt über completedDialogs', () => {
+    const upToNc2 = {
+      completedLessons: SCRIPT_LESSONS.map(l => l.id), completedWordBlocks: ['nw1', 'nw2', 'nw3'],
+      completedGrammar: ['ng1', 'ng2', 'ng3', 'ng4', 'ng5'], completedChapters: ['nc1', 'nc2'],
+    }
+    const nd1 = NE_PATH.findIndex(n => n.type === 'dialog' && n.id === 'nd1')
+    expect(nextOpenIndex(NE_PATH, upToNc2)).toBe(nd1)
+    expect(stationStates(NE_PATH, upToNc2)[nd1]).toBe('current')
+    expect(stationStates(NE_PATH, { ...upToNc2, completedDialogs: ['nd1'] })[nd1]).toBe('done')
+    expect(isNodeDone({ type: 'dialog', id: 'nd1' }, { completedDialogs: ['nd1'] })).toBe(true)
   })
   it('Ziel: gesperrt bis alles davor erledigt ist, dann offen, gebucht erledigt', () => {
     const gi = NE_PATH.length - 1

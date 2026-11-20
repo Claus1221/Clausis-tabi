@@ -390,7 +390,7 @@ export function GoalScreen({ alreadyDone = false, onComplete, onClose }) {
       footer={<Btn onClick={finish} disabled={finishing} style={{ width: '100%', minHeight: 48 }}>{alreadyDone ? 'Schließen' : 'Reise abschließen ✓'}</Btn>}>
       <div style={{ textAlign: 'center', padding: '8px 0' }}>
         <div style={{ fontSize: 64, marginBottom: 6 }}>🏔️</div>
-        <h2 style={{ fontSize: 22, color: C.indigo, marginBottom: 8 }}>Annapurna-Aussicht erreicht!</h2>
+        <h2 style={{ fontSize: 22, color: C.indigo, marginBottom: 8 }}>Annapurna-Blick erreicht!</h2>
         <p style={{ lineHeight: 1.6, marginBottom: 14 }}>
           Von der Ankunft in Kathmandu über Thamel, Boudha und Pokhara bis zum Sonnenaufgang über den Gipfeln –
           deine Reise ist geschafft. Das hast du unterwegs gelernt:

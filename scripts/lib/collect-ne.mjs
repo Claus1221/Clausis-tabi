@@ -3,9 +3,9 @@
 // Gegenstück zu collectTexts() in scripts/generate-audio.mjs.
 //
 // sources = { script?, words?, grammar?, grammarNewWords?, chapters?, dialogs? }
-// Bisher behandelt: `script` (SCRIPT_DATA), `words` (WORD_BLOCKS), `grammar` (GRAMMAR),
-// `grammarNewWords` (GRAMMAR_NEW_WORDS) und `chapters` (CHAPTERS). Spätere Tasks ergänzen
-// hier ihre Sprechstellen; nicht behandelte Schlüssel werden ignoriert.
+// Behandelt: `script` (SCRIPT_DATA), `words` (WORD_BLOCKS), `grammar` (GRAMMAR),
+// `grammarNewWords` (GRAMMAR_NEW_WORDS), `chapters` (CHAPTERS) und `dialogs` (DIALOGS).
+// Neue Sprechstellen ergänzen hier ihren Zweig; unbekannte Schlüssel werden ignoriert.
 import { nfc } from '../../src/ne/lib/deva.js'
 import { solved } from '../../src/ne/data/grammar.js'
 
@@ -75,6 +75,19 @@ export function collectNeTexts(sources = {}) {
       else if (s.kind === 'dialog') { addSentence(s.line); addSentence(s.answer) }
       else if (s.kind === 'gap') addSentence(s.before + s.answer + s.after)
       else if (s.kind === 'tf' || s.kind === 'build') addSentence(s.dev)
+    }
+  }
+
+  // Szenen: genau das, was der Szenen-Spieler (src/ne/screens/dialog.jsx) anhören lässt –
+  // als Satz die NPC-Zeile und den Antwortsatz (Aufwärmen, nach dem Antippen), als Zitierform
+  // jedes antippbare Token beider und die neuen Wendungen des Aufwärmens. Falsche Optionen
+  // werden nie gesprochen; eine leere NPC-Zeile (du fängst an) fällt ohnehin weg.
+  for (const d of sources.dialogs || []) {
+    for (const p of d.newPhrases || []) addWord(p.dev)
+    for (const t of d.turns || []) {
+      addSentence(t.npc)
+      addSentence(t.answer)
+      for (const tok of [...(t.npcTokens || []), ...(t.answerTokens || [])]) if (tok.de) addWord(tok.t)
     }
   }
 

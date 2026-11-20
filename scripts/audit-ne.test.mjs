@@ -122,6 +122,33 @@ describe('auditPath – Kapitel-Stationen', () => {
   })
 })
 
+describe('auditPath – Szenen-Stationen', () => {
+  const T = (npc, npcTokens, options, answer, answerTokens) => ({ npc, npcTokens, options, answer, answerTokens })
+  const dialogs = [{
+    id: 'nd1',
+    newPhrases: [{ dev: 'कति भयो', roman: 'x', de: 'x' }],
+    turns: [
+      // चिया in der NPC-Zeile vor nw2 → Fund (Token); बस in einer falschen Option → Fund.
+      T('चिया छ?', [tok('चिया'), tok('छ'), { t: '?' }], ['पानी छ।', 'बस छ।', 'भात छ।'], 'पानी छ।', [tok('पानी'), tok('छ'), { t: '।' }]),
+      // newPhrases gelten in der eigenen Szene (Teile einzeln); Anhängsel an Bekanntem zählen.
+      T('', [], ['कति भयो?', 'पानीमा छ।', 'दाल छ।'], 'कति भयो?', [tok('कति'), tok('भयो'), { t: '?' }]),
+    ],
+  }, { id: 'nd2', turns: [T('भयो?', [tok('भयो'), { t: '?' }], ['छ।'], 'छ।', [tok('छ'), { t: '।' }])] }]
+  const dpath = [{ type: 'word', id: 'nw1' }, { type: 'dialog', id: 'nd1' }, { type: 'dialog', id: 'nd2' }, { type: 'dialog', id: 'nd9' }]
+  const known = new Set(['छ', 'मा', 'कति'])
+  const found = auditPath(dpath, blocks, known, {}, [], dialogs)
+
+  it('prüft NPC- und Antwort-Tokens und jedes Wort jeder Option (auch der falschen)', () => {
+    expect(found).toEqual([
+      { block: 'nd1', word: 'चिया छ?', token: 'चिया' },
+      { block: 'nd1', word: 'बस छ।', token: 'बस' },
+    ])
+  })
+  it('newPhrases gelten ab ihrer Szene, auch für spätere Stationen; Szene ohne Daten wird übersprungen', () => {
+    expect(found.some(f => f.token === 'भयो' || f.token === 'पानीमा' || f.token === 'दाल')).toBe(false)
+  })
+})
+
 describe('FUNCTION_WORDS', () => {
   it('kommt aus src/ne/lib/functionWords.js (eine Quelle für Audit und Daten-Tests)', () => {
     expect(FUNCTION_WORDS).toBe(FW_SOURCE)

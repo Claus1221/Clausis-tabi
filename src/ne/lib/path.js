@@ -2,7 +2,8 @@ import { SCRIPT_LESSONS, SCRIPT_DATA } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
 import { GRAMMAR_BY_ID } from '../data/grammar.js'
 import { CHAPTER_BY_ID } from '../data/chapters.js'
-import { GOAL_ID } from './chapters.js'
+import { DIALOG_BY_ID } from '../data/dialogs.js'
+import { GOAL_ID } from '../data/path.js'
 
 // Reine Pfad-Logik der Yatra-Karte (kein React). Gegenstück zu src/lib/path.js.
 
@@ -27,8 +28,8 @@ export function isNodeDone(node, progress) {
 }
 
 // Titel + Stationszeichen. null für Überschriften und für Stationen, deren Daten es
-// heute nicht gibt (Szenen kommen in einem späteren Task) – die Karte lässt solche
-// Stationen still aus, statt zu stürzen. Spätere Tasks ergänzen hier ihren Typ.
+// (in dieser Version) nicht gibt – die Karte lässt solche Stationen still aus, statt zu
+// stürzen. Ein neuer Stationstyp ergänzt hier seinen Zweig.
 export function nodeMeta(node) {
   if (node?.type === 'script') {
     const l = SCRIPT_LESSONS.find(x => x.id === node.id)
@@ -50,16 +51,21 @@ export function nodeMeta(node) {
     const c = CHAPTER_BY_ID[node.id]
     return c ? { title: c.title, glyph: '📖' } : null
   }
+  if (node?.type === 'dialog') {
+    // Szene: ihr Titel und ihr Emoji (🚕, 🍛 …) – so unterscheidet die Karte „Taxi“ (Szene)
+    // vom Kapitel „Taxi nach Thamel“ (📖) auf einen Blick.
+    const d = DIALOG_BY_ID[node.id]
+    return d ? { title: d.title, glyph: d.emoji } : null
+  }
   if (node?.type === 'goal') return node.id === GOAL_ID ? { title: 'Ziel: Annapurna-Blick', glyph: '🏔️' } : null
   return null
 }
 
-// Station = kein Überschrift-Eintrag und mit Daten. Eine Station ohne Daten (Szene,
-// solange es sie nicht gibt) ist damit weder erledigt noch offen – sie
-// hält die Stationen dahinter nicht auf.
-// Wird ein übersprungener Typ in einer späteren Version bekannt (Kapitel-Daten kommen
-// dazu), zählt die Station ab dann: die erste noch nicht erledigte neue Station wird
-// 'current', auch wenn der Lernende schon weiter hinten war; nicht erledigte Stationen
+// Station = kein Überschrift-Eintrag und mit Daten. Eine Station ohne Daten ist damit
+// weder erledigt noch offen – sie hält die Stationen dahinter nicht auf.
+// Wird ein übersprungener Typ in einer späteren Version bekannt (so kamen Kapitel und
+// später die Szenen dazu), zählt die Station ab dann: die erste noch nicht erledigte
+// neue Station wird 'current', auch wenn der Lernende schon weiter hinten war; nicht erledigte Stationen
 // dahinter sind 'locked', bis sie erledigt ist. Erledigte Stationen bleiben 'done' und
 // wiederholbar (stationStates prüft isNodeDone vor der Lage). Das ist ein einmaliger
 // Rückschritt auf der Karte, nie eine Sackgasse: es gibt immer genau eine offene Station,

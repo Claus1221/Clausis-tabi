@@ -2,33 +2,36 @@ import { useState, useRef, useEffect, useContext } from 'react'
 import { C, NE } from '../../theme.js'
 import { ProgressCtx } from '../../state/ProgressContext.js'
 import { Btn, Stars } from '../../components/ui.jsx'
-import { XP_PER_KANA, XP_PER_WORD, XP_PER_GRAMMAR, XP_PER_CHAPTER } from '../../lib/xp.js'
-import { NE_PATH } from '../data/path.js'
+import { XP_PER_KANA, XP_PER_WORD, XP_PER_GRAMMAR, XP_PER_CHAPTER, XP_PER_DIALOG } from '../../lib/xp.js'
+import { NE_PATH, GOAL_ID } from '../data/path.js'
 import { SCRIPT_LESSONS } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
 import { GRAMMAR_BY_ID, grammarKey } from '../data/grammar.js'
 import { CHAPTER_BY_ID } from '../data/chapters.js'
+import { DIALOG_BY_ID } from '../data/dialogs.js'
 import { nfc } from '../lib/deva.js'
 import { isNodeDone, nodeMeta, stationStates } from '../lib/path.js'
 import { wordKey } from '../lib/learned.js'
-import { chapterSrsKeys, GOAL_ID } from '../lib/chapters.js'
+import { chapterSrsKeys } from '../lib/chapters.js'
 import { buildBackdrop, roadPath, startFlags, STATE_PALETTE } from '../lib/scene.jsx'
 import { ScriptLesson, WordBlock, GrammarLesson } from './players.jsx'
 import { ChapterPlayer, ChapterDiary, GoalScreen } from './chapter.jsx'
+import { DialogPlay } from './dialog.jsx'
 
 // ─── Reise: die Yatra-Karte ───────────────────────────────────────────────────
 // Gegenstück zu src/screens/reise.jsx: Stationen entlang eines gewundenen Wegs, je
 // Welt eine eigene Nepal-Kulisse. Zustände wie dort: erledigt (grün, ✓, antippbar zum
 // Wiederholen) / offen (rot, START) / gesperrt (🔒). Freischalt-Regel in lib/path.js.
 // Stationen ohne Daten (nodeMeta null, Typen späterer Tasks) fallen still weg. Erledigte
-// Kapitel tragen ihre Sterne (bester Stand, 1–3) unter dem Namen; die letzte Station ist
-// das Ziel 🏔. Über der Karte öffnet „Deine Geschichte“ das Tagebuch (ab dem ersten Kapitel).
+// Kapitel tragen ihre Sterne (bester Stand, 1–3) unter dem Namen; Szenen stehen mit ihrem
+// Emoji (🚕, 🍛 …) im Weg; die letzte Station ist das Ziel 🏔. Über der Karte öffnet
+// „Deine Geschichte“ das Tagebuch (ab dem ersten Kapitel).
 
 // Kulisse je Welt: steht an der Welt-Überschrift in data/path.js (theme): tal → huegel →
 // see → berge; unter dem Ziel laufen die Berge noch ein Stück weiter.
 
 export default function ReiseScreen() {
-  const { progress, completeLesson, completeWordBlock, completeGrammar, completeChapter, bumpChapterStars, scheduleNew } = useContext(ProgressCtx)
+  const { progress, completeLesson, completeWordBlock, completeGrammar, completeChapter, completeDialog, bumpChapterStars, scheduleNew } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
   const [diary, setDiary] = useState(false)
   // Station öffnen und dabei merken, ob sie schon erledigt war (s. ScriptLesson unten).
@@ -115,6 +118,18 @@ export default function ReiseScreen() {
           bumpChapterStars({ [chapter.id]: stars })
           if (!already) completeChapter(chapter.id, XP_PER_CHAPTER, { chapters: 1, words: keys.length })
         }} />
+    )
+  }
+
+  if (active?.type === 'dialog') {
+    const dialog = DIALOG_BY_ID[active.id]
+    const already = active.wasDone // Stand beim Öffnen, Begründung wie oben
+    // Szene: XP und Zähler `scenes` nur beim ersten Abschluss. Nichts einplanen – die
+    // Antwortsätze haben (noch) keinen Karten-Schlüssel (learned.js kennt Zeichen, Wörter,
+    // Grammatik); ihre Wörter sind über Wortblöcke und Themen ohnehin im Plan.
+    return (
+      <DialogPlay dialog={dialog} alreadyDone={already} onClose={() => setActive(null)}
+        onComplete={() => { if (!already) completeDialog(dialog.id, XP_PER_DIALOG, { scenes: 1 }) }} />
     )
   }
 

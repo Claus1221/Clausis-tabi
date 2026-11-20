@@ -9,8 +9,9 @@ import { ATTACHED_SUFFIXES } from './functionWords.js'
 // sauber man das Kapitel gespielt hat (nicht den Wiederholungsstand wie im Japanischen).
 
 // Das Ziel ('goal') bucht sich in completedChapters ein (kein eigenes Fortschritts-Feld);
-// es ist kein Kapitel – jede Stelle, die Kapitel zählt, geht über CHAPTERS.
-export const GOAL_ID = 'goal'
+// es ist kein Kapitel – jede Stelle, die Kapitel zählt, geht über CHAPTERS. Definiert in
+// data/path.js, hier nur weitergereicht.
+export { GOAL_ID } from '../data/path.js'
 
 // Schritt-Arten, die eine Antwort verlangen (und Sterne kosten können).
 export const TASK_KINDS = new Set(['audio', 'dialog', 'gap', 'tf', 'build'])
@@ -38,6 +39,11 @@ export function isBuildCorrect(step, tiles) {
   const got = join(tiles)
   return got !== '' && [step.answer, ...(step.alsoAccept || [])].some(a => join(a) === got)
 }
+
+// „Prüfen“ erst, wenn genau so viele Stücke liegen, wie die Antwort hat. Mit Ablenkern unter
+// den Stücken sieht man sonst nicht, wann der Satz vollständig ist – ein halber Satz wäre ein
+// verschenkter Versuch. alsoAccept sind Umstellungen DERSELBEN Stücke (gleiche Länge).
+export const canCheckBuild = (step, placedCount) => !!step?.answer?.length && placedCount === step.answer.length
 
 // Umschrift einer Antwort-Option (Satzbau-Stück, Lücken-Option). Die Kapitel tragen
 // Lesungen nur an ihren Sätzen – nachgeschlagen wird daher in den intro-Wörtern und den
