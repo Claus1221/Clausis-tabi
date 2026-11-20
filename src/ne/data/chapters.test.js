@@ -11,15 +11,17 @@ const ROMAN_EXCEPTIONS = {}
 
 // Eigennamen der Geschichte: antippbar (mit Bedeutung „Name“), aber kein Lernwort – sie
 // werden nie per intro vorgestellt und gelten deshalb im Wortschatz-Test als bekannt.
-const PROPER_NAMES = ['आशा']
+const PROPER_NAMES = ['आशा', 'नेपाल', 'माछापुच्छ्रे']
 
-const IDS = ['nc1', 'nc2', 'nc3', 'nc4']
+const IDS = ['nc1', 'nc2', 'nc3', 'nc4', 'nc5', 'nc6', 'nc7', 'nc8', 'nc9', 'nc10']
 // Verbindliche Reihenfolge aus dem Lernpfad (path-order.md), fest verdrahtet: was VOR einem
 // Kapitel liegt, darf es benutzen. Szenen (nd…) bringen keinen Wortschatz und fehlen hier.
 const COURSE = ['nw1', 'ng1', 'ng2', 'nw2', 'ng3', 'nc1',
   'nw3', 'ng4', 'ng5', 'nc2',
   'nw4', 'ng8', 'ng9', 'ng10', 'nc3',
-  'nw5', 'ng6', 'ng7', 'ng11', 'nc4']
+  'nw5', 'ng6', 'ng7', 'ng11', 'nc4',
+  'nw6', 'ng12', 'nc5', 'nc6',
+  'nw7', 'nc7', 'nc8', 'nc9', 'nc10']
 
 const KINDS = {
   story: ['de'],
@@ -185,6 +187,18 @@ describe('Schritte', () => {
       for (const t of s.tiles) expect(isNfc(t), t).toBe(true)
     }
   })
+  it('build: jede alsoAccept-Reihenfolge ist eine Umstellung von answer, keine gleich answer', () => {
+    const key = a => [...a].sort().join('|')
+    for (const s of allSteps.filter(x => x.kind === 'build' && x.alsoAccept !== undefined)) {
+      expect(Array.isArray(s.alsoAccept) && s.alsoAccept.length > 0, at(s)).toBe(true)
+      const seen = new Set([s.answer.join(' ')])
+      for (const alt of s.alsoAccept) {
+        expect(key(alt), `${at(s)}: ${alt.join(' ')}`).toBe(key(s.answer))
+        expect(seen.has(alt.join(' ')), `${at(s)}: ${alt.join(' ')} doppelt oder gleich answer`).toBe(false)
+        seen.add(alt.join(' '))
+      }
+    }
+  })
   it('alle Nepali-Sätze: NFC, romanFits, Aussagen mit ।, Fragen mit ? (Umschrift gleich)', () => {
     for (const s of allSteps) {
       for (const [dev, roman] of pairs(s)) {
@@ -208,7 +222,7 @@ describe('Kapitelwörter', () => {
     for (const k of Object.keys(CHAPTER_WORD)) expect(isNfc(k), k).toBe(true)
   })
   it('chapterWords liefert die intro-Wörter eines Kapitels', () => {
-    expect(chapterWords(CHAPTER_BY_ID.nc1)).toEqual(['भिसा', 'पर्यटक', 'पहिलो पटक', 'बाहिर'].map(nfc))
+    expect(chapterWords(CHAPTER_BY_ID.nc1)).toEqual(['भिसा', 'पर्यटक', 'पहिलो पटक', 'त्यहाँ'].map(nfc))
     for (const c of CHAPTERS) expect(chapterWords(c)).toEqual(c.steps.filter(s => s.kind === 'intro').map(s => nfc(s.dev)))
   })
   it('kein intro-Wort ist schon Wortblock-, Grammatik- oder Funktionswort oder ein anderes Kapitelwort', () => {
@@ -276,6 +290,52 @@ describe('Wortschatz-Disziplin', () => {
         }
       })
     }
+  })
+})
+
+// Grammatik nicht vorwegnehmen: Formen, die ein späteres Thema erst erklärt, sind vorher tabu.
+// Die Wortschatz-Prüfung oben fängt das nicht, weil die Nachstellungen und मैले Funktionswörter
+// sind (überall „bekannt“). Angehängte Nachstellung → Thema, das sie erklärt:
+const SUFFIX_TOPIC = { 'मा': 'ng6', 'बाट': 'ng6', 'को': 'ng7', 'लाई': 'ng8', 'सँग': 'ng8', 'वटा': 'ng10', 'ले': 'ng12' }
+// Brocken, die ein Wortblock schon VOR dem Thema als Ganzes lehrt – in Kapiteln erlaubt.
+const TAUGHT_CHUNKS = {
+  'तपाईंलाई': 'nw1: तपाईंलाई सन्चै छ?',
+  // nw1: हो, यो तपाईंको हो। – nc1 benutzt es vor einem Nomen (यो तपाईंको झोला हो?), vor ng7;
+  // vom Lektor ausdrücklich abgenommen.
+  'तपाईंको': 'nw1: यो तपाईंको हो।',
+  'मलाई': 'nw3: धन्यवाद, मलाई चाहिँदैन।',
+  'मैले': 'nw1: मैले बुझिनँ।',
+}
+// Vergangenheitsformen (ng12): ‑एँ (गएँ, थाकेँ), verneint ‑इनँ (बुझिनँ), ‑यो (भयो, खानुभयो).
+const isPast = w => /(ेँ|एँ|िनँ)$/u.test(w) || (w.endsWith('यो') && !['यो', 'त्यो'].includes(w))
+
+describe('Grammatik-Reihenfolge', () => {
+  it('keine Nachstellung, Vergangenheit oder ‑नुहोस्-Bitte vor ihrem Thema (außer gelehrten Brocken)', () => {
+    const blocks = Object.fromEntries(WORD_BLOCKS.map(b => [b.id, b]))
+    const passed = new Set(), blockWords = new Set(), fw = functionWordSet()
+    const grammarWords = new Set(Object.values(GRAMMAR_NEW_WORDS).flat().map(w => nfc(w.dev)))
+    for (const id of COURSE) {
+      if (!id.startsWith('nc')) {
+        passed.add(id)
+        if (id.startsWith('nw')) for (const w of blocks[id].words) for (const p of [w.dev, ...w.dev.split(' ')]) blockWords.add(nfc(p))
+        continue
+      }
+      CHAPTER_BY_ID[id].steps.forEach((s, i) => {
+        for (const text of allNepali(s)) for (const w of wordsOf(text)) {
+          const need = Object.entries(SUFFIX_TOPIC)
+            .filter(([suf, topic]) => w.length > suf.length && w.endsWith(suf) && !passed.has(topic)).map(([, t]) => t)
+          if (!passed.has('ng12') && isPast(w)) need.push('ng12')
+          if (!passed.has('ng11') && w.endsWith('नुहोस्')) need.push('ng11')
+          // Ein Wort, das selbst Lernwort ist (जम्मा endet nur zufällig auf ‑मा), ist kein Anhängsel-Fall.
+          const ok = !need.length || w in TAUGHT_CHUNKS || blockWords.has(w) || fw.has(w) || w in CHAPTER_WORD || grammarWords.has(w)
+          expect(ok, `${id}#${i} „${text}“: ${w} braucht ${need.join(', ')}`).toBe(true)
+        }
+      })
+    }
+  })
+  it('die Prüfung greift: Beispiele, die sie melden muss', () => {
+    expect(isPast('गएँ') && isPast('बुझिनँ') && isPast('खानुभयो')).toBe(true)
+    expect(isPast('यो') || isPast('त्यो') || isPast('मेरो')).toBe(false)
   })
 })
 
