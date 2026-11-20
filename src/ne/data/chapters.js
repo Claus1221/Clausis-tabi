@@ -159,7 +159,7 @@ const TAL = ['ताल', 'tāl', 'See']
 const BADAL = ['बादल', 'bādal', 'Wolke(n)']
 const DUNGA = ['डुङ्गा', 'ḍuṅgā', 'Boot']
 const DEKHINCHA = ['देखिन्छ', 'dekhincha', 'ist zu sehen, man sieht']
-const PARMIT = ['परमिट', 'paramiṭ', 'Genehmigung, Permit']
+const PARMIT = ['परमिट', 'parmiṭ', 'Genehmigung, Permit']
 const SHUBH = ['शुभ', 'shubh', 'glücklich, gut (in शुभ यात्रा)']
 const YATRA = ['यात्रा', 'yātrā', 'Reise']
 const SIMDHI = ['सिँढी', 'siṃḍhī', 'Treppe, Stufen']
@@ -433,15 +433,15 @@ export const CHAPTERS = [
     steps: [
       story('Zwei Tage später bringt euch ein Jeep aus Pokhara hinaus bis dorthin, wo der Trekkingweg beginnt. Ashas Bruder bleibt in Pokhara, er hat eine eigene Gruppe. Asha schultert ihren Rucksack: „Heute bin ich Ihr Guide.“',
         L('आज म तपाईंको गाइड हुँ।', 'āj ma tapāīṃko gāiḍ huṃ.', AAJ, MA, TAPAIN, KO, GAID, HUN, DANDA)),
-      intro('परमिट', 'paramiṭ', 'Genehmigung, Trekking-Permit', 'Aus dem Englischen; gesprochen meist „parmit“. Für das Annapurna-Schutzgebiet braucht man eine Genehmigung; an Kontrollposten unterwegs zeigt man sie vor.'),
-      dialog(['परमिट र पासपोर्ट दिनुहोस्।', 'paramiṭ ra pāsporṭ dinuhos.', 'Genehmigung und Pass, bitte. (am Kontrollposten)'], [
-        ['हजुर, यो मेरो परमिट हो।', 'hajur, yo mero paramiṭ ho.', 'Ja, das ist meine Genehmigung.'],
-        ['मलाई परमिट मन पर्दैन।', 'malāī paramiṭ man pardaina.', 'Ich mag keine Genehmigungen.'],
-        ['होइन, म परमिट हुँ।', 'hoina, ma paramiṭ huṃ.', 'Nein, ich bin eine Genehmigung.'],
+      intro('परमिट', 'parmiṭ', 'Genehmigung, Trekking-Permit', 'Aus dem Englischen. Für das Annapurna-Schutzgebiet braucht man eine Genehmigung; an Kontrollposten unterwegs zeigt man sie vor.'),
+      dialog(['परमिट र पासपोर्ट दिनुहोस्।', 'parmiṭ ra pāsporṭ dinuhos.', 'Genehmigung und Pass, bitte. (am Kontrollposten)'], [
+        ['हजुर, यो मेरो परमिट हो।', 'hajur, yo mero parmiṭ ho.', 'Ja, das ist meine Genehmigung.'],
+        ['मलाई परमिट मन पर्दैन।', 'malāī parmiṭ man pardaina.', 'Ich mag keine Genehmigungen.'],
+        ['होइन, म परमिट हुँ।', 'hoina, ma parmiṭ huṃ.', 'Nein, ich bin eine Genehmigung.'],
       ], 0),
       intro('शुभ यात्रा', 'shubh yātrā', 'Gute Reise!', 'शुभ „glücklich, gut“, यात्रा „Reise“ – der feste Wunsch zum Aufbruch.'),
       story('Der Beamte stempelt und gibt alles zurück: „Die Genehmigung ist in Ordnung. Gute Reise!“',
-        L('परमिट ठीक छ। शुभ यात्रा।', 'paramiṭ ṭhīk cha. shubh yātrā.', PARMIT, THIK, CHA, DANDA, SHUBH, YATRA, DANDA)),
+        L('परमिट ठीक छ। शुभ यात्रा।', 'parmiṭ ṭhīk cha. shubh yātrā.', PARMIT, THIK, CHA, DANDA, SHUBH, YATRA, DANDA)),
       tf('शुभ यात्रा।', 'shubh yātrā.', 'Gute Reise!',
         'Der Beamte wünscht dir eine gute Reise.', true),
       story('Der Weg führt an Dörfern und Terrassenfeldern vorbei, über Hängebrücken und durch Wald. Und dann: Stufen. Steinstufen, Hunderte, hinauf und immer weiter hinauf.'),
