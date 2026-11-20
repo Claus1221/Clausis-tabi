@@ -19,6 +19,12 @@ describe('initialLang', () => {
   it('neu, nur eine Sprache wählbar → diese', () => {
     if (!NE_PUBLIC) expect(initialLang({ profileLang: null, hasJaProgress: false, isAdmin: false })).toBe('ja')
   })
+  it('Nepali freigegeben: neue Person ohne Admin-Recht bekommt die Auswahl', () => {
+    if (NE_PUBLIC) expect(initialLang({ profileLang: null, hasJaProgress: false, isAdmin: false })).toBe(null)
+  })
+  it('Nepali freigegeben: gespeicherte Wahl ne gilt auch ohne Admin-Recht', () => {
+    if (NE_PUBLIC) expect(initialLang({ profileLang: 'ne', hasJaProgress: true, isAdmin: false })).toBe('ne')
+  })
   it('unbekannter Profilwert zählt als kein Profil', () => expect(initialLang({ profileLang: 'xx', hasJaProgress: true, isAdmin: false })).toBe('ja'))
   it('ne im Profil, aber für diese Person gesperrt → ja', () => {
     if (!NE_PUBLIC) expect(initialLang({ profileLang: 'ne', hasJaProgress: false, isAdmin: false })).toBe('ja')
@@ -45,6 +51,9 @@ describe('resolveLang', () => {
     expect(resolveLang({ ...ready, hasJaProgress: true })).toEqual({ lang: 'ja', loading: false }))
   it('Hinweis + offene Lesevorgänge → diese Sprache, lädt nicht', () =>
     expect(resolveLang({ ...pending, isAdmin: true, hint: 'ne' })).toEqual({ lang: 'ne', loading: false }))
+  it('Nepali freigegeben: Wahl ne gilt sofort auch ohne Admin-Recht', () => {
+    if (NE_PUBLIC) expect(resolveLang({ ...pending, choice: 'ne' })).toEqual({ lang: 'ne', loading: false })
+  })
   it('Hinweis ne für Nicht-Admin wird ignoriert', () => {
     if (!NE_PUBLIC) expect(resolveLang({ ...pending, hint: 'ne' })).toEqual({ lang: null, loading: true })
   })

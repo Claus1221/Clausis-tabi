@@ -8,9 +8,10 @@ export const LANGS = {
   ne: { id: 'ne', name: 'Nepali', app: 'Yatra', glyph: 'यात्रा', sub: 'Nepal-Reise' },
 }
 
-// Solange false, ist Nepali nur für Admins wählbar. Plan B stellt auf true,
-// dann sehen alle Nutzer die Nepali-Kachel.
-export const NE_PUBLIC = false
+// Seit der Nepali-Kurs fertig ist (Plan B) true: alle freigeschalteten Nutzer
+// sehen die Nepali-Kachel. Auf false gesetzt, wäre Nepali wieder nur für
+// Admins wählbar; gespeicherte Wahl "ne" fiele dann auf Japanisch zurück.
+export const NE_PUBLIC = true
 
 const isKnown = (lang) => Object.prototype.hasOwnProperty.call(LANGS, lang)
 
