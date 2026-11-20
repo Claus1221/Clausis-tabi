@@ -51,3 +51,42 @@ was daran zweifelhaft war. Fundstelle ist, wo nicht anders genannt, `src/ne/data
   (ग), „Dach unterbrochen“ (श) und „Dach links unterbrochen“ (ण). Zweifel: in gängigen Schriften
   sieht die Kopflinie von ग und श meist durchgehend aus. Gegen die tatsächlich verwendete Schrift
   (Noto Sans Devanagari) prüfen; die Bemerkung dort streichen, wo keine Lücke sichtbar ist.
+
+## Wörter (Task 6, `src/ne/data/words.js` und Oberfläche)
+
+- **पढाइ / सिकाइ** – für „Lernen“ in der Oberfläche. Zweifel: welches Wort ein Nepali-Sprecher für
+  „Lernen“ (als Menüpunkt) natürlicher findet.
+- **काठमाडौं / काठमाडौँ** – der Kurs schreibt eine Form durchgehend. Zweifel: Anusvāra oder
+  Chandrabindu am Wortende; beide sind in Gebrauch.
+- **तपाईंलाई ठीक छ?** – „Geht es Ihnen gut?“. Zweifel: ob das so gefragt wird oder eher
+  तपाईंलाई कस्तो छ? / सन्चै हुनुहुन्छ?.
+- **पानी पर्छ** – gelehrt als „es regnet (allgemein) / es wird regnen“. Für Regen, der gerade
+  fällt, sagt man पानी परिरहेको छ; der Kurs benutzt deshalb पर्छ nur für Vorhersagen.
+- **ट्याक्सी कति हो?** – „Was kostet das Taxi?“. Zweifel: ob man eher भाडा कति हो? fragt.
+
+## Grammatik (Task 7, `src/ne/data/grammar.js`)
+
+- **‑सँग = `saṃga`, ‑बाट = `bāṭa`** – der Kurs schreibt den Endvokal, weil er gesprochen wird.
+  Zweifel: viele Umschriften schreiben `sang`/`bāṭ`; bitte bestätigen, dass man ihn hört.
+- **ng10: वटा bei Menschen** – Zählwort वटा auch für Personen ist umgangssprachlich verbreitet,
+  gilt aber als salopp (जना ist das höfliche Zählwort). Offen, ob der Kurs das erwähnen soll.
+- **ng3: हो / हुन्छ bei Eigenschaften** – der Kurs erklärt den Unterschied jetzt vorsichtiger.
+  Offen, ob die Erklärung die Nuance trifft.
+- **Umschrift von fünf Antwort-Optionen** – vom Kurs nach Schema gesetzt, ohne Prüfung durch
+  einen Sprecher: छैनँ `chainaṃ`, नबोल्नुहोस् `nabolnuhos`, आउनुहोस् `āunuhos`, खानुहोस् `khānuhos`,
+  जानुभयो `jānubhayo`.
+
+## Geschichte (Tasks 8/9, `src/ne/data/chapters.js`)
+
+- **nc1 नेपाल पहिलो पटक हो?** – „Sind Sie zum ersten Mal in Nepal?“. Richtig, aber locker
+  gesprochen; natürlicher wäre नेपाल पहिलो पटक आउनुभएको हो? (die Form lehrt der Kurs nicht).
+- **nc3 मसँग पैसा छ** – Asha besteht darauf zu zahlen. Richtig, aber man sagt dafür eher
+  म तिर्छु („ich zahle“), das der Kurs nicht lehrt; der deutsche Erzähltext trägt die Absicht.
+- **जाने als Vorschlag** (nc4, nc7, nc9, nc10: बिस्तारै जाने, माथि जाने?) – umgangssprachlich
+  „gehen wir …“; die übliche Form wäre जाऔँ, die der Kurs nicht lehrt. Im Kurs als
+  umgangssprachlich markiert.
+- **nc7 परमिट** – Schreibung परमिट (häufiger als पर्मिट), Umschrift `parmiṭ` wie gesprochen.
+- **nc9 यहाँ बस्नुहोस् र पर्खनुहोस्** – zwei Bitten mit र klingen etwas schriftlich; natürlicher
+  wäre यहाँ बसेर पर्खनुहोस्, aber die ‑एर-Form lehrt der Kurs nicht.
+- **nc10 बिस्तारै उज्यालो हुन्छ** – „Bald wird es langsam hell“, gesagt vor der Dämmerung.
+  Während es hell wird, sagte man eher उज्यालो हुँदैछ.
