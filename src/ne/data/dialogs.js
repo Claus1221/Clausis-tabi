@@ -448,11 +448,3 @@ export const DIALOGS = [
 ]
 
 export const DIALOG_BY_ID = Object.fromEntries(DIALOGS.map(d => [d.id, d]))
-
-// Alle antippbaren Wörter einer Szene (NPC-Zeilen und Antwortsätze), NFC, ohne Doppelte, in
-// Spielreihenfolge – Grundlage für Freischaltung und Aufwärmen (lib/dialog.js).
-export function dialogVocab(dialog) {
-  const seen = new Set()
-  for (const t of dialog.turns) for (const k of [...t.npcTokens, ...t.answerTokens]) if (k.de) seen.add(nfc(k.t))
-  return [...seen]
-}

@@ -1,9 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { DIALOGS, DIALOG_BY_ID, dialogVocab } from './dialogs.js'
+import { DIALOGS, DIALOG_BY_ID } from './dialogs.js'
 import { WORD_BLOCKS } from './words.js'
 import { GRAMMAR_NEW_WORDS, GRAMMAR_FORMS } from './grammar.js'
 import { functionWordSet } from '../lib/functionWords.js'
 import { romanFits, nfc } from '../lib/deva.js'
+
+// Alle antippbaren Wörter einer Szene (NPC-Zeilen und Antwortsätze), NFC, ohne Doppelte, in
+// Spielreihenfolge – nur die Tests hier brauchen sie (die App nimmt answerWords, lib/dialog.js).
+function dialogVocab(dialog) {
+  const seen = new Set()
+  for (const t of dialog.turns) for (const k of [...t.npcTokens, ...t.answerTokens]) if (k.de) seen.add(nfc(k.t))
+  return [...seen]
+}
 
 // Paare aus Devanagari und Umschrift, die romanFits ablehnt, obwohl sie richtig sind.
 // Je Eintrag eine Zeile Begründung; die Umschrift wird NIE verbogen. Schlüssel `${dev}|${roman}`.

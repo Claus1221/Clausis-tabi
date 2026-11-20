@@ -1,17 +1,20 @@
 import { describe, it, expect } from 'vitest'
 import { CHAPTERS, CHAPTER_BY_ID, CHAPTER_WORD, chapterWords } from './chapters.js'
-import { WORD_BLOCKS, WORD_BY_DEV } from './words.js'
+import { WORD_BLOCKS } from './words.js'
 import { GRAMMAR_NEW_WORDS, GRAMMAR_FORMS } from './grammar.js'
 import { romanFits, nfc } from '../lib/deva.js'
 import { functionWordSet, isKnownWord } from '../lib/functionWords.js'
+// Eigennamen der Geschichte: antippbar (mit Bedeutung „Name“), aber kein Lernwort – sie
+// werden nie per intro vorgestellt und gelten deshalb im Wortschatz-Test als bekannt.
+// Eine Liste für Tests, Audit und Lernstand (lib/known.js).
+import { PROPER_NAMES } from '../lib/known.js'
 
 // Paare aus Devanagari und Umschrift, die romanFits ablehnt, obwohl sie richtig sind.
 // Je Eintrag eine Zeile Begründung; die Umschrift wird NIE verbogen. Schlüssel `${dev}|${roman}`.
 const ROMAN_EXCEPTIONS = {}
 
-// Eigennamen der Geschichte: antippbar (mit Bedeutung „Name“), aber kein Lernwort – sie
-// werden nie per intro vorgestellt und gelten deshalb im Wortschatz-Test als bekannt.
-const PROPER_NAMES = ['आशा', 'माछापुच्छ्रे']
+// Wortblock-Wörter nach Devanagari (nur der Test braucht die Tafel).
+const WORD_BY_DEV = Object.fromEntries(WORD_BLOCKS.flatMap(b => b.words).map(w => [w.dev, w]))
 
 const IDS = ['nc1', 'nc2', 'nc3', 'nc4', 'nc5', 'nc6', 'nc7', 'nc8', 'nc9', 'nc10']
 // Verbindliche Reihenfolge aus dem Lernpfad (path-order.md), fest verdrahtet: was VOR einem

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { GRAMMAR, GRAMMAR_ORDER, GRAMMAR_BY_ID, GRAMMAR_NEW_WORDS, GRAMMAR_FORMS, grammarKey, solved } from './grammar.js'
-import { WORD_BLOCKS, WORD_BY_DEV } from './words.js'
+import { WORD_BLOCKS } from './words.js'
 import { romanFits, aksharas, nfc } from '../lib/deva.js'
 import { functionWordSet, isKnownWord } from '../lib/functionWords.js'
 import { NE_PATH } from './path.js'
@@ -8,6 +8,9 @@ import { NE_PATH } from './path.js'
 // Paare aus Devanagari und Umschrift, die romanFits ablehnt, obwohl sie richtig sind.
 // Je Eintrag eine Zeile Begründung; die Umschrift wird NIE verbogen. Schlüssel `${dev}|${roman}`.
 const ROMAN_EXCEPTIONS = {}
+
+// Wortblock-Wörter nach Devanagari (nur der Test braucht die Tafel).
+const WORD_BY_DEV = Object.fromEntries(WORD_BLOCKS.flatMap(b => b.words).map(w => [w.dev, w]))
 
 const IDS = ['ng1', 'ng2', 'ng3', 'ng4', 'ng5', 'ng6', 'ng7', 'ng8', 'ng9', 'ng10', 'ng11', 'ng12']
 // Verbindliche Reihenfolge aus dem Lernpfad (path-order.md): was VOR einem Thema liegt,

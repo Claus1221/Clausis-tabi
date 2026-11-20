@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { WORD_BLOCKS, WORD_BY_DEV, learnedWords } from './words.js'
+import { WORD_BLOCKS, learnedWords } from './words.js'
 import { romanFits, nfc } from '../lib/deva.js'
 
 // Paare aus Devanagari und Umschrift, die romanFits ablehnt, obwohl sie richtig sind.
@@ -125,10 +125,9 @@ describe('Beispielsätze und Tokens', () => {
   })
 })
 
-describe('WORD_BY_DEV und learnedWords', () => {
-  it('WORD_BY_DEV findet jedes Wort', () => {
-    for (const w of words) expect(WORD_BY_DEV[w.dev]).toBe(w)
-    expect(Object.keys(WORD_BY_DEV)).toHaveLength(words.length)
+describe('learnedWords', () => {
+  it('kein Wort steht in zwei Blöcken (Devanagari eindeutig)', () => {
+    expect(new Set(words.map(w => w.dev)).size).toBe(words.length)
   })
   it('nichts erledigt → keine Wörter', () => expect(learnedWords([])).toEqual([]))
   it('Wörter der erledigten Blöcke in Blockreihenfolge, NFC, unbekannte IDs ohne Wirkung', () => {

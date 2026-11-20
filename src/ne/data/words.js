@@ -315,9 +315,6 @@ export const WORD_BLOCKS = [
   },
 ]
 
-const ALL_WORDS = WORD_BLOCKS.flatMap(b => b.words)
-export const WORD_BY_DEV = Object.fromEntries(ALL_WORDS.map(w => [w.dev, w]))
-
 // Karten-Schlüssel (NFC) aller Wörter aus abgeschlossenen Blöcken, in Blockreihenfolge –
 // nicht in der Reihenfolge, in der die IDs im Lernstand stehen, damit Stapel und Zähler
 // stabil bleiben. Unbekannte IDs (z. B. aus einer neueren Version) wirken nicht.

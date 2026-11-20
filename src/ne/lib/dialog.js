@@ -1,10 +1,9 @@
-import { learnedWords, WORD_BLOCKS } from '../data/words.js'
-import { GRAMMAR_FORMS, GRAMMAR_NEW_WORDS } from '../data/grammar.js'
-import { CHAPTERS, CHAPTER_BY_ID, chapterWords } from '../data/chapters.js'
+import { XP_PER_DIALOG } from '../../lib/xp.js'
 import { NE_PATH } from '../data/path.js'
-import { stationStates, nodeMeta } from './path.js'
+import { stationStates, nodeMeta, isNodeDone } from './path.js'
 import { nfc } from './deva.js'
-import { functionWordSet, isKnownWord } from './functionWords.js'
+import { isKnownWord } from './functionWords.js'
+import { knownAfter, taughtWords, wordParts } from './known.js'
 import { shuffle } from './scriptQuiz.js'
 
 // ─── Reine Szenen-Logik (kein React) ──────────────────────────────────────────
@@ -13,21 +12,12 @@ import { shuffle } from './scriptQuiz.js'
 // ohnehin der Reihe nach (lib/path.js) – dialogGate ist für die Szenen-Übersicht im Üben,
 // wo man eine Szene auch außer der Reihe spielen darf, sobald man ihre Sätze sagen kann.
 
-// Was der Lernstand als bekannt ausweist – dieselbe Regel wie das Wort-Audit
-// (scripts/audit-ne.mjs): Funktionswörter, jedes Wort erledigter Wortblöcke (ein Eintrag mit
-// Leerzeichen wie दाल भात führt jeden Teil ein), Formen und neue Wörter erledigter
-// Grammatik-Themen, intro-Wörter erledigter Kapitel. Set aus NFC-Texten.
+// Was der Lernstand als bekannt ausweist – dieselbe Regel wie das Wort-Audit, beide aus
+// lib/known.js: Funktionswörter und Eigennamen, dazu was jede erledigte Station des Pfads
+// lehrt (Wortblock-Wörter, Themen-Formen und -Wörter, Kapitel-intro-Wörter, newPhrases
+// gespielter Szenen; Einträge mit Leerzeichen Teil für Teil). Set aus NFC-Texten.
 export function knownWords(progress) {
-  const known = functionWordSet()
-  const add = dev => { for (const p of nfc(dev).split(/\s+/)) if (p) known.add(p) }
-  learnedWords(progress?.completedWordBlocks).forEach(add)
-  for (const id of progress?.completedGrammar || []) {
-    for (const f of GRAMMAR_FORMS[id] || []) add(f)
-    for (const w of GRAMMAR_NEW_WORDS[id] || []) add(w.dev)
-  }
-  const chapters = progress?.completedChapters || []
-  CHAPTERS.filter(c => chapters.includes(c.id)).flatMap(chapterWords).forEach(add)
-  return known
+  return knownAfter(NE_PATH, n => isNodeDone(n, progress))
 }
 
 // Antippbare Wörter der Antwortsätze (nur was man selbst sagen muss – die NPC-Zeile darf
@@ -46,7 +36,7 @@ export function dialogGate(dialog, progress) {
   if (!dialog) return { open: false, missing: [] }
   if ((progress?.completedDialogs || []).includes(dialog.id)) return { open: true, missing: [] }
   const known = knownWords(progress)
-  for (const p of dialog.newPhrases || []) for (const part of nfc(p.dev).split(/\s+/)) known.add(part)
+  for (const p of dialog.newPhrases || []) for (const part of wordParts(p.dev)) known.add(part)
   const missing = answerWords(dialog).filter(w => !isKnownWord(w, known))
   return { open: missing.length === 0, missing }
 }
@@ -62,22 +52,26 @@ export function sceneOpen(dialog, progress) {
   return state !== null && state !== 'locked' && dialogGate(dialog, progress).open
 }
 
-// Wo im Pfad ein Wort zuerst gelehrt wird (Wortblock, Grammatik-Thema, Kapitel-intro) –
-// Titel der Station; Tafel beim ersten Aufruf gebaut.
+// Wo im Pfad ein Wort zuerst gelehrt wird (taughtWords aus lib/known.js – dieselbe Regel wie
+// knownWords) – Titel der Station; Tafel beim ersten Aufruf gebaut.
 let TEACHER = null
 function teacher() {
   if (TEACHER) return TEACHER
   TEACHER = new Map()
-  const put = (dev, title) => { for (const p of nfc(dev).split(/\s+/)) if (p && !TEACHER.has(p)) TEACHER.set(p, title) }
-  const blocks = Object.fromEntries(WORD_BLOCKS.map(b => [b.id, b]))
   for (const n of NE_PATH) {
     const title = nodeMeta(n)?.title
     if (!title) continue
-    if (n.type === 'word') for (const w of blocks[n.id]?.words || []) put(w.dev, title)
-    if (n.type === 'grammar') for (const x of [...(GRAMMAR_FORMS[n.id] || []), ...(GRAMMAR_NEW_WORDS[n.id] || []).map(w => w.dev)]) put(x, title)
-    if (n.type === 'chapter' && CHAPTER_BY_ID[n.id]) chapterWords(CHAPTER_BY_ID[n.id]).forEach(w => put(w, title))
+    for (const w of taughtWords(n)) if (!TEACHER.has(w)) TEACHER.set(w, title)
   }
   return TEACHER
+}
+
+// Abschluss einer Szene buchen – eine Fassung für die Reise (reise.jsx) und das Üben
+// (DialogHub): completedDialogs, XP und Zähler `scenes` nur beim ersten Mal (wasDone = Stand
+// beim Öffnen). Nichts einplanen – die Antwortsätze haben keinen Karten-Schlüssel; ihre
+// Wörter sind über Wortblöcke und Themen ohnehin im Plan.
+export function bookDialog(completeDialog, dialog, wasDone) {
+  if (!wasDone) completeDialog(dialog.id, XP_PER_DIALOG, { scenes: 1 })
 }
 
 // Hinweis zu gesperrten Szenen: je fehlendes Wort { dev, de, where } – de = Bedeutung des

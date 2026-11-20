@@ -14,6 +14,8 @@
 //     (auch für das Thema selbst).
 //   • Funktionswörter (src/ne/lib/functionWords.js) und die Eigennamen der Geschichte
 //     (PROPER_NAMES – antippbar, aber nie als Lernwort vorgestellt) gelten überall.
+//   Was eine Station lehrt, steht als eine Regel in src/ne/lib/known.js (taughtWords) –
+//   dieselbe nutzt der Lernstand (lib/dialog.js knownWords) für die Szenen im Üben.
 //   • Kapitel: jedes intro-Wort gilt ab SEINEM Schritt (und für alle späteren Stationen).
 //   • Szene: ihre newPhrases (jeder Teil) gelten ab der Szene – das Aufwärmen stellt sie vor.
 // Geprüft wird:
@@ -36,12 +38,12 @@ import { CHAPTERS } from '../src/ne/data/chapters.js'
 import { DIALOGS } from '../src/ne/data/dialogs.js'
 import { nfc } from '../src/ne/lib/deva.js'
 import { FUNCTION_WORDS, FUNCTION_WORD_LIMIT, functionWordSet, isKnownWord } from '../src/ne/lib/functionWords.js'
+import { PROPER_NAMES, baseKnown, introWords, makeCourse, taughtWords } from '../src/ne/lib/known.js'
 
 // Weitergereicht, damit Aufrufer (Test, --list-function-words) eine Adresse behalten.
-export { FUNCTION_WORDS, FUNCTION_WORD_LIMIT, functionWordSet }
-
-// Eigennamen der Geschichte (wie PROPER_NAMES in src/ne/data/chapters.test.js).
-export const PROPER_NAMES = ['आशा', 'माछापुच्छ्रे']
+// PROPER_NAMES und was eine Station lehrt (taughtWords) stehen in src/ne/lib/known.js –
+// dieselbe Regel nutzt der Lernstand (Freischaltung der Szenen im Üben).
+export { FUNCTION_WORDS, FUNCTION_WORD_LIMIT, functionWordSet, PROPER_NAMES }
 
 // Alle Nepali-Texte eines Kapitel-Schritts außer Erzählung/intro, inkl. Ablenker.
 function chapterTexts(s) {
@@ -65,18 +67,17 @@ const wordsOf = sentence => nfc(sentence).split(/[\s,।?!.–—"“”„]+/).
 // → [{ block, word, token }] in Pfad- und Satzreihenfolge; bei Grammatik, Kapiteln und Szenen
 // ist `block` die Stations-ID und `word` der Satz (je Schritt bzw. Szene, Satz und Wort ein Fund).
 export function auditPath(path, blocks, known, grammar = {}, chapters = [], dialogs = []) {
-  const byId = new Map(blocks.map(b => [b.id, b]))
-  const topics = new Map((grammar.topics || []).map(g => [g.id, g]))
-  const chapterById = new Map(chapters.map(c => [c.id, c]))
-  const dialogById = new Map(dialogs.map(d => [d.id, d]))
+  const course = makeCourse({ blocks, grammar, chapters, dialogs })
   const introduced = new Set(known)
   const findings = []
   for (const node of path) {
+    // Was die Station lehrt, gilt schon in ihr (Wortblock: Block-Ende zählt; Thema: ab dem
+    // Thema; Szene: ab der Szene). Kapitel nicht pauschal: dort gilt ein intro-Wort erst ab
+    // SEINEM Schritt (introWords unten). Station ohne Daten → taughtWords liefert nichts.
+    if (node.type !== 'chapter') for (const w of taughtWords(node, course)) introduced.add(w)
     if (node.type === 'word') {
-      const block = byId.get(node.id)
+      const block = course.blocks.get(node.id)
       if (!block) continue // Station ohne Daten (z. B. ein Block, der noch fehlt)
-      // Erst alle Wörter des Blocks einführen, dann seine Sätze prüfen (Block-Ende zählt).
-      for (const w of block.words) for (const part of nfc(w.dev).split(/\s+/)) if (part) introduced.add(part)
       for (const w of block.words) {
         for (const tok of w.ex?.tokens || []) {
           if (!tok.de) continue
@@ -84,10 +85,8 @@ export function auditPath(path, blocks, known, grammar = {}, chapters = [], dial
         }
       }
     } else if (node.type === 'grammar') {
-      const g = topics.get(node.id)
+      const g = course.topics.get(node.id)
       if (!g) continue
-      for (const f of grammar.forms?.[g.id] || []) introduced.add(nfc(f))
-      for (const w of grammar.newWords?.[g.id] || []) for (const part of nfc(w.dev).split(/\s+/)) if (part) introduced.add(part)
       for (const x of g.examples || []) {
         for (const tok of x.tokens || []) {
           if (tok.de && !introduced.has(nfc(tok.t))) findings.push({ block: g.id, word: x.dev, token: tok.t })
@@ -98,11 +97,11 @@ export function auditPath(path, blocks, known, grammar = {}, chapters = [], dial
         for (const w of wordsOf(s)) if (!isKnownWord(w, introduced)) findings.push({ block: g.id, word: s, token: w })
       }
     } else if (node.type === 'chapter') {
-      const c = chapterById.get(node.id)
+      const c = course.chapters.get(node.id)
       if (!c) continue
       for (const s of c.steps) {
         if (s.kind === 'intro') {
-          for (const part of nfc(s.dev).split(/\s+/)) if (part) introduced.add(part)
+          for (const w of introWords(s)) introduced.add(w)
           continue
         }
         const seen = new Set()
@@ -114,9 +113,8 @@ export function auditPath(path, blocks, known, grammar = {}, chapters = [], dial
         for (const text of chapterTexts(s)) for (const w of wordsOf(text)) if (!isKnownWord(w, introduced)) report(text, w)
       }
     } else if (node.type === 'dialog') {
-      const d = dialogById.get(node.id)
+      const d = course.dialogs.get(node.id)
       if (!d) continue
-      for (const p of d.newPhrases || []) for (const part of nfc(p.dev).split(/\s+/)) if (part) introduced.add(part)
       const seen = new Set()
       const report = (text, token) => {
         const key = `${text}|${token}`
@@ -142,7 +140,7 @@ function main(argv) {
     return 0
   }
   const grammar = { topics: GRAMMAR, newWords: GRAMMAR_NEW_WORDS, forms: GRAMMAR_FORMS }
-  const known = new Set([...functionWordSet(), ...PROPER_NAMES.map(nfc)])
+  const known = baseKnown()
   const findings = auditPath(NE_PATH, WORD_BLOCKS, known, grammar, CHAPTERS, DIALOGS)
   const blocks = NE_PATH.filter(n => n.type === 'word' && WORD_BLOCKS.some(b => b.id === n.id)).length
   const topics = NE_PATH.filter(n => n.type === 'grammar' && GRAMMAR.some(g => g.id === n.id)).length

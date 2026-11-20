@@ -6,8 +6,10 @@ import { CHAPTERS } from '../data/chapters.js'
 import { nfc } from './deva.js'
 import {
   dialogGate, answerWords, knownWords, phrasesFromTurns, warmupPhrases,
-  warmupOptions, startWarmup, answerWarmup, warmupDone, firstTryScore, sceneOpen, explainMissing,
+  warmupOptions, startWarmup, answerWarmup, warmupDone, firstTryScore, sceneOpen, explainMissing, bookDialog,
 } from './dialog.js'
+import { PROPER_NAMES } from './known.js'
+import { XP_PER_DIALOG } from '../../lib/xp.js'
 import { SCRIPT_LESSONS } from '../data/script.js'
 
 // Lernstand „alles bis vor die Szene“ nach path-order.md (Wortblöcke, Themen, Kapitel).
@@ -43,6 +45,23 @@ describe('knownWords', () => {
     const k = knownWords(ALL)
     for (const b of WORD_BLOCKS) for (const w of b.words) for (const p of w.dev.split(' ')) expect(k.has(nfc(p)), p).toBe(true)
     expect(knownWords({}).has(nfc('थमेल'))).toBe(false)
+  })
+  it('Eigennamen der Geschichte gelten immer (dieselbe Regel wie das Wort-Audit)', () => {
+    for (const n of PROPER_NAMES) expect(knownWords({}).has(nfc(n)), n).toBe(true)
+  })
+  it('newPhrases gespielter Szenen gelten danach als bekannt', () => {
+    expect(knownWords(ALL).has(nfc('पुग्यो'))).toBe(false)
+    expect(knownWords({ ...ALL, completedDialogs: ['nd3'] }).has(nfc('पुग्यो'))).toBe(true)
+  })
+})
+
+describe('bookDialog', () => {
+  it('erster Abschluss bucht XP und den Zähler scenes, eine Wiederholung bucht nichts', () => {
+    const calls = []
+    const complete = (...a) => calls.push(a)
+    bookDialog(complete, nd1, false)
+    bookDialog(complete, nd1, true)
+    expect(calls).toEqual([['nd1', XP_PER_DIALOG, { scenes: 1 }]])
   })
 })
 
