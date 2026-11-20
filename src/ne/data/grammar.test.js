@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { GRAMMAR, GRAMMAR_ORDER, GRAMMAR_BY_ID, GRAMMAR_NEW_WORDS, GRAMMAR_FORMS, grammarKey, solved } from './grammar.js'
 import { WORD_BLOCKS, WORD_BY_DEV } from './words.js'
 import { romanFits, aksharas, nfc } from '../lib/deva.js'
+import { functionWordSet, isKnownWord } from '../lib/functionWords.js'
 
 // Paare aus Devanagari und Umschrift, die romanFits ablehnt, obwohl sie richtig sind.
 // Je Eintrag eine Zeile Begründung; die Umschrift wird NIE verbogen. Schlüssel `${dev}|${roman}`.
@@ -13,13 +14,10 @@ const IDS = ['ng1', 'ng2', 'ng3', 'ng4', 'ng5', 'ng6', 'ng7', 'ng8', 'ng9', 'ng1
 // erst in der anderen Hälfte der Aufgabe.
 const COURSE = ['nw1', 'ng1', 'ng2', 'nw2', 'ng3', 'nw3', 'ng4', 'ng5', 'nw4', 'ng8', 'ng9', 'ng10',
   'nw5', 'ng6', 'ng7', 'ng11', 'nw6', 'ng12', 'nw7']
-// Angehängte Wörter: झोला+मा, तपाईं+को, दुई+वटा, म+सँग … – im Lückensatz ein Wort ohne Leerzeichen.
-const SUFFIXES = ['लाई', 'बाट', 'वटा', 'सँग', 'मा', 'को', 'ले']
-// Funktionswörter des Wort-Audits (FUNCTION_WORDS in scripts/audit-ne.mjs) – hier abgeschrieben,
-// weil src/ne/ nicht aus scripts/ importieren darf (Importgrenze, s. src/ne/imports.test.js).
-// Beide gleich halten.
-const FUNCTION_WORDS = ['मा', 'को', 'लाई', 'बाट', 'हो', 'छ', 'छैन', 'होइन', 'छु', 'म', 'तपाईं', 'यो', 'त्यो',
-  'मेरो', 'के', 'कति', 'कहाँ', 'र', 'चाहिन्छ', 'दिनुहोस्', 'जानुहोस्', 'जान्छ', 'हुन्छ']
+// Funktionswörter und angehängte Wörter (झोला+मा, तपाईं+को, दुई+वटा, म+सँग – im Lückensatz ein
+// Wort ohne Leerzeichen) kommen aus EINER Quelle, src/ne/lib/functionWords.js – dieselbe, die
+// der Wort-Audit (scripts/audit-ne.mjs) benutzt. isKnownWord verlangt bei Stamm + Anhängsel,
+// dass beide eingeführt sind.
 
 const GAP = '＿＿'
 const isNfc = s => s === nfc(s)
@@ -162,8 +160,8 @@ describe('Wortschatz-Disziplin', () => {
   })
   it('Beispiele und gelöste Übungen benutzen nur, was im Pfad vorher eingeführt ist', () => {
     const blocks = Object.fromEntries(WORD_BLOCKS.map(b => [b.id, b]))
-    const known = new Set(FUNCTION_WORDS.map(nfc))
-    const isKnown = w => known.has(w) || SUFFIXES.some(s => w.endsWith(s) && known.has(w.slice(0, -s.length)))
+    const known = functionWordSet()
+    const isKnown = w => isKnownWord(w, known)
     for (const id of COURSE) {
       if (id.startsWith('nw')) {
         for (const w of blocks[id].words) for (const p of [w.dev, ...w.dev.split(' ')]) known.add(nfc(p))

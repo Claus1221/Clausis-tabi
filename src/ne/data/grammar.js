@@ -20,7 +20,7 @@
 //                     Satz lesbar da. (Das japanische Vorbild hat dafür kein Feld.)
 //
 // Wortschatz: ein Thema benutzt nur Wörter aus Blöcken, die im Pfad VOR ihm liegen, dazu die
-// Funktionswörter des Audits (scripts/audit-ne.mjs), die Formen, die es selbst lehrt
+// Funktionswörter (src/ne/lib/functionWords.js – dieselbe Liste nutzt der Audit), die Formen, die es selbst lehrt
 // (GRAMMAR_FORMS), und höchstens drei ausdrücklich vorgestellte neue Wörter
 // (GRAMMAR_NEW_WORDS, im body als „Neue Wörter“ erklärt). Der Test prüft das Satz für Satz.
 
@@ -460,4 +460,14 @@ export const GRAMMAR_FORMS = {
   ng10: ['वटा', 'जना', 'छौँ'],
   ng11: ['नजानुहोस्', 'नरोक्नुहोस्', 'नबोल्नुहोस्'],
   ng12: ['मैले', 'ले', 'गएँ', 'आएँ', 'खाएँ', 'बुझेँ', 'खानुभयो', 'आउनुभयो'],
+}
+
+// Umschrift von Antwort-Optionen, die sonst nirgends im Kurs als Wort oder Token stehen
+// (lib/readings.js schlägt alle übrigen aus Wörtern und Beispielsätzen nach).
+export const OPTION_READINGS = {
+  'छैनँ': 'chainaṃ',
+  'नबोल्नुहोस्': 'nabolnuhos',
+  'आउनुहोस्': 'āunuhos',
+  'खानुहोस्': 'khānuhos',
+  'जानुभयो': 'jānubhayo',
 }

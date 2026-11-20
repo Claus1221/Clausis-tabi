@@ -15,6 +15,7 @@ import TraceCanvas from '../components/TraceCanvas.jsx'
 import { useSound, usePlayback, ListenButton, NoSoundMark, NO_SOUND_HINT } from '../components/sound.jsx'
 import { NeText, TappableSentence, useShowRoman } from '../components/text.jsx'
 import { GapDrill } from '../components/GapDrill.jsx'
+import { startDrill, answerDrill, currentDrill, drillDone } from '../lib/drillQueue.js'
 import { GrammarHead, GrammarExplain, GrammarExamples } from '../components/grammar.jsx'
 
 // ─── Spieler für Yatra-Lektionen ──────────────────────────────────────────────
@@ -326,35 +327,31 @@ export function ScriptLesson({ lesson, alreadyDone = false, onComplete, onClose 
 
 // ─── Grammatik ────────────────────────────────────────────────────────────────
 
-// Alle Übungen eines Themas als Lückensätze, nacheinander. Falsch beim ersten Versuch →
-// die Übung kommt EINMAL am Ende der Lektion wieder (mit neu gemischten Optionen); auch
-// ein zweiter Fehler hält die Lektion nicht auf. onFinish(beim ersten Versuch richtig, Anzahl).
+// Alle Übungen eines Themas als Lückensätze, nacheinander. Reihenfolge und Zählung aus
+// lib/drillQueue.js: falsch beim ersten Versuch → die Übung kommt EINMAL am Ende wieder
+// (mit neu gemischten Optionen); ein zweiter Fehler hält die Lektion nicht auf.
+// onFinish(beim ersten Versuch richtig, Anzahl).
 function GrammarDrillStep({ topic, sound, onFinish }) {
-  const [list, setList] = useState(() => topic.exercises.map(ex => ({ ex, retry: false })))
-  const [pos, setPos] = useState(0)
-  const [right, setRight] = useState(0)
-  const cur = list[pos]
+  const [state, setState] = useState(() => startDrill(topic.exercises.length))
+  const cur = currentDrill(state)
 
   // GapDrill ruft onDone je Erscheinen genau einmal (eigene Sperre, key je Position) –
-  // die Werte aus diesem Render sind also aktuell.
+  // der Zustand aus diesem Render ist also aktuell.
   const done = correct => {
-    const nr = right + (correct && !cur.retry ? 1 : 0)
-    const nl = !correct && !cur.retry ? [...list, { ...cur, retry: true }] : list
-    if (pos + 1 >= nl.length) { onFinish(nr, topic.exercises.length); return }
-    setRight(nr)
-    setList(nl)
-    setPos(pos + 1)
+    const next = answerDrill(state, correct)
+    if (drillDone(next)) { onFinish(next.right, next.total); return }
+    setState(next)
   }
 
-  const last = pos + 1 >= list.length
   const head = (
     <p style={{ color: C.textMuted, fontSize: 13, margin: '0 0 10px', textAlign: 'center' }}>
-      {cur.retry ? '🔁 Noch einmal' : 'Anwenden'} · {pos + 1} / {list.length}
+      {cur.retry ? '🔁 Noch einmal' : 'Anwenden'} · {state.pos + 1} / {state.list.length}
     </p>
   )
+  // Knopftext nach der Antwort: ob danach noch etwas kommt, hängt von ihr ab.
+  const nextLabel = correct => (drillDone(answerDrill(state, correct)) ? 'Übungen abschließen →' : 'Nächster Satz →')
   // key je Position: eine wiederholte Übung ist eine neue Runde (neu gemischt, offen).
-  return <GapDrill key={pos} ex={cur.ex} sound={sound} head={head} onDone={done}
-    nextLabel={last ? 'Übungen abschließen →' : 'Nächster Satz →'} />
+  return <GapDrill key={state.pos} ex={topic.exercises[cur.i]} sound={sound} head={head} onDone={done} nextLabel={nextLabel} />
 }
 
 // Grammatik-Lektion: Erklärung (mit neuen Wörtern) → Beispiele zum Antippen (Anhören nur
@@ -384,7 +381,7 @@ export function GrammarLesson({ topic, alreadyDone = false, onComplete, onClose 
     content = (
       <>
         <GrammarHead topic={topic} />
-        <GrammarExplain topic={topic} />
+        <GrammarExplain topic={topic} sound={sound} />
         {sound === false && (
           <div style={{ background: `${C.indigo}12`, borderRadius: 10, padding: 12, fontSize: 13, color: C.indigo, lineHeight: 1.5, marginTop: 14 }}>
             🔇 {NO_SOUND_HINT}

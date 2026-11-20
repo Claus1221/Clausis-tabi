@@ -53,7 +53,8 @@ function SRSQuiz({ onClose, initialMode = 'due', sound }) {
   })
   const [flipped, setFlipped] = useState(false)
   // Grammatik: zuletzt gezeigte Frage je Karte – kommt die Karte nach „Nochmal“ wieder,
-  // zeigt pickDrill eine andere Übung desselben Themas.
+  // zeigt pickDrill eine andere Übung desselben Themas. Gilt nur innerhalb EINER Runde:
+  // die erste beginnt leer (Mount), jede weitere (startFree) leert es.
   const lastDrill = useRef({})
   const { mode, size, s: session, turn } = round
   const item = currentCard(session)
@@ -69,6 +70,7 @@ function SRSQuiz({ onClose, initialMode = 'due', sound }) {
   // sind, zählen weiter als fällig – alle anderen verschieben den Plan nicht.
   const startFree = () => {
     const d = buildDeck('free')
+    lastDrill.current = {} // neue Runde: „eben gezeigt“ gilt nur innerhalb einer Runde
     setRound(r => ({ mode: 'free', size: d.length, s: startSession(d, session.pending), turn: r.turn + 1 }))
     setFlipped(false)
   }

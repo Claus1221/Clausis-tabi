@@ -9,6 +9,8 @@ import { useSound, ListenButton, NO_SOUND_HINT } from '../components/sound.jsx'
 import { TappableSentence, useShowRoman } from '../components/text.jsx'
 import { GrammarHead, GrammarExplain, GrammarExamples } from '../components/grammar.jsx'
 import { GRAMMAR_ORDER, GRAMMAR_BY_ID } from '../data/grammar.js'
+import { NE_PATH } from '../data/path.js'
+import { stationStates } from '../lib/path.js'
 import { stopSpeaking } from '../lib/speech.js'
 
 // ─── Lernen (Yatra): Bibliothek zum Nachschlagen ──────────────────────────────
@@ -162,7 +164,7 @@ function GrammarSheet({ topic, sound, onClose }) {
   return (
     <LibSheet title={topic.title} onClose={onClose}>
       <GrammarHead topic={topic} />
-      <GrammarExplain topic={topic} />
+      <GrammarExplain topic={topic} sound={sound} />
       <div style={{ ...sectionLabel, marginTop: 20 }}>BEISPIELE</div>
       <GrammarExamples topic={topic} sound={sound} />
       <Btn onClick={onClose} variant="ghost" style={{ width: '100%', minHeight: 48, marginTop: 18 }}>Schließen</Btn>
@@ -171,19 +173,22 @@ function GrammarSheet({ topic, sound, onClose }) {
 }
 
 // Alle Themen in Pfad-Reihenfolge (GRAMMAR_ORDER). Wie die japanische GrammarLibrary eine
-// Liste mit Zeichen, Titel und Kurzbeschreibung. Noch nicht auf der Reise erreichte Themen
-// stehen blass da („kommt auf der Reise“), lassen sich aber trotzdem aufschlagen – die
-// Bibliothek hat keine Sperren; erledigte tragen ein ✓.
-function GrammarList({ done, onPick }) {
+// Liste mit Zeichen, Titel und Kurzbeschreibung. Nicht erledigte Themen erkennt man an der
+// grauen Zeichen-Kachel (Titel und Beschreibung bleiben voll lesbar); „Kommt noch auf der
+// Reise“ steht nur bei Themen, die weder erledigt noch die offene Station sind. Alles lässt
+// sich aufschlagen – die Bibliothek hat keine Sperren; erledigte tragen ein ✓.
+// current = ID des Themas, das auf der Reise gerade offen ist (oder null).
+function GrammarList({ done, current, onPick }) {
   return GRAMMAR_ORDER.map(id => GRAMMAR_BY_ID[id]).filter(Boolean).map(t => {
     const isDone = done.includes(t.id)
+    const later = !isDone && t.id !== current
     return (
-      <button key={t.id} onClick={() => onPick(t)} aria-label={`${t.title}${isDone ? ' (gelernt)' : ' (noch nicht auf der Reise)'} – öffnen`}
+      <button key={t.id} onClick={() => onPick(t)}
+        aria-label={`${t.title}${isDone ? ' (gelernt)' : later ? ' (kommt noch auf der Reise)' : ' (als Nächstes auf der Reise)'} – öffnen`}
         style={{
           display: 'flex', alignItems: 'center', gap: 12, width: '100%', minHeight: 56, textAlign: 'left',
           background: '#fff', border: '1px solid rgba(33,31,27,0.05)', borderRadius: 12,
           boxShadow: 'var(--shadow-card)', padding: '10px 14px', marginBottom: 8, cursor: 'pointer',
-          opacity: isDone ? 1 : 0.55,
         }}>
         <span style={{
           width: 44, height: 44, flexShrink: 0, borderRadius: 10, background: isDone ? `${C.shu}12` : C.washiDark,
@@ -194,7 +199,7 @@ function GrammarList({ done, onPick }) {
           <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: C.sumi }}>
             {t.title}{isDone && <span style={{ color: C.matcha, marginLeft: 6 }}>✓</span>}
           </span>
-          <span style={{ display: 'block', fontSize: 12, color: C.textMuted, lineHeight: 1.4 }}>{isDone ? t.summary : `Kommt noch auf der Reise · ${t.summary}`}</span>
+          <span style={{ display: 'block', fontSize: 12, color: C.textMuted, lineHeight: 1.4 }}>{later ? `Kommt noch auf der Reise · ${t.summary}` : t.summary}</span>
         </span>
         <span style={{ fontSize: 16, color: C.textMuted }}>›</span>
       </button>
@@ -260,6 +265,9 @@ export default function LernenScreen() {
   const done = progress.completedLessons || []
   const doneBlocks = progress.completedWordBlocks || []
   const doneGrammar = progress.completedGrammar || []
+  // Offene Station der Reise – ist sie ein Grammatik-Thema, steht es nicht als „kommt noch“ da.
+  const openNode = NE_PATH[stationStates(NE_PATH, progress).indexOf('current')]
+  const currentGrammar = openNode?.type === 'grammar' ? openNode.id : null
 
   // Die Blätter liegen als fixes Overlay ÜBER der Tafel, statt sie zu ersetzen: so bleibt
   // die Tafel gerendert und die Scroll-Position nach dem Schließen dieselbe.
@@ -298,7 +306,7 @@ export default function LernenScreen() {
 
       {view === 'woerter' && <WordList done={doneBlocks} onPick={(word, block) => setSelWord({ word, block })} />}
       {view === 'zeichen' && <CharTable done={done} onPick={setSel} onNotes={() => setNotesOpen(true)} />}
-      {view === 'grammatik' && <GrammarList done={doneGrammar} onPick={setSelTopic} />}
+      {view === 'grammatik' && <GrammarList done={doneGrammar} current={currentGrammar} onPick={setSelTopic} />}
     </div>
   )
 }

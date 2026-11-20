@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { GRAMMAR, GRAMMAR_BY_ID, grammarKey } from '../data/grammar.js'
-import { pickDrill, isGrammarKey, topicForKey, GRAMMAR_QUALITY, readingOf } from './grammarSrs.js'
-import { romanFits } from './deva.js'
+import { pickDrill, isGrammarKey, topicForKey, GRAMMAR_QUALITY } from './grammarSrs.js'
 
 // Kleines Thema mit drei Übungen – die echten Daten ändern sich, die Regel nicht.
 const ex = q => ({ q, a: 'x', options: ['x', 'y', 'z'] })
@@ -60,28 +59,6 @@ describe('pickDrill – Übungen reihum statt immer dieselbe', () => {
   it('Thema ohne Übungen oder ohne Thema → null', () => {
     expect(pickDrill({ exercises: [] }, { reps: 1 }, never)).toBeNull()
     expect(pickDrill(null, { reps: 1 }, never)).toBeNull()
-  })
-})
-
-describe('readingOf – Umschrift einer Antwort-Option', () => {
-  it('aus den Kursdaten: Tokens und Wörter', () => {
-    expect(readingOf('लाई')).toBe('lāī')
-    expect(readingOf('म')).toBe('ma')
-    expect(readingOf('लाई'.normalize('NFD'))).toBe('lāī')
-  })
-  it('Stamm + angehängtes Wort', () => {
-    expect(readingOf('मलाई')).toBe('malāī')
-  })
-  it('mehrere Wörter: Teile mit Leerzeichen; ein unbekannter Teil → leer', () => {
-    expect(readingOf('म म')).toBe('ma ma')
-    expect(readingOf('म xyz')).toBe('')
-    expect(readingOf('')).toBe('')
-  })
-  it('jede gefundene Umschrift einer Option passt zur Schrift (romanFits)', () => {
-    for (const g of GRAMMAR) for (const e of g.exercises) for (const o of e.options) {
-      const r = readingOf(o)
-      if (r) expect(romanFits(o, r), `${o} ≠ ${r}`).toBe(true)
-    }
   })
 })
 

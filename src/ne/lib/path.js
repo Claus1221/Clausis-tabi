@@ -47,6 +47,13 @@ export function nodeMeta(node) {
 // Station = kein Überschrift-Eintrag und mit Daten. Eine Station ohne Daten (Kapitel,
 // Szene, Ziel, solange es sie nicht gibt) ist damit weder erledigt noch offen – sie
 // hält die Stationen dahinter nicht auf.
+// Wird ein übersprungener Typ in einer späteren Version bekannt (Kapitel-Daten kommen
+// dazu), zählt die Station ab dann: die erste noch nicht erledigte neue Station wird
+// 'current', auch wenn der Lernende schon weiter hinten war; nicht erledigte Stationen
+// dahinter sind 'locked', bis sie erledigt ist. Erledigte Stationen bleiben 'done' und
+// wiederholbar (stationStates prüft isNodeDone vor der Lage). Das ist ein einmaliger
+// Rückschritt auf der Karte, nie eine Sackgasse: es gibt immer genau eine offene Station,
+// solange etwas fehlt.
 const isStation = n => !n.world && nodeMeta(n) !== null
 
 // Index der nächsten offenen Station: die erste nicht erledigte (Überschriften und

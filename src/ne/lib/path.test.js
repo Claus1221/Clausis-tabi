@@ -41,6 +41,21 @@ describe('NE_PATH', () => {
     const ids = [...SCRIPT_LESSONS.map(l => ['script', l.id]), ...WORD_BLOCKS.map(b => ['word', b.id]), ...GRAMMAR.map(g => ['grammar', g.id])]
     for (const [type, id] of ids) expect(stations.filter(n => n.type === type && n.id === id), `${type}:${id}`).toHaveLength(1)
   })
+  // Die verbindliche Reihenfolge aus path-order.md, als Ganzes festgenagelt: jede
+  // Umsortierung (auch zweier Kapitel) muss hier bewusst nachgezogen werden.
+  it('der ganze Kurs in verbindlicher Reihenfolge', () => {
+    const S = n => Array.from({ length: n }, (_, i) => `script:s${i + 1}`)
+    expect(stations.map(n => `${n.type}:${n.id}`)).toEqual([
+      ...S(14),
+      'word:nw1', 'grammar:ng1', 'grammar:ng2', 'word:nw2', 'grammar:ng3', 'chapter:nc1',
+      'word:nw3', 'grammar:ng4', 'grammar:ng5', 'chapter:nc2', 'dialog:nd1',
+      'word:nw4', 'grammar:ng8', 'grammar:ng9', 'grammar:ng10', 'chapter:nc3', 'dialog:nd3', 'dialog:nd4',
+      'word:nw5', 'grammar:ng6', 'grammar:ng7', 'grammar:ng11', 'chapter:nc4', 'dialog:nd5',
+      'word:nw6', 'grammar:ng12', 'chapter:nc5', 'chapter:nc6', 'dialog:nd2',
+      'word:nw7', 'chapter:nc7', 'chapter:nc8', 'dialog:nd6', 'chapter:nc9', 'chapter:nc10', 'goal:goal',
+    ])
+    expect(NE_PATH.filter(n => n.world).map(n => n.theme)).toEqual(['tal', 'tal', 'tal', 'tal', 'tal', 'tal', 'huegel', 'see', 'berge'])
+  })
   it('Grammatik-Stationen in der Reihenfolge von GRAMMAR_ORDER', () => {
     expect(stations.filter(n => n.type === 'grammar').map(n => n.id)).toEqual(GRAMMAR_ORDER)
   })

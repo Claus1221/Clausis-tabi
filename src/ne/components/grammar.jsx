@@ -2,6 +2,8 @@ import { C, NE } from '../../theme.js'
 import { Card } from '../../components/ui.jsx'
 import { GRAMMAR_NEW_WORDS } from '../data/grammar.js'
 import { TappableSentence, useShowRoman } from './text.jsx'
+import { ListenButton } from './sound.jsx'
+import { explainParts } from '../lib/grammarText.js'
 
 // ─── Grammatik-Bausteine: Erklärung und Beispiele ─────────────────────────────
 // Eine Fassung für die Lektion (screens/players.jsx, GrammarLesson) und das Nachlesen in
@@ -18,20 +20,15 @@ export function GrammarHead({ topic }) {
   )
 }
 
-// Erklärung: Abschnitte des body, danach die neuen Wörter des Themas (falls es welche
-// hat) als kleine Liste – Devanagari, Umschrift nach Schalter, Bedeutung.
-// Der body hat für dieselben Wörter oft einen Abschnitt „Neue Wörter“ als Fließtext – den
-// ersetzt die Liste (sonst stünde alles doppelt). Erkannt wird er nur, wenn die Überschrift
-// so heißt UND er jedes neue Wort nennt; jeder andere Abschnitt bleibt stehen.
-const isNewWordsSection = (s, fresh) =>
-  fresh.length > 0 && /^neue?s? w(ö|o)rt/i.test(s.h || '') && fresh.every(w => s.text.includes(w.dev))
-
-export function GrammarExplain({ topic }) {
+// Erklärung: jeder body-Abschnitt, wie er geschrieben ist; die neuen Wörter des Themas als
+// kleine Liste (Devanagari, Umschrift nach Schalter, Bedeutung, Anhören nur mit Ton) nur,
+// wenn der body sie nicht schon in einem eigenen Abschnitt erklärt – Regel in lib/grammarText.js.
+export function GrammarExplain({ topic, sound }) {
   const showRoman = useShowRoman()
-  const fresh = GRAMMAR_NEW_WORDS[topic.id] || []
+  const { sections, list: fresh } = explainParts(topic.body, GRAMMAR_NEW_WORDS[topic.id])
   return (
     <>
-      {topic.body.filter(s => !isNewWordsSection(s, fresh)).map((s, i) => (
+      {sections.map((s, i) => (
         <div key={i} style={{ marginBottom: 12 }}>
           {s.h && <div style={{ fontSize: 12, color: C.shu, fontWeight: 700, marginBottom: 2 }}>{s.h}</div>}
           <p style={{ fontSize: 15, color: C.sumi, lineHeight: 1.6, margin: 0 }}>{s.text}</p>
@@ -41,12 +38,13 @@ export function GrammarExplain({ topic }) {
         <Card style={{ marginTop: 4, padding: '12px 14px' }}>
           <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, letterSpacing: 1, marginBottom: 6 }}>NEUE WÖRTER</div>
           {fresh.map(w => (
-            <div key={w.dev} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '4px 0', borderTop: `1px solid ${C.washiDark}` }}>
+            <div key={w.dev} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderTop: `1px solid ${C.washiDark}` }}>
               <span style={{ flexShrink: 0, maxWidth: '50%' }}>
                 <span style={{ display: 'block', fontFamily: NE, fontSize: 22, color: C.sumi, lineHeight: 1.35 }}>{w.dev}</span>
                 {showRoman && <span style={{ display: 'block', fontSize: 12, color: C.indigo }}>{w.roman}</span>}
               </span>
               <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: C.sumi, lineHeight: 1.4 }}>{w.de}</span>
+              {sound && <ListenButton text={w.dev} sound={sound} quiet label="" />}
             </div>
           ))}
         </Card>

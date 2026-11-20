@@ -3,7 +3,7 @@ import { C, NE } from '../../theme.js'
 import { Btn, Card } from '../../components/ui.jsx'
 import { feedbackColor } from '../lib/srs.js'
 import { shuffle } from '../lib/scriptQuiz.js'
-import { readingOf } from '../lib/grammarSrs.js'
+import { readingOf } from '../lib/readings.js'
 import { solved } from '../data/grammar.js'
 import { stopSpeaking } from '../lib/speech.js'
 import { ListenButton } from './sound.jsx'
@@ -23,7 +23,7 @@ import { useShowRoman } from './text.jsx'
 //
 // ex     – Übung aus data/grammar.js { q, a, options, hint, de, roman }
 // head   – optionale Kopfzeile über der Karte (Thema, Zähler)
-// sound  – useSound()-Stand; nextLabel – Text des Weiter-Knopfs
+// sound  – useSound()-Stand; nextLabel – Text des Weiter-Knopfs oder Funktion (richtig?) → Text
 const GAP = '＿＿'
 
 export function GapDrill({ ex, onDone, sound, head = null, nextLabel = 'Weiter →' }) {
@@ -98,7 +98,7 @@ export function GapDrill({ ex, onDone, sound, head = null, nextLabel = 'Weiter �
               💡 {ex.hint}
             </div>
           )}
-          <Btn onClick={finish} style={{ marginTop: 12, width: '100%', minHeight: 48 }}>{nextLabel}</Btn>
+          <Btn onClick={finish} style={{ marginTop: 12, width: '100%', minHeight: 48 }}>{typeof nextLabel === 'function' ? nextLabel(correct) : nextLabel}</Btn>
         </>
       )}
     </div>
