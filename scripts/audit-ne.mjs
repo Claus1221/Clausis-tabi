@@ -12,36 +12,59 @@
 //     darf im Satz eines früheren Worts DESSELBEN Blocks vorkommen.
 //   • Grammatik-Thema: seine GRAMMAR_NEW_WORDS und GRAMMAR_FORMS gelten ab diesem Thema
 //     (auch für das Thema selbst).
-//   • Funktionswörter (src/ne/lib/functionWords.js) gelten überall.
+//   • Funktionswörter (src/ne/lib/functionWords.js) und die Eigennamen der Geschichte
+//     (PROPER_NAMES – antippbar, aber nie als Lernwort vorgestellt) gelten überall.
+//   • Kapitel: jedes intro-Wort gilt ab SEINEM Schritt (und für alle späteren Stationen).
 // Geprüft wird:
 //   • Wortblock: jedes antippbare Token (mit de) der Beispielsätze.
 //   • Grammatik-Thema: jedes antippbare Token der Beispiele und jedes Wort der GELÖSTEN
 //     Lückensätze (die haben keine Tokens; angehängte Wörter wie झोलामा zählen, wenn
 //     Stamm und Anhängsel eingeführt sind – isKnownWord).
-// Satzzeichen zählen nie. Stationen ohne Daten (Kapitel, Szenen, Ziel – noch) werden
-// übersprungen; später ergänzen hier Kapitel-`intro`-Wörter die Einführungen.
+//   • Kapitel: in Erzähl-Zeilen jedes antippbare Token, in allen anderen Schritten jedes
+//     Wort jedes Nepali-Texts – auch der Ablenker (Gespräch-Optionen, jede Lücken-Option
+//     eingesetzt, jedes Satzbau-Stück): was man antippen soll, muss man lesen können.
+// Satzzeichen zählen nie. Stationen ohne Daten (Szenen – noch – und das Ziel) werden
+// übersprungen.
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 import { NE_PATH } from '../src/ne/data/path.js'
 import { WORD_BLOCKS } from '../src/ne/data/words.js'
 import { GRAMMAR, GRAMMAR_NEW_WORDS, GRAMMAR_FORMS, solved } from '../src/ne/data/grammar.js'
+import { CHAPTERS } from '../src/ne/data/chapters.js'
 import { nfc } from '../src/ne/lib/deva.js'
 import { FUNCTION_WORDS, FUNCTION_WORD_LIMIT, functionWordSet, isKnownWord } from '../src/ne/lib/functionWords.js'
 
 // Weitergereicht, damit Aufrufer (Test, --list-function-words) eine Adresse behalten.
 export { FUNCTION_WORDS, FUNCTION_WORD_LIMIT, functionWordSet }
 
+// Eigennamen der Geschichte (wie PROPER_NAMES in src/ne/data/chapters.test.js).
+export const PROPER_NAMES = ['आशा', 'माछापुच्छ्रे']
+
+// Alle Nepali-Texte eines Kapitel-Schritts außer Erzählung/intro, inkl. Ablenker.
+function chapterTexts(s) {
+  switch (s.kind) {
+    case 'audio': return [s.say]
+    case 'dialog': return [s.line, ...(s.options || [])]
+    case 'gap': return (s.options || []).map(o => s.before + o + s.after)
+    case 'tf': return [s.dev]
+    case 'build': return [s.dev, ...(s.tiles || [])]
+    default: return []
+  }
+}
+
 // Wörter eines Satzes ohne Tokens: an Leer- und Satzzeichen trennen.
 const wordsOf = sentence => nfc(sentence).split(/[\s,।?!.–—"“”„]+/).filter(w => /[ऀ-ॿ]/.test(w))
 
 // Kern (rein): path in Reihenfolge, blocks = WORD_BLOCKS-Format, known = Set (NFC) der
 // immer bekannten Wörter, grammar = { topics, newWords, forms } im Format von
-// data/grammar.js (fehlt → Grammatik-Stationen werden übersprungen).
-// → [{ block, word, token }] in Pfad- und Satzreihenfolge; bei Grammatik ist `block` die
-// Themen-ID und `word` der Satz.
-export function auditPath(path, blocks, known, grammar = {}) {
+// data/grammar.js (fehlt → Grammatik-Stationen werden übersprungen), chapters = CHAPTERS
+// (fehlt → Kapitel-Stationen werden übersprungen).
+// → [{ block, word, token }] in Pfad- und Satzreihenfolge; bei Grammatik und Kapiteln ist
+// `block` die Stations-ID und `word` der Satz (je Schritt, Satz und Wort ein Fund).
+export function auditPath(path, blocks, known, grammar = {}, chapters = []) {
   const byId = new Map(blocks.map(b => [b.id, b]))
   const topics = new Map((grammar.topics || []).map(g => [g.id, g]))
+  const chapterById = new Map(chapters.map(c => [c.id, c]))
   const introduced = new Set(known)
   const findings = []
   for (const node of path) {
@@ -70,6 +93,22 @@ export function auditPath(path, blocks, known, grammar = {}) {
         const s = solved(e)
         for (const w of wordsOf(s)) if (!isKnownWord(w, introduced)) findings.push({ block: g.id, word: s, token: w })
       }
+    } else if (node.type === 'chapter') {
+      const c = chapterById.get(node.id)
+      if (!c) continue
+      for (const s of c.steps) {
+        if (s.kind === 'intro') {
+          for (const part of nfc(s.dev).split(/\s+/)) if (part) introduced.add(part)
+          continue
+        }
+        const seen = new Set()
+        const report = (text, token) => {
+          const key = `${text}|${token}`
+          if (!seen.has(key)) { seen.add(key); findings.push({ block: c.id, word: text, token }) }
+        }
+        for (const tok of s.tokens || []) if (tok.de && !introduced.has(nfc(tok.t))) report(s.dev, tok.t)
+        for (const text of chapterTexts(s)) for (const w of wordsOf(text)) if (!isKnownWord(w, introduced)) report(text, w)
+      }
     }
   }
   return findings
@@ -84,10 +123,12 @@ function main(argv) {
     return 0
   }
   const grammar = { topics: GRAMMAR, newWords: GRAMMAR_NEW_WORDS, forms: GRAMMAR_FORMS }
-  const findings = auditPath(NE_PATH, WORD_BLOCKS, functionWordSet(), grammar)
+  const known = new Set([...functionWordSet(), ...PROPER_NAMES.map(nfc)])
+  const findings = auditPath(NE_PATH, WORD_BLOCKS, known, grammar, CHAPTERS)
   const blocks = NE_PATH.filter(n => n.type === 'word' && WORD_BLOCKS.some(b => b.id === n.id)).length
   const topics = NE_PATH.filter(n => n.type === 'grammar' && GRAMMAR.some(g => g.id === n.id)).length
-  console.log(`Wort-Audit: ${blocks} Wortblöcke und ${topics} Grammatik-Themen im Pfad geprüft.`)
+  const chapters = NE_PATH.filter(n => n.type === 'chapter' && CHAPTERS.some(c => c.id === n.id)).length
+  console.log(`Wort-Audit: ${blocks} Wortblöcke, ${topics} Grammatik-Themen und ${chapters} Kapitel im Pfad geprüft.`)
   if (!findings.length) {
     console.log('✓ Jedes Wort ist an seiner Stelle eingeführt.')
     return 0

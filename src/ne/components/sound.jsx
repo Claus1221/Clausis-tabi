@@ -51,13 +51,14 @@ export function usePlayback() {
 
 // Anhören-Knopf mit drei Zuständen: prüfen (gesperrt), kein Ton (nur stummes Zeichen,
 // mit `quiet` gar nichts – z. B. auf der Rückseite einer Karteikarte), Ton (44-px-Knopf,
-// solange gesprochen wird als „spricht…“ markiert).
-export function ListenButton({ text, sound, label = 'Anhören', quiet = false }) {
+// solange gesprochen wird als „spricht…“ markiert). ariaLabel: Name für Vorleser, nötig,
+// wenn label leer ist (nur 🔊 sichtbar) – z. B. „Anhören: पानी“.
+export function ListenButton({ text, sound, label = 'Anhören', quiet = false, ariaLabel }) {
   const [busy, play] = usePlayback()
   if (sound === false) return quiet ? null : <NoSoundMark />
   const checking = sound === null
   return (
-    <button disabled={checking || busy !== null}
+    <button disabled={checking || busy !== null} aria-label={ariaLabel}
       onClick={() => play('x', [text])}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44,

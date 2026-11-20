@@ -3,21 +3,28 @@ import { NE_PATH } from '../data/path.js'
 import { SCRIPT_LESSONS } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
 import { GRAMMAR, GRAMMAR_ORDER } from '../data/grammar.js'
+import { CHAPTERS } from '../data/chapters.js'
 import { isNodeDone, nodeMeta, nextOpenIndex, stationStates, wordsBefore } from './path.js'
 
 const stations = NE_PATH.filter(n => !n.world)
 const EMPTY = { completedLessons: [] }
-const ALL_DONE = { completedLessons: SCRIPT_LESSONS.map(l => l.id), completedWordBlocks: WORD_BLOCKS.map(b => b.id), completedGrammar: GRAMMAR.map(g => g.id) }
+// Alles mit Daten erledigt, das Ziel (bucht sich in completedChapters ein) noch nicht.
+const BEFORE_GOAL = {
+  completedLessons: SCRIPT_LESSONS.map(l => l.id), completedWordBlocks: WORD_BLOCKS.map(b => b.id),
+  completedGrammar: GRAMMAR.map(g => g.id), completedChapters: CHAPTERS.map(c => c.id),
+}
+const ALL_DONE = { ...BEFORE_GOAL, completedChapters: [...BEFORE_GOAL.completedChapters, 'goal'] }
 const wordIds = new Set(WORD_BLOCKS.map(b => b.id))
 
 describe('NE_PATH', () => {
   it('beginnt mit einer Welt-Überschrift', () => {
     expect(NE_PATH[0].world).toBeTruthy()
   })
-  // Kapitel, Szenen und Ziel haben heute noch keine Daten – die Karte lässt sie still aus.
+  // Szenen haben heute noch keine Daten in der Karte – sie fallen still weg.
   it('jede Station mit Daten hat nodeMeta ≠ null (Titel + Zeichen)', () => {
     const grammarIds = new Set(GRAMMAR.map(g => g.id))
     const withData = n => n.type === 'script' || (n.type === 'word' && wordIds.has(n.id)) || (n.type === 'grammar' && grammarIds.has(n.id))
+      || n.type === 'chapter' || n.type === 'goal'
     for (const n of stations.filter(withData)) {
       const m = nodeMeta(n)
       expect(m, `${n.type}:${n.id}`).not.toBeNull()
@@ -68,12 +75,30 @@ describe('NE_PATH', () => {
     const PATTERN = { script: /^s\d+$/, word: /^nw\d+$/, grammar: /^ng\d+$/, chapter: /^nc\d+$/, dialog: /^nd\d+$/, goal: /^goal$/ }
     for (const n of stations) expect(n.id, n.type).toMatch(PATTERN[n.type])
   })
-  it('Kapitel, Szenen und Ziel stehen schon im Pfad (Daten folgen) und werden heute übersprungen', () => {
+  it('Kapitel, Szenen und Ziel stehen im Pfad; alles erledigt → nichts offen', () => {
     expect(stations.filter(n => n.type === 'chapter')).toHaveLength(10)
     expect(stations.filter(n => n.type === 'dialog')).toHaveLength(6)
-    expect(stations.at(-1)).toEqual({ type: 'goal', id: 'goal' })
-    // Ziel und alles ohne Daten sind kein Hindernis: alles mit Daten erledigt → nichts offen.
     expect(stationStates(NE_PATH, ALL_DONE).includes('current')).toBe(false)
+  })
+  it('genau eine Ziel-Station, und sie ist die letzte im Pfad', () => {
+    expect(NE_PATH.filter(n => n.type === 'goal')).toEqual([{ type: 'goal', id: 'goal' }])
+    expect(NE_PATH.at(-1)).toEqual({ type: 'goal', id: 'goal' })
+  })
+  it('jedes Kapitel genau einmal im Pfad, in der Reihenfolge von path-order.md (= CHAPTERS)', () => {
+    expect(stations.filter(n => n.type === 'chapter').map(n => n.id))
+      .toEqual(['nc1', 'nc2', 'nc3', 'nc4', 'nc5', 'nc6', 'nc7', 'nc8', 'nc9', 'nc10'])
+    expect(CHAPTERS.map(c => c.id)).toEqual(stations.filter(n => n.type === 'chapter').map(n => n.id))
+  })
+  it('Kapitel-Station: Titel des Kapitels; Ziel-Station: eigener Titel', () => {
+    for (const c of CHAPTERS) expect(nodeMeta({ type: 'chapter', id: c.id })).toMatchObject({ title: c.title })
+    expect(nodeMeta({ type: 'goal', id: 'goal' }).title).toBeTruthy()
+  })
+  it('Ziel: gesperrt bis alles davor erledigt ist, dann offen, gebucht erledigt', () => {
+    const gi = NE_PATH.length - 1
+    expect(stationStates(NE_PATH, {})[gi]).toBe('locked')
+    expect(stationStates(NE_PATH, BEFORE_GOAL)[gi]).toBe('current')
+    expect(stationStates(NE_PATH, ALL_DONE)[gi]).toBe('done')
+    expect(isNodeDone({ type: 'goal', id: 'goal' }, { completedChapters: ['goal'] })).toBe(true)
   })
   it('jede Welt-Überschrift hat Titel, Untertitel und eine bekannte Kulisse', () => {
     for (const w of NE_PATH.filter(n => n.world)) {
@@ -96,7 +121,7 @@ describe('isNodeDone / nodeMeta', () => {
     expect(nodeMeta(odd)).toBeNull()
   })
   it('spätere Typen mit unbekannter ID → nodeMeta null', () => {
-    for (const type of ['word', 'grammar', 'chapter', 'dialog', 'goal']) {
+    for (const type of ['word', 'grammar', 'chapter', 'dialog']) {
       expect(nodeMeta({ type, id: 'gibtsnicht' }), type).toBeNull()
     }
     expect(nodeMeta({ type: 'script', id: 's99' })).toBeNull()
@@ -128,8 +153,8 @@ describe('nextOpenIndex', () => {
     const path = [{ world: 'A' }, { type: 'word', id: 'gibtsnicht' }, { type: 'script', id: 's1' }]
     expect(nextOpenIndex(path, EMPTY)).toBe(2)
   })
-  it('überspringt Kapitel/Szenen/Ziel ohne Daten auch mitten im Pfad', () => {
-    const path = [{ world: 'A' }, { type: 'script', id: 's1' }, { type: 'chapter', id: 'nc1' }, { type: 'dialog', id: 'nd1' }, { type: 'goal', id: 'goal' }, { type: 'script', id: 's2' }]
+  it('überspringt Kapitel/Szenen ohne Daten auch mitten im Pfad', () => {
+    const path = [{ world: 'A' }, { type: 'script', id: 's1' }, { type: 'chapter', id: 'nc99' }, { type: 'dialog', id: 'nd99' }, { type: 'raetsel', id: 'x' }, { type: 'script', id: 's2' }]
     expect(nextOpenIndex(path, { completedLessons: ['s1'] })).toBe(5)
     expect(nextOpenIndex(path, { completedLessons: ['s1', 's2'] })).toBe(path.length)
   })
@@ -147,7 +172,7 @@ describe('stationStates', () => {
     expect(stationStates(path, { completedLessons: ['s1'] })).toEqual([null, 'done', 'current', null, 'locked'])
   })
   it('eine Station ohne Daten blockiert die folgende nicht (weder erledigt noch offen)', () => {
-    const p = [{ world: 'A' }, { type: 'script', id: 's1' }, { type: 'chapter', id: 'nc1' }, { type: 'script', id: 's2' }]
+    const p = [{ world: 'A' }, { type: 'script', id: 's1' }, { type: 'chapter', id: 'nc99' }, { type: 'script', id: 's2' }]
     expect(stationStates(p, { completedLessons: ['s1'] })).toEqual([null, 'done', null, 'current'])
   })
   it('eine erledigte Station hinter der offenen bleibt erledigt', () => {

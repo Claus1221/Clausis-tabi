@@ -3,6 +3,7 @@ import { GRAMMAR, GRAMMAR_ORDER, GRAMMAR_BY_ID, GRAMMAR_NEW_WORDS, GRAMMAR_FORMS
 import { WORD_BLOCKS, WORD_BY_DEV } from './words.js'
 import { romanFits, aksharas, nfc } from '../lib/deva.js'
 import { functionWordSet, isKnownWord } from '../lib/functionWords.js'
+import { NE_PATH } from './path.js'
 
 // Paare aus Devanagari und Umschrift, die romanFits ablehnt, obwohl sie richtig sind.
 // Je Eintrag eine Zeile Begründung; die Umschrift wird NIE verbogen. Schlüssel `${dev}|${roman}`.
@@ -10,10 +11,9 @@ const ROMAN_EXCEPTIONS = {}
 
 const IDS = ['ng1', 'ng2', 'ng3', 'ng4', 'ng5', 'ng6', 'ng7', 'ng8', 'ng9', 'ng10', 'ng11', 'ng12']
 // Verbindliche Reihenfolge aus dem Lernpfad (path-order.md): was VOR einem Thema liegt,
-// darf es benutzen. Bewusst hier fest verdrahtet – NE_PATH bekommt die Grammatik-Stationen
-// erst in der anderen Hälfte der Aufgabe.
-const COURSE = ['nw1', 'ng1', 'ng2', 'nw2', 'ng3', 'nw3', 'ng4', 'ng5', 'nw4', 'ng8', 'ng9', 'ng10',
-  'nw5', 'ng6', 'ng7', 'ng11', 'nw6', 'ng12', 'nw7']
+// darf es benutzen. Abgeleitet aus NE_PATH (Wortblöcke und Grammatik-Themen in Pfad-
+// Reihenfolge); dass NE_PATH selbst path-order.md folgt, prüft path.test.js als Ganzes.
+const COURSE = NE_PATH.filter(n => n.type === 'word' || n.type === 'grammar').map(n => n.id)
 // Funktionswörter und angehängte Wörter (झोला+मा, तपाईं+को, दुई+वटा, म+सँग – im Lückensatz ein
 // Wort ohne Leerzeichen) kommen aus EINER Quelle, src/ne/lib/functionWords.js – dieselbe, die
 // der Wort-Audit (scripts/audit-ne.mjs) benutzt. isKnownWord verlangt bei Stamm + Anhängsel,

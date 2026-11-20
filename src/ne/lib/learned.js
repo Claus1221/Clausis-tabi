@@ -1,6 +1,7 @@
 import { SCRIPT_DATA, SCRIPT_LESSONS } from '../data/script.js'
 import { WORD_BLOCKS, learnedWords } from '../data/words.js'
 import { GRAMMAR_ORDER, grammarKey } from '../data/grammar.js'
+import { CHAPTERS, CHAPTER_WORD, chapterWords } from '../data/chapters.js'
 import { isDue } from '../../useProgress.js'
 import { nfc } from './deva.js'
 import { isGrammarKey, topicForKey } from './grammarSrs.js'
@@ -8,8 +9,8 @@ import { isGrammarKey, topicForKey } from './grammarSrs.js'
 // ─── Was im Yatra-Wiederholungs-Umlauf ist ───────────────────────────────────
 // Gegenstück zu src/lib/learned.js + srsItemInfo. Eine Quelle für alle Stapel und
 // Zähler (Üben, Fortschritt, Einplanen in NepaliApp) – sonst zeigt die App an zwei
-// Stellen verschiedene „fällig“-Zahlen. Heute Schriftzeichen, Wörter und Grammatik;
-// spätere Tasks hängen Kapitel-Wörter an learnedItems und itemInfo an.
+// Stellen verschiedene „fällig“-Zahlen. Schriftzeichen, Wörter (aus Wortblöcken und die
+// intro-Wörter abgeschlossener Kapitel – beide als w:-Karte) und Grammatik.
 //
 // Jeder Schlüssel geht durch nfc: dieselbe Silbe kann zerlegt oder zusammengesetzt
 // ankommen (Tastatur, Kopieren, Datenpflege) – ohne NFC wären das zwei Karten bzw. ein
@@ -39,13 +40,17 @@ export const wordKey = dev => WORD_PREFIX + nfc(dev)
 const WORD_BY_KEY = Object.fromEntries(WORD_BLOCKS.flatMap(b => b.words).map(w => [wordKey(w.dev), w]))
 
 // Alle Karten-Schlüssel (NFC, ohne Doppel) laut Lernstand: erst Schriftzeichen in
-// Lektionsreihenfolge, dann Wörter (w:-Schlüssel) in Blockreihenfolge.
+// Lektionsreihenfolge, dann Wörter (w:-Schlüssel) in Blockreihenfolge, dann die Wörter
+// abgeschlossener Kapitel (Kapitel-Reihenfolge = Pfad-Reihenfolge), dann Grammatik.
+// completedChapters enthält auch das Ziel ('goal') – es ist kein Kapitel und fällt weg.
 export function learnedItems(progress) {
   const done = progress?.completedLessons || []
   const grammar = progress?.completedGrammar || []
+  const chapters = progress?.completedChapters || []
   return [...new Set([
     ...SCRIPT_LESSONS.filter(l => done.includes(l.id)).flatMap(l => l.chars.map(nfc)),
     ...learnedWords(progress?.completedWordBlocks).map(wordKey),
+    ...CHAPTERS.filter(c => chapters.includes(c.id)).flatMap(chapterWords).map(wordKey),
     // Grammatik: eine Karte je abgeschlossenem Thema, in Pfad-Reihenfolge (GRAMMAR_ORDER).
     ...GRAMMAR_ORDER.filter(id => grammar.includes(id)).map(grammarKey),
   ])]
@@ -59,7 +64,8 @@ export function learnedItems(progress) {
 //   de    – deutsche Erklärung (bei Zeichen die Merkhilfe)
 //   say   – Text für die Sprachausgabe
 //   kindLabel – Zeichenart auf Deutsch („Konsonant“, „Wort“); leer, wenn unbekannt
-//   ex    – nur bei Wörtern: der Beispielsatz { dev, roman, de, tokens } (null, wenn unbekannt)
+//   ex    – nur bei Wörtern: der Beispielsatz { dev, roman, de, tokens } (null, wenn unbekannt
+//           oder ein Kapitelwort – die haben keinen eigenen Beispielsatz)
 //   (Grammatik: front = Zeichen des Themas, de = Titel, summary = Kurzbeschreibung;
 //   geübt wird sie nicht über diese Felder, sondern als Lückensatz – s. lib/grammarSrs.js)
 export function itemInfo(key) {
@@ -74,6 +80,9 @@ export function itemInfo(key) {
     const w = WORD_BY_KEY[k]
     // Unbekanntes Wort (neuere Version): das Präfix nie anzeigen oder sprechen.
     const text = k.slice(WORD_PREFIX.length)
+    // Kapitelwort (intro eines Kapitels): Umschrift und Bedeutung aus CHAPTER_WORD.
+    const cw = !w && CHAPTER_WORD[text]
+    if (cw) return { key: k, front: text, roman: cw.roman, de: cw.de, kind: 'word', say: text, kindLabel: 'Wort', ex: null }
     if (!w) return { key: k, front: text, roman: '', de: '', kind: 'word', say: text, kindLabel: 'Wort', ex: null }
     return { key: k, front: w.dev, roman: w.roman, de: w.de, kind: 'word', say: w.dev, kindLabel: 'Wort', ex: w.ex }
   }

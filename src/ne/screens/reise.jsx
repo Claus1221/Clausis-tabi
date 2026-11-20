@@ -1,31 +1,36 @@
 import { useState, useRef, useEffect, useContext } from 'react'
 import { C, NE } from '../../theme.js'
 import { ProgressCtx } from '../../state/ProgressContext.js'
-import { Btn } from '../../components/ui.jsx'
-import { XP_PER_KANA, XP_PER_WORD, XP_PER_GRAMMAR } from '../../lib/xp.js'
+import { Btn, Stars } from '../../components/ui.jsx'
+import { XP_PER_KANA, XP_PER_WORD, XP_PER_GRAMMAR, XP_PER_CHAPTER } from '../../lib/xp.js'
 import { NE_PATH } from '../data/path.js'
 import { SCRIPT_LESSONS } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
 import { GRAMMAR_BY_ID, grammarKey } from '../data/grammar.js'
+import { CHAPTER_BY_ID } from '../data/chapters.js'
 import { nfc } from '../lib/deva.js'
 import { isNodeDone, nodeMeta, stationStates } from '../lib/path.js'
 import { wordKey } from '../lib/learned.js'
+import { chapterSrsKeys, GOAL_ID } from '../lib/chapters.js'
 import { buildBackdrop, roadPath, startFlags, STATE_PALETTE } from '../lib/scene.jsx'
 import { ScriptLesson, WordBlock, GrammarLesson } from './players.jsx'
+import { ChapterPlayer, ChapterDiary, GoalScreen } from './chapter.jsx'
 
 // ─── Reise: die Yatra-Karte ───────────────────────────────────────────────────
 // Gegenstück zu src/screens/reise.jsx: Stationen entlang eines gewundenen Wegs, je
 // Welt eine eigene Nepal-Kulisse. Zustände wie dort: erledigt (grün, ✓, antippbar zum
 // Wiederholen) / offen (rot, START) / gesperrt (🔒). Freischalt-Regel in lib/path.js.
-// Stationen ohne Daten (nodeMeta null, Typen späterer Tasks) fallen still weg; am
-// Ende steht eine Tafel „Hier geht es bald weiter“.
+// Stationen ohne Daten (nodeMeta null, Typen späterer Tasks) fallen still weg. Erledigte
+// Kapitel tragen ihre Sterne (bester Stand, 1–3) unter dem Namen; die letzte Station ist
+// das Ziel 🏔. Über der Karte öffnet „Deine Geschichte“ das Tagebuch (ab dem ersten Kapitel).
 
-// Kulisse je Welt: steht an der Welt-Überschrift in data/path.js (theme); der Bereich der
-// Tafel am Ende zeigt die Berge als Ausblick (Standard: berge).
+// Kulisse je Welt: steht an der Welt-Überschrift in data/path.js (theme): tal → huegel →
+// see → berge; unter dem Ziel laufen die Berge noch ein Stück weiter.
 
 export default function ReiseScreen() {
-  const { progress, completeLesson, completeWordBlock, completeGrammar, scheduleNew } = useContext(ProgressCtx)
+  const { progress, completeLesson, completeWordBlock, completeGrammar, completeChapter, bumpChapterStars, scheduleNew } = useContext(ProgressCtx)
   const [active, setActive] = useState(null)
+  const [diary, setDiary] = useState(false)
   // Station öffnen und dabei merken, ob sie schon erledigt war (s. ScriptLesson unten).
   const open = node => setActive({ ...node, wasDone: isNodeDone(node, progress) })
   const currentRef = useRef(null)
@@ -95,6 +100,35 @@ export default function ReiseScreen() {
     )
   }
 
+  if (active?.type === 'chapter') {
+    const chapter = CHAPTER_BY_ID[active.id]
+    const already = active.wasDone // Stand beim Öffnen, Begründung wie oben
+    const close = () => setActive(null)
+    return (
+      <ChapterPlayer chapter={chapter} alreadyDone={already} onClose={close}
+        onComplete={stars => {
+          // Die neuen Wörter idempotent und immer einplanen; Sterne immer melden –
+          // bumpChapterStars behält den besten Stand, eine Wiederholung kann sie nur heben.
+          // XP und Zähler (chapters, words) nur beim ersten Abschluss.
+          const keys = chapterSrsKeys(chapter)
+          scheduleNew(keys)
+          bumpChapterStars({ [chapter.id]: stars })
+          if (!already) completeChapter(chapter.id, XP_PER_CHAPTER, { chapters: 1, words: keys.length })
+        }} />
+    )
+  }
+
+  if (active?.type === 'goal') {
+    const already = active.wasDone
+    // Das Ziel bucht sich einmal als 'goal' in completedChapters (lib/path.js), ohne XP und
+    // ohne Zähler – es ist kein Kapitel.
+    return <GoalScreen alreadyDone={already} onClose={() => setActive(null)}
+      onComplete={() => { if (!already) completeChapter(GOAL_ID, 0, {}) }} />
+  }
+
+  if (diary) return <ChapterDiary onClose={() => setDiary(false)} />
+  const chaptersDone = (progress.completedChapters || []).some(id => CHAPTER_BY_ID[id])
+
   // ─ Layout der Karte ─
   const R = 30, AMP = 86, CENTER = 160, XPAT = [0, 1, 0, -1]
   const bands = [], headers = [], laid = []
@@ -115,14 +149,11 @@ export default function ReiseScreen() {
     ni++
   })
   if (bandIdx >= 0) bands.push({ top: bandStart, bottom: y, idx: bandIdx, theme: bandTheme })
-  // Tafel am Pfadende: der Weg führt noch ein Stück zu ihr hin.
-  const boardY = y + 10
-  const BOARD_H = 120
-  bands.push({ top: y, bottom: y + BOARD_H + 40, idx: bands.length, theme: 'berge' })
-  const trackH = boardY + BOARD_H + 40
-  const roadPts = laid.map(n => [n.x, n.y])
-  roadPts.push([CENTER, boardY + 8])
-  const road = roadPath(roadPts)
+  // Unter dem Ziel noch ein Stück Berge, damit die letzte Station nicht am Rand klebt.
+  const TAIL = 60
+  bands.push({ top: y, bottom: y + TAIL, idx: bands.length, theme: 'berge' })
+  const trackH = y + TAIL
+  const road = roadPath(laid.map(n => [n.x, n.y]))
 
   const backdropH = trackH + 80
   const backdrop = buildBackdrop(bands.map((b, i) => ({
@@ -157,6 +188,11 @@ export default function ReiseScreen() {
         <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6 }}>
           {doneCount} / {stationIdx.length} Stationen gemeistert
         </div>
+        {chaptersDone && (
+          <Btn variant="ghost" onClick={() => setDiary(true)} style={{ width: '100%', minHeight: 44, marginTop: 10, fontSize: 14 }}>
+            📖 Deine Geschichte nachlesen
+          </Btn>
+        )}
       </div>
 
       {/* Karte */}
@@ -187,6 +223,7 @@ export default function ReiseScreen() {
           {laid.map((n, i) => {
             const [bg, edge] = STATE_PALETTE[n.state]
             const locked = n.state === 'locked'
+            const stars = n.node.type === 'chapter' && n.state === 'done' ? progress.chapterStars?.[n.node.id] || 0 : 0
             return (
               <div key={i} ref={n.state === 'current' ? currentRef : null}
                 style={{ position: 'absolute', left: n.x, top: n.y, transform: 'translate(-50%,-50%)', width: 2 * R + 64, textAlign: 'center' }}>
@@ -210,6 +247,13 @@ export default function ReiseScreen() {
                     {n.meta.title}
                   </span>
                 </div>
+                {stars > 0 && (
+                  <div style={{ marginTop: 1 }}>
+                    <span style={{ display: 'inline-block', background: 'rgba(239,235,224,0.88)', borderRadius: 8, padding: '0 5px' }}>
+                      <Stars count={stars} max={3} size={11} />
+                    </span>
+                  </div>
+                )}
                 {n.state === 'current' && (
                   <div style={{ marginTop: 2 }}>
                     <span style={{ background: C.shu, color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 9px', borderRadius: 10 }}>START</span>
@@ -218,21 +262,6 @@ export default function ReiseScreen() {
               </div>
             )
           })}
-
-          {/* Tafel am Pfadende */}
-          <div style={{ position: 'absolute', left: '50%', top: boardY, transform: 'translateX(-50%)', width: 230, textAlign: 'center' }}>
-            <div style={{
-              background: '#F6EBD3', border: '3px solid #A9885E', borderRadius: 10, padding: '12px 14px',
-              boxShadow: '0 6px 14px -8px rgba(33,31,27,0.45)',
-            }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#6E5138' }}>Hier geht es bald weiter</div>
-              <div style={{ fontSize: 12, color: '#7A6242', marginTop: 4, lineHeight: 1.45 }}>Neue Stationen sind unterwegs.</div>
-            </div>
-            <div aria-hidden="true" style={{ display: 'flex', justifyContent: 'space-between', width: 150, margin: '0 auto' }}>
-              <span style={{ width: 6, height: 26, background: '#8A6F55', borderRadius: 2 }} />
-              <span style={{ width: 6, height: 26, background: '#8A6F55', borderRadius: 2 }} />
-            </div>
-          </div>
         </div>
       </div>
     </div>

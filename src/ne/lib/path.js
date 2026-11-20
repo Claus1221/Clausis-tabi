@@ -1,29 +1,34 @@
 import { SCRIPT_LESSONS, SCRIPT_DATA } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
 import { GRAMMAR_BY_ID } from '../data/grammar.js'
+import { CHAPTER_BY_ID } from '../data/chapters.js'
+import { GOAL_ID } from './chapters.js'
 
 // Reine Pfad-Logik der Yatra-Karte (kein React). Gegenstück zu src/lib/path.js.
 
 // Welches Fortschritts-Feld eine Station abhakt. Felder werden aus dem japanischen
-// Kurs wiederverwendet (completedLessons = Schrift-Lektionen usw.).
+// Kurs wiederverwendet (completedLessons = Schrift-Lektionen usw.). Das Ziel hat kein
+// eigenes Feld: es bucht sich einmal als 'goal' in completedChapters ein (Kapitel-Zähler
+// gehen über CHAPTERS und sehen es nicht).
 const DONE_FIELD = {
   script: 'completedLessons',
   word: 'completedWordBlocks',
   grammar: 'completedGrammar',
   chapter: 'completedChapters',
   dialog: 'completedDialogs',
+  goal: 'completedChapters',
 }
 
-// Unbekannter Typ (oder Ziel) → nie erledigt, aber auch kein Wurf: ein Pfad aus einer
-// neueren Version darf eine ältere App nicht abstürzen lassen.
+// Unbekannter Typ → nie erledigt, aber auch kein Wurf: ein Pfad aus einer neueren
+// Version darf eine ältere App nicht abstürzen lassen.
 export function isNodeDone(node, progress) {
   const field = node && DONE_FIELD[node.type]
   return !!field && (progress?.[field] || []).includes(node.id)
 }
 
 // Titel + Stationszeichen. null für Überschriften und für Stationen, deren Daten es
-// heute nicht gibt (Kapitel, Szenen, Ziel kommen in späteren Tasks) – die Karte lässt
-// solche Stationen still aus, statt zu stürzen. Spätere Tasks ergänzen hier ihren Typ.
+// heute nicht gibt (Szenen kommen in einem späteren Task) – die Karte lässt solche
+// Stationen still aus, statt zu stürzen. Spätere Tasks ergänzen hier ihren Typ.
 export function nodeMeta(node) {
   if (node?.type === 'script') {
     const l = SCRIPT_LESSONS.find(x => x.id === node.id)
@@ -41,11 +46,16 @@ export function nodeMeta(node) {
     const g = GRAMMAR_BY_ID[node.id]
     return g ? { title: g.title, glyph: g.glyph } : null
   }
+  if (node?.type === 'chapter') {
+    const c = CHAPTER_BY_ID[node.id]
+    return c ? { title: c.title, glyph: '📖' } : null
+  }
+  if (node?.type === 'goal') return node.id === GOAL_ID ? { title: 'Ziel: Annapurna-Blick', glyph: '🏔️' } : null
   return null
 }
 
-// Station = kein Überschrift-Eintrag und mit Daten. Eine Station ohne Daten (Kapitel,
-// Szene, Ziel, solange es sie nicht gibt) ist damit weder erledigt noch offen – sie
+// Station = kein Überschrift-Eintrag und mit Daten. Eine Station ohne Daten (Szene,
+// solange es sie nicht gibt) ist damit weder erledigt noch offen – sie
 // hält die Stationen dahinter nicht auf.
 // Wird ein übersprungener Typ in einer späteren Version bekannt (Kapitel-Daten kommen
 // dazu), zählt die Station ab dann: die erste noch nicht erledigte neue Station wird

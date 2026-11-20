@@ -90,6 +90,33 @@ describe('collectNeTexts', () => {
     expect(collectNeTexts({ grammarNewWords })).toEqual([['जर्मन', RATE_WORD]])
   })
 
+  // Kapitel im Format von src/ne/data/chapters.js (nur die gelesenen Felder). Gesammelt wird,
+  // was der Kapitel-Spieler anhören lässt.
+  const chapters = [{
+    id: 'nc1',
+    steps: [
+      { kind: 'story', de: 'Nur Deutsch.' },
+      { kind: 'story', de: 'x', dev: 'यो थमेल हो।', tokens: [{ t: 'यो', r: 'yo', de: 'das' }, { t: 'थमेल', r: 'thamel', de: 'Thamel' }, { t: 'हो', r: 'ho', de: 'ist' }, { t: '।' }] },
+      { kind: 'intro', dev: 'भिसा', roman: 'bhisā', de: 'Visum' },
+      { kind: 'audio', say: 'एक हजार रुपैयाँ।', options: ['a', 'b', 'c'], answer: 'a' },
+      { kind: 'dialog', line: 'कहाँ जाने?', options: ['थमेल।', 'म जर्मन हुँ।'], answer: 'थमेल।' },
+      { kind: 'gap', before: 'अलि ', after: ' छ।', options: ['महँगो', 'सस्तो'], answer: 'महँगो' },
+      { kind: 'tf', dev: 'त्यहाँ छ।' },
+      { kind: 'build', dev: 'म पर्यटक हुँ।', tiles: ['म', 'पर्यटक', 'हुँ', 'हो'], answer: ['म', 'पर्यटक', 'हुँ'] },
+    ],
+  }]
+  it('Kapitel: Sätze (Erzählung, Hören, Gespräch samt Antwort, gelöste Lücke, Stimmt-das, Satzbau) mit Satz-Tempo', () => {
+    const t = collectNeTexts({ chapters })
+    for (const x of ['यो थमेल हो।', 'एक हजार रुपैयाँ।', 'कहाँ जाने?', 'थमेल।', 'अलि महँगो छ।', 'त्यहाँ छ।', 'म पर्यटक हुँ।']) {
+      expect(t, x).toContainEqual([x, RATE_SENTENCE])
+    }
+  })
+  it('Kapitel: intro-Wörter und antippbare Tokens mit Wort-Tempo; Ablenker, Lücken-Optionen und Stücke nicht', () => {
+    const t = collectNeTexts({ chapters })
+    for (const w of ['भिसा', 'यो', 'थमेल', 'हो']) expect(t, w).toContainEqual([w, RATE_WORD])
+    for (const x of ['म जर्मन हुँ।', 'सस्तो', 'महँगो', 'पर्यटक', '।']) expect(t.some(([y]) => y === x), x).toBe(false)
+  })
+
   it('fehlende Quellen sind erlaubt', () => {
     expect(collectNeTexts({})).toEqual([])
   })

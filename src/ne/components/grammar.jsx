@@ -44,7 +44,7 @@ export function GrammarExplain({ topic, sound }) {
                 {showRoman && <span style={{ display: 'block', fontSize: 12, color: C.indigo }}>{w.roman}</span>}
               </span>
               <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: C.sumi, lineHeight: 1.4 }}>{w.de}</span>
-              {sound && <ListenButton text={w.dev} sound={sound} quiet label="" />}
+              {sound && <ListenButton text={w.dev} sound={sound} quiet label="" ariaLabel={`Anhören: ${w.dev}`} />}
             </div>
           ))}
         </Card>

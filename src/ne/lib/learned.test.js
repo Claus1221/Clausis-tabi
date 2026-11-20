@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { SCRIPT_LESSONS, SCRIPT_DATA } from '../data/script.js'
 import { WORD_BLOCKS } from '../data/words.js'
 import { GRAMMAR, GRAMMAR_ORDER, grammarKey } from '../data/grammar.js'
+import { CHAPTERS, CHAPTER_BY_ID, CHAPTER_WORD, chapterWords } from '../data/chapters.js'
 import { learnedItems, itemInfo, dueItems, srsEntry, wordKey } from './learned.js'
 import { NE_SETTINGS_DEFAULTS, neSettings } from './settings.js'
 import { SETTINGS_DEFAULTS, addDays } from '../../useProgress.js'
@@ -99,6 +100,33 @@ describe('learnedItems / itemInfo – Grammatik (Schlüssel g: + id)', () => {
     expect(i.kind).toBe('grammar')
     expect(i.front.startsWith('g:')).toBe(false)
     expect(Object.values(i).includes(undefined)).toBe(false)
+  })
+})
+
+describe('learnedItems / itemInfo – Kapitelwörter (w: + Text)', () => {
+  it('abgeschlossene Kapitel bringen ihre intro-Wörter als w:-Schlüssel, nach den Wortblöcken', () => {
+    const got = learnedItems({ completedWordBlocks: ['nw1'], completedChapters: ['nc2', 'nc1'] })
+    const nw1 = WORD_BLOCKS.find(b => b.id === 'nw1').words.map(w => wordKey(w.dev))
+    expect(got).toEqual([...nw1, ...chapterWords(CHAPTER_BY_ID.nc1).map(wordKey), ...chapterWords(CHAPTER_BY_ID.nc2).map(wordKey)])
+  })
+  it('das Ziel (goal) und unbekannte Kapitel bringen nichts', () => {
+    expect(learnedItems({ completedChapters: ['goal', 'nc99'] })).toEqual([])
+  })
+  it('alles erledigt: eindeutig, NFC, Anzahl = Summe aller Quellen', () => {
+    const all = learnedItems({
+      completedLessons: SCRIPT_LESSONS.map(l => l.id), completedWordBlocks: WORD_BLOCKS.map(b => b.id),
+      completedGrammar: GRAMMAR.map(g => g.id), completedChapters: [...CHAPTERS.map(c => c.id), 'goal'],
+    })
+    expect(new Set(all).size).toBe(all.length)
+    const words = WORD_BLOCKS.flatMap(b => b.words).length
+    expect(all.length).toBe(Object.keys(SCRIPT_DATA).length + words + Object.keys(CHAPTER_WORD).length + GRAMMAR.length)
+  })
+  it('itemInfo eines Kapitelworts: Umschrift und Bedeutung, kein Beispielsatz, nichts undefined', () => {
+    for (const [dev, w] of Object.entries(CHAPTER_WORD)) {
+      const i = itemInfo(wordKey(dev))
+      expect(i).toMatchObject({ key: wordKey(dev), kind: 'word', front: dev, roman: w.roman, de: w.de, say: dev, kindLabel: 'Wort', ex: null })
+      expect(Object.values(i).includes(undefined), dev).toBe(false)
+    }
   })
 })
 

@@ -22,7 +22,10 @@
 // Wortschatz: ein Thema benutzt nur Wörter aus Blöcken, die im Pfad VOR ihm liegen, dazu die
 // Funktionswörter (src/ne/lib/functionWords.js – dieselbe Liste nutzt der Audit), die Formen, die es selbst lehrt
 // (GRAMMAR_FORMS), und höchstens drei ausdrücklich vorgestellte neue Wörter
-// (GRAMMAR_NEW_WORDS, im body als „Neue Wörter“ erklärt). Der Test prüft das Satz für Satz.
+// (GRAMMAR_NEW_WORDS). Meist erklärt der body sie in einem eigenen Abschnitt „Neue Wörter“ /
+// „Neues Wort“; fehlt der (ng8 nennt पैसा nur im Fließtext), zeigt die App die Wörter
+// zusätzlich als Liste unter der Erklärung (Regel explainParts in src/ne/lib/grammarText.js).
+// Der Test prüft den Wortschatz Satz für Satz.
 
 // Bauhilfen wie in words.js: Tokens als [t, r, de]-Tupel; Satzzeichen [t].
 const tok = ([t, r, de]) => (de === undefined ? { t } : { t, r, de })

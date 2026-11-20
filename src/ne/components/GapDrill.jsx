@@ -24,9 +24,11 @@ import { useShowRoman } from './text.jsx'
 // ex     – Übung aus data/grammar.js { q, a, options, hint, de, roman }
 // head   – optionale Kopfzeile über der Karte (Thema, Zähler)
 // sound  – useSound()-Stand; nextLabel – Text des Weiter-Knopfs oder Funktion (richtig?) → Text
-const GAP = '＿＿'
+// readOption – Umschrift einer Option (Standard readingOf; Kapitel geben chapterReading,
+//          weil ihre Wörter nicht in der Grammatik-Tafel stehen)
+export const GAP = '＿＿'
 
-export function GapDrill({ ex, onDone, sound, head = null, nextLabel = 'Weiter →' }) {
+export function GapDrill({ ex, onDone, sound, head = null, nextLabel = 'Weiter →', readOption = readingOf }) {
   const showRoman = useShowRoman()
   const [options] = useState(() => shuffle(ex.options))
   const [ans, setAns] = useState(null)
@@ -73,7 +75,7 @@ export function GapDrill({ ex, onDone, sound, head = null, nextLabel = 'Weiter �
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8 }}>
         {options.map(o => {
           const fb = feedbackColor(!revealed ? 'neutral' : o === ex.a ? 'correct' : o === ans ? 'wrong' : 'neutral')
-          const r = showRoman ? readingOf(o) : ''
+          const r = showRoman ? readOption(o) : ''
           return (
             <button key={o} onClick={() => !revealed && setAns(o)} disabled={revealed}
               aria-label={revealed ? `${o}${o === ex.a ? ' – richtig' : o === ans ? ' – falsch' : ''}` : o}

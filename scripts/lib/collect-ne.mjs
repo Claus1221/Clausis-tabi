@@ -3,9 +3,9 @@
 // Gegenstück zu collectTexts() in scripts/generate-audio.mjs.
 //
 // sources = { script?, words?, grammar?, grammarNewWords?, chapters?, dialogs? }
-// Bisher behandelt: `script` (SCRIPT_DATA), `words` (WORD_BLOCKS), `grammar` (GRAMMAR)
-// und `grammarNewWords` (GRAMMAR_NEW_WORDS). Spätere Tasks ergänzen hier ihre
-// Sprechstellen; nicht behandelte Schlüssel werden ignoriert.
+// Bisher behandelt: `script` (SCRIPT_DATA), `words` (WORD_BLOCKS), `grammar` (GRAMMAR),
+// `grammarNewWords` (GRAMMAR_NEW_WORDS) und `chapters` (CHAPTERS). Spätere Tasks ergänzen
+// hier ihre Sprechstellen; nicht behandelte Schlüssel werden ignoriert.
 import { nfc } from '../../src/ne/lib/deva.js'
 import { solved } from '../../src/ne/data/grammar.js'
 
@@ -59,6 +59,24 @@ export function collectNeTexts(sources = {}) {
     }
   }
   for (const list of Object.values(sources.grammarNewWords || {})) for (const w of list) addWord(w.dev)
+
+  // Kapitel: genau das, was der Kapitel-Spieler (src/ne/screens/chapter.jsx) anhören lässt –
+  // intro-Wort und antippbare Tokens der Erzählung als Zitierform; als Satz die Erzähl-Zeile,
+  // der Hör-Satz, im Gespräch die Zeile und die richtige Antwort, die GELÖSTE Lücke, der
+  // Stimmt-das-Satz und der fertige Satzbau-Satz. Ablenker, Lücken-Optionen und einzelne
+  // Satzbau-Stücke werden nie gesprochen.
+  for (const c of sources.chapters || []) {
+    for (const s of c.steps || []) {
+      if (s.kind === 'intro') addWord(s.dev)
+      else if (s.kind === 'story') {
+        addSentence(s.dev)
+        for (const tok of s.tokens || []) if (tok.de) addWord(tok.t)
+      } else if (s.kind === 'audio') addSentence(s.say)
+      else if (s.kind === 'dialog') { addSentence(s.line); addSentence(s.answer) }
+      else if (s.kind === 'gap') addSentence(s.before + s.answer + s.after)
+      else if (s.kind === 'tf' || s.kind === 'build') addSentence(s.dev)
+    }
+  }
 
   return [...texts.entries()]
 }

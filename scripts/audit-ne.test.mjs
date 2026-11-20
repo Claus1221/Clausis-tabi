@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { auditPath, FUNCTION_WORDS, functionWordSet, FUNCTION_WORD_LIMIT } from './audit-ne.mjs'
+import { auditPath, FUNCTION_WORDS, functionWordSet, FUNCTION_WORD_LIMIT, PROPER_NAMES } from './audit-ne.mjs'
 import { FUNCTION_WORDS as FW_SOURCE } from '../src/ne/lib/functionWords.js'
 
 const tok = (t, de = 'x') => ({ t, r: 'x', de })
@@ -73,6 +73,52 @@ describe('auditPath – Grammatik-Stationen', () => {
   it('ein Thema ohne Daten und Stationen anderer Typen werden übersprungen', () => {
     expect(() => auditPath([{ type: 'grammar', id: 'ng9' }, { type: 'goal', id: 'goal' }], blocks, known, grammar)).not.toThrow()
     expect(auditPath([{ type: 'grammar', id: 'ng1' }], blocks, known)).toEqual([])
+  })
+})
+
+describe('auditPath – Kapitel-Stationen', () => {
+  const L = (dev, ...tokens) => ({ dev, roman: 'x', tokens })
+  const chapters = [{
+    id: 'nc1',
+    steps: [
+      { kind: 'story', de: 'x', ...L('पानी छ।', tok('पानी'), tok('छ'), { t: '।' }) },
+      // चिया steht im Erzähl-Satz, bevor nw2 kommt → Fund (Token).
+      { kind: 'story', de: 'x', ...L('चिया छ।', tok('चिया'), tok('छ'), { t: '।' }) },
+      // भिसा wird vor seinem intro benutzt → Fund; danach nicht mehr.
+      { kind: 'tf', dev: 'भिसा छ।' },
+      { kind: 'intro', dev: 'भिसा' },
+      { kind: 'tf', dev: 'भिसा छ।' },
+      // Ablenker zählen mit: Gespräch-Optionen, Lücken-Optionen, Satzbau-Stücke.
+      { kind: 'dialog', line: 'पानी छ?', options: ['पानी छ।', 'बस छ।'], answer: 'पानी छ।' },
+      { kind: 'gap', before: '', after: ' छ।', options: ['पानी', 'तातो'], answer: 'पानी' },
+      { kind: 'build', dev: 'भिसा छ।', tiles: ['भिसा', 'छ', 'चिया'], answer: ['भिसा', 'छ'] },
+      { kind: 'audio', say: 'भिसामा पानी छ।' },
+      // Eigenname aus der Liste: gilt als bekannt.
+      { kind: 'story', de: 'x', ...L('आशा छ।', tok('आशा'), tok('छ'), { t: '।' }) },
+    ],
+  }]
+  const cpath = [{ type: 'word', id: 'nw1' }, { type: 'chapter', id: 'nc1' }, { type: 'chapter', id: 'nc2' }]
+  const known = new Set(['छ', 'मा', ...PROPER_NAMES])
+  const found = auditPath(cpath, blocks, known, {}, chapters)
+
+  it('prüft antippbare Tokens und jedes Wort jedes Nepali-Texts (auch Ablenker), intro erst ab seiner Stelle', () => {
+    expect(found).toEqual([
+      { block: 'nc1', word: 'चिया छ।', token: 'चिया' },
+      { block: 'nc1', word: 'भिसा छ।', token: 'भिसा' },
+      { block: 'nc1', word: 'बस छ।', token: 'बस' },
+      { block: 'nc1', word: 'तातो छ।', token: 'तातो' },
+      { block: 'nc1', word: 'चिया', token: 'चिया' },
+    ])
+  })
+  it('intro-Wörter gelten für spätere Stationen; Anhängsel an bekannten Wörtern zählen', () => {
+    expect(found.some(f => f.token === 'भिसामा')).toBe(false)
+    const later = [{ kind: 'tf', dev: 'भिसा छ।' }]
+    expect(auditPath([{ type: 'chapter', id: 'nc1' }, { type: 'chapter', id: 'nc2' }], blocks, known, {},
+      [chapters[0], { id: 'nc2', steps: later }]).some(f => f.block === 'nc2')).toBe(false)
+  })
+  it('Eigennamen der Geschichte stehen auf der Liste', () => {
+    expect(PROPER_NAMES).toEqual(['आशा', 'माछापुच्छ्रे'])
+    expect(found.some(f => f.token === 'आशा')).toBe(false)
   })
 })
 

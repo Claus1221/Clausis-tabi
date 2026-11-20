@@ -176,8 +176,8 @@ function QuizStep({ quiz, onFinish }) {
 // Gebucht wird dagegen SOFORT beim ersten Tipp (onComplete), verzögert ist nur das
 // Schließen (onClose): verschwindet die Lektion in der Spanne (Abmelden, Sprachwechsel,
 // ✕), geht kein Abschluss verloren – der Timer wird dann nur verworfen.
-// → [finishing (für disabled), finish]
-function useFinishOnce(onComplete, onClose) {
+// → [finishing (für disabled), finish]. Auch vom Kapitel-Spieler (chapter.jsx) benutzt.
+export function useFinishOnce(onComplete, onClose) {
   const [finishing, setFinishing] = useState(false)
   const finishTimer = useRef(null)
   useEffect(() => () => clearTimeout(finishTimer.current), [])
@@ -196,8 +196,9 @@ function useFinishOnce(onComplete, onClose) {
 
 // Vollbild-Overlay: Kopf (✕ mit 44 px, Fortschrittsbalken, Schrittzähler, Titel),
 // scrollbarer Inhalt, Fußleiste (footer = null → keine, z. B. beim Quiz).
-function LessonFrame({ title, step, total, onClose, footer, children }) {
-  const pct = Math.round((step / Math.max(1, total - 1)) * 100)
+export function LessonFrame({ title, step, total, onClose, footer, children }) {
+  // Ein einziger Schritt (Ziel-Station) ist schon das Ende → voller Balken.
+  const pct = total <= 1 ? 100 : Math.round((step / (total - 1)) * 100)
   // Neuer Schritt beginnt oben – sonst bliebe nach einer langen Erklärung die Scroll-
   // Position stehen und der nächste Schritt öffnete mitten im Inhalt.
   const bodyRef = useRef(null)
