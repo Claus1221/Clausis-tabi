@@ -45,14 +45,19 @@ export function NoSoundBanner({ sound, extra = '', style }) {
 // verstummen; eine späte Antwort der Prüfung wirkt nicht mehr.
 // → { sound: null|true|false, shown, reveal, canReveal(answered) } – Regeln in lib/soundRules.js.
 export function useListenProbe(text, key = text) {
-  const [probe, setProbe] = useState(PROBE_START)
+  // Der Zustand merkt sich, zu welcher Aufgabe er gehört. Gehört er zu einer früheren,
+  // gilt schon beim ersten Rendern der neuen Aufgabe der Startzustand – sonst stünde
+  // für einen Frame die Bedeutung (= die Antwort) der neuen Aufgabe da, bis der Effekt
+  // zurücksetzt.
+  const [stored, setProbe] = useState({ ...PROBE_START, key })
+  const probe = stored.key === key ? stored : { ...PROBE_START, key }
+  const forKey = s => (s.key === key ? s : { ...PROBE_START, key })
   useEffect(() => {
     let live = true
-    setProbe(PROBE_START)
     if (text) {
       soundAvailable().then(ok => {
         if (!live) return
-        setProbe(s => probeResult(s, ok))
+        setProbe(s => ({ ...probeResult(forKey(s), ok), key }))
         if (ok) speak(text)
       })
     }
@@ -61,7 +66,7 @@ export function useListenProbe(text, key = text) {
   return {
     sound: probe.sound,
     shown: probe.shown,
-    reveal: () => setProbe(s => ({ ...s, shown: true })),
+    reveal: () => setProbe(s => ({ ...forKey(s), shown: true, key })),
     canReveal: answered => offerReveal(probe, answered),
   }
 }
