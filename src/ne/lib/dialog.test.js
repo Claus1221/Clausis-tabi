@@ -6,8 +6,9 @@ import { CHAPTERS } from '../data/chapters.js'
 import { nfc } from './deva.js'
 import {
   dialogGate, answerWords, knownWords, phrasesFromTurns, warmupPhrases,
-  warmupOptions, startWarmup, answerWarmup, warmupDone, firstTryScore,
+  warmupOptions, startWarmup, answerWarmup, warmupDone, firstTryScore, sceneOpen, explainMissing,
 } from './dialog.js'
+import { SCRIPT_LESSONS } from '../data/script.js'
 
 // Lernstand „alles bis vor die Szene“ nach path-order.md (Wortblöcke, Themen, Kapitel).
 const W5 = { completedWordBlocks: ['nw1', 'nw2', 'nw3'], completedGrammar: ['ng1', 'ng2', 'ng3', 'ng4', 'ng5'], completedChapters: ['nc1', 'nc2'] }
@@ -119,6 +120,68 @@ describe('warmupOptions', () => {
   })
   it('weniger Wendungen als Optionen → so viele wie da sind', () => {
     expect(warmupOptions(list.slice(0, 2), 0, () => 0.1)).toHaveLength(2)
+  })
+})
+
+describe('warmupOptions – nie zwei richtige Antworten (Wendung steckt im Satz)', () => {
+  // Wortmenge eines Satzes: an Leer- und Satzzeichen getrennt, NFC.
+  const words = dev => new Set(nfc(dev).split(/[\s,।?]+/).filter(Boolean))
+  const within = (a, b) => [...words(a)].every(w => words(b).has(w))
+  const tries = [() => 0, () => 0.3, () => 0.6, () => 0.99]
+  it('nd3, nd5, nd6: die neue Wendung kommt nie zusammen mit dem Satz, der sie enthält', () => {
+    const cases = [['nd3', 'पुग्यो', 'पुग्यो, धन्यवाद।'], ['nd3', 'कति भयो', 'दिदी, कति भयो?'],
+      ['nd5', 'अनि', 'सिधा, अनि दायाँ?'], ['nd6', 'खाइनँ', 'खाइनँ, मलाई दाल भात चाहिन्छ।']]
+    for (const [id, phrase, sentence] of cases) {
+      const list = warmupPhrases(DIALOG_BY_ID[id])
+      for (const dev of [phrase, sentence]) {
+        const i = list.findIndex(p => p.dev === nfc(dev))
+        expect(i, dev).toBeGreaterThanOrEqual(0)
+        const other = nfc(dev === phrase ? sentence : phrase)
+        for (const r of tries) expect(warmupOptions(list, i, r), `${id}: ${dev}`).not.toContain(other)
+      }
+    }
+  })
+  it('alle sechs Szenen: keine Option enthält die Antwort oder steckt in ihr', () => {
+    for (const d of DIALOGS) {
+      const list = warmupPhrases(d)
+      for (let i = 0; i < list.length; i++) for (const r of tries) {
+        const right = list[i].dev
+        for (const o of warmupOptions(list, i, r)) if (o !== right) {
+          expect(within(o, right) || within(right, o), `${d.id}: ${right} / ${o}`).toBe(false)
+        }
+        expect(warmupOptions(list, i, r).length, `${d.id}: ${right}`).toBeGreaterThanOrEqual(2)
+      }
+    }
+  })
+})
+
+describe('sceneOpen – Üben: Station nicht gesperrt UND Wörter-Tor offen; Gespieltes immer', () => {
+  const scripts = SCRIPT_LESSONS.map(l => l.id)
+  const upToNc2 = { ...W5, completedLessons: scripts }
+  it('nach nc2: nd1 offen, nd4 trotz offenem Wörter-Tor zu (Station noch gesperrt)', () => {
+    expect(dialogGate(DIALOG_BY_ID.nd4, upToNc2).open).toBe(true)
+    expect(sceneOpen(DIALOG_BY_ID.nd1, upToNc2)).toBe(true)
+    expect(sceneOpen(DIALOG_BY_ID.nd4, upToNc2)).toBe(false)
+  })
+  it('nur die Schrift gelernt → zu (Station gesperrt, Wörter fehlen)', () => {
+    expect(sceneOpen(DIALOG_BY_ID.nd1, { completedLessons: scripts })).toBe(false)
+  })
+  it('gespielte Szene bleibt wiederholbar, auch wenn ihre Station sonst gesperrt wäre', () => {
+    expect(sceneOpen(DIALOG_BY_ID.nd6, { completedDialogs: ['nd6'] })).toBe(true)
+  })
+})
+
+describe('explainMissing', () => {
+  it('je fehlendes Wort Bedeutung und die Station, die es lehrt', () => {
+    const info = explainMissing(nd1, dialogGate(nd1, {}).missing)
+    const thamel = info.find(x => x.dev === nfc('थमेल'))
+    expect(thamel.de).toBeTruthy()
+    expect(thamel.where).toBe(GRAMMAR.find(g => g.id === 'ng5').title)
+    for (const x of info) expect(x.de, x.dev).toBeTruthy()
+  })
+  it('Wort aus einem Wortblock → Titel des Blocks', () => {
+    const info = explainMissing(nd1, [nfc('धन्यवाद')])
+    expect(info[0].where).toBe(WORD_BLOCKS.find(b => b.words.some(w => w.dev.split(' ').includes('धन्यवाद'))).title)
   })
 })
 

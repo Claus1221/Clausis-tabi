@@ -194,6 +194,14 @@ export function useFinishOnce(onComplete, onClose) {
   return [finishing, finish]
 }
 
+// Ein Aufruf je Erscheinen, auch bei Doppeltipp: der erste Aufruf gewinnt, jeder weitere
+// verpufft (Ref, nicht State – zwei Tipps im selben Render sähen sonst beide „frei“). Für
+// die Weiter-Knöpfe einmal beantworteter Aufgaben (chapter.jsx, dialog.jsx).
+export function useOnce(fn) {
+  const done = useRef(false)
+  return (...a) => { if (done.current) return; done.current = true; fn(...a) }
+}
+
 // Vollbild-Overlay: Kopf (✕ mit 44 px, Fortschrittsbalken, Schrittzähler, Titel),
 // scrollbarer Inhalt, Fußleiste (footer = null → keine, z. B. beim Quiz).
 export function LessonFrame({ title, step, total, onClose, footer, children }) {

@@ -1,6 +1,8 @@
-import { learnedWords } from '../data/words.js'
+import { learnedWords, WORD_BLOCKS } from '../data/words.js'
 import { GRAMMAR_FORMS, GRAMMAR_NEW_WORDS } from '../data/grammar.js'
-import { CHAPTERS, chapterWords } from '../data/chapters.js'
+import { CHAPTERS, CHAPTER_BY_ID, chapterWords } from '../data/chapters.js'
+import { NE_PATH } from '../data/path.js'
+import { stationStates, nodeMeta } from './path.js'
 import { nfc } from './deva.js'
 import { functionWordSet, isKnownWord } from './functionWords.js'
 import { shuffle } from './scriptQuiz.js'
@@ -49,6 +51,45 @@ export function dialogGate(dialog, progress) {
   return { open: missing.length === 0, missing }
 }
 
+// Übersicht im Üben: eine Szene ist spielbar, wenn sie schon gespielt wurde (Wiederholung
+// geht immer) – oder wenn ihre Station auf der Karte nicht mehr gesperrt ist UND das
+// Wörter-Tor offen ist (wie die japanische Übersicht: nichts außer der Reihe).
+export function sceneOpen(dialog, progress) {
+  if (!dialog) return false
+  if ((progress?.completedDialogs || []).includes(dialog.id)) return true
+  const at = NE_PATH.findIndex(n => n.type === 'dialog' && n.id === dialog.id)
+  const state = at === -1 ? null : stationStates(NE_PATH, progress || {})[at]
+  return state !== null && state !== 'locked' && dialogGate(dialog, progress).open
+}
+
+// Wo im Pfad ein Wort zuerst gelehrt wird (Wortblock, Grammatik-Thema, Kapitel-intro) –
+// Titel der Station; Tafel beim ersten Aufruf gebaut.
+let TEACHER = null
+function teacher() {
+  if (TEACHER) return TEACHER
+  TEACHER = new Map()
+  const put = (dev, title) => { for (const p of nfc(dev).split(/\s+/)) if (p && !TEACHER.has(p)) TEACHER.set(p, title) }
+  const blocks = Object.fromEntries(WORD_BLOCKS.map(b => [b.id, b]))
+  for (const n of NE_PATH) {
+    const title = nodeMeta(n)?.title
+    if (!title) continue
+    if (n.type === 'word') for (const w of blocks[n.id]?.words || []) put(w.dev, title)
+    if (n.type === 'grammar') for (const x of [...(GRAMMAR_FORMS[n.id] || []), ...(GRAMMAR_NEW_WORDS[n.id] || []).map(w => w.dev)]) put(x, title)
+    if (n.type === 'chapter' && CHAPTER_BY_ID[n.id]) chapterWords(CHAPTER_BY_ID[n.id]).forEach(w => put(w, title))
+  }
+  return TEACHER
+}
+
+// Hinweis zu gesperrten Szenen: je fehlendes Wort { dev, de, where } – de = Bedeutung des
+// Worts in der Szene (sein Token), where = Titel der lehrenden Station ('' wenn unbekannt).
+export function explainMissing(dialog, words) {
+  const tok = new Map()
+  for (const t of dialog?.turns || []) for (const k of [...(t.answerTokens || []), ...(t.npcTokens || [])]) {
+    if (k.de && !tok.has(nfc(k.t))) tok.set(nfc(k.t), k.de)
+  }
+  return (words || []).map(w => ({ dev: nfc(w), de: tok.get(nfc(w)) || '', where: teacher().get(nfc(w)) || '' }))
+}
+
 // Die Sätze, die eine Szene von dir verlangt – ohne Doppelte, in Spielreihenfolge, NFC.
 // tokens = answerTokens, damit das Aufwärmen die Wörter antippbar zeigt.
 export function phrasesFromTurns(turns) {
@@ -71,16 +112,24 @@ export function warmupPhrases(dialog) {
   return [...fresh, ...phrasesFromTurns(dialog?.turns).filter(p => !have.has(p.dev))]
 }
 
+// Wortmenge einer Wendung (NFC, an Leer- und Satzzeichen getrennt).
+const wordSet = dev => new Set(nfc(dev).split(/[\s,।?]+/).filter(Boolean))
+// Steckt a ganz in b? (पुग्यो in „पुग्यो, धन्यवाद।“)
+const inside = (a, b) => { const B = wordSet(b); return [...wordSet(a)].every(w => B.has(w)) }
+// Zwei Wendungen, die beide auf dieselbe Frage passen könnten: gleicher Text, gleiche
+// Bedeutung, oder die eine steckt in der anderen – eine neue Wendung (कति भयो) steht ja
+// meist in einem Antwortsatz derselben Szene („दिदी, कति भयो?“).
+const clash = (p, q) => p.dev === q.dev || p.de === q.de || inside(p.dev, q.dev) || inside(q.dev, p.dev)
+
 // Optionen der Abfrage „Wie sagst du das?“ für list[i]: die richtige plus bis zu `count − 1`
-// andere Wendungen derselben Szene – nie zwei mit gleichem Text oder gleicher Bedeutung
-// (sonst wären zwei richtig). Gemischt.
+// andere Wendungen derselben Szene, die weder mit der richtigen noch untereinander
+// kollidieren (clash) – sonst wären zwei richtig. Gemischt.
 export function warmupOptions(list, i, rand = Math.random, count = 3) {
   const right = list[i]
-  const others = shuffle(list.filter((p, j) => j !== i && p.dev !== right.dev && p.de !== right.de), rand)
   const pick = []
-  for (const p of others) {
+  for (const p of shuffle(list.filter((_, j) => j !== i), rand)) {
     if (pick.length >= count - 1) break
-    if (!pick.some(q => q.dev === p.dev || q.de === p.de)) pick.push(p)
+    if (!clash(p, right) && !pick.some(q => clash(p, q))) pick.push(p)
   }
   return shuffle([right, ...pick], rand).map(p => p.dev)
 }

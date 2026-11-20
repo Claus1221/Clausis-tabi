@@ -445,7 +445,8 @@ export default function UebenScreen({ initialMode, onConsumeInitial }) {
       </div>
 
       <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: 0.5, margin: '18px 0 8px' }}>GESPRÄCHE</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+      {/* Eine einzelne Kachel volle Breite – sonst bliebe bei 360 px eine halbe Reihe leer. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginBottom: 16 }}>
         {tile({ id: 'szenen', icon: '💬', title: 'Szenen', sub: `${scenesDone} / ${DIALOGS.length} geschafft – wiederholen`, color: C.indigo })}
       </div>
     </div>

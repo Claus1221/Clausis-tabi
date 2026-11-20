@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useContext } from 'react'
+import { useState, useEffect, useMemo, useContext } from 'react'
 import { C, NE } from '../../theme.js'
 import { Btn, Card } from '../../components/ui.jsx'
 import { ProgressCtx } from '../../state/ProgressContext.js'
@@ -8,11 +8,11 @@ import { stopSpeaking } from '../lib/speech.js'
 import { shuffle } from '../lib/scriptQuiz.js'
 import { feedbackColor } from '../lib/srs.js'
 import {
-  dialogGate, warmupPhrases, warmupOptions, startWarmup, answerWarmup, warmupDone, firstTryScore,
+  dialogGate, sceneOpen, explainMissing, warmupPhrases, warmupOptions, startWarmup, answerWarmup, warmupDone, firstTryScore,
 } from '../lib/dialog.js'
 import { useSound, ListenButton, NO_SOUND_HINT } from '../components/sound.jsx'
 import { NeText, TappableSentence, useShowRoman } from '../components/text.jsx'
-import { LessonFrame, useFinishOnce } from './players.jsx'
+import { LessonFrame, useFinishOnce, useOnce } from './players.jsx'
 
 // ─── Gesprächs-Szenen: Spieler und Übersicht ──────────────────────────────────
 // Gegenstück zu DialogPlay/SceneWarmup in src/screens/players.jsx und DialogHub in
@@ -26,12 +26,6 @@ import { LessonFrame, useFinishOnce } from './players.jsx'
 // erst nach der richtigen Antwort – vorher wären sie die Lösung (die Wörter der Zeile lassen
 // sich antippen). Eine falsche Antwort zeigt nur IHRE Bedeutung als kurze Erklärung, dann
 // versucht man es noch einmal.
-
-// Ein Aufruf je Erscheinen, auch bei Doppeltipp (wie in chapter.jsx).
-function useOnce(fn) {
-  const done = useRef(false)
-  return (...a) => { if (done.current) return; done.current = true; fn(...a) }
-}
 
 const label = text => (
   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.indigo, textAlign: 'center', marginBottom: 6 }}>{text}</div>
@@ -235,7 +229,7 @@ export function DialogPlay({ dialog, alreadyDone = false, onComplete, onClose })
         <p style={{ lineHeight: 1.6, marginBottom: 8 }}>{dialog.sceneDe}</p>
         <p style={{ fontSize: 14, color: C.textMuted, marginBottom: 14 }}>Dein Gegenüber: {dialog.role}</p>
         <div style={{ background: `${C.indigo}0E`, border: `1px solid ${C.indigo}33`, borderRadius: 12, padding: '12px 14px', fontSize: 14, color: C.sumi, lineHeight: 1.55, textAlign: 'left', marginBottom: 12 }}>
-          🧤 Zuerst wärmst du dich auf: die {P} Sätze, die du gleich brauchst – lesen, verstehen, einmal wiedererkennen.
+          🧤 Zuerst wärmst du dich auf: die {P} Wendungen, die du gleich brauchst – lesen, verstehen, einmal wiedererkennen.
           Dann spielst du die Szene und tippst jeweils die passende, höfliche Antwort an.
         </div>
         {sound === false && (
@@ -292,9 +286,10 @@ export function DialogPlay({ dialog, alreadyDone = false, onComplete, onClose })
   )
 }
 
-// Übersicht im Üben: alle Szenen in Pfad-Reihenfolge. Offen ist, was gespielt wurde oder
-// dessen Antwortsätze man schon sagen kann (dialogGate) – auch außer der Reihe; sonst
-// gesperrt mit den fehlenden Wörtern. Abschluss bucht wie auf der Reise (onComplete des
+// Übersicht im Üben: alle Szenen in Pfad-Reihenfolge. Offen ist, was gespielt wurde, oder
+// eine Szene, deren Station auf der Karte nicht mehr gesperrt ist UND deren Antwortsätze man
+// sagen kann (sceneOpen) – nichts außer der Reihe. Gesperrt: die fehlenden Wörter mit
+// Bedeutung und lehrender Station (explainMissing), sonst „kommt auf der Reise noch“. Abschluss bucht wie auf der Reise (onComplete des
 // Aufrufers: completedDialogs, XP nur beim ersten Mal).
 export function DialogHub({ onClose }) {
   const { progress, completeDialog } = useContext(ProgressCtx)
@@ -315,8 +310,8 @@ export function DialogHub({ onClose }) {
       </p>
       {DIALOGS.map(d => {
         const isDone = done.includes(d.id)
-        const gate = dialogGate(d, progress)
-        const open = isDone || gate.open
+        const open = sceneOpen(d, progress)
+        const missing = open ? [] : explainMissing(d, dialogGate(d, progress).missing)
         return (
           <button key={d.id} onClick={() => open && setActive({ dialog: d, wasDone: isDone })} disabled={!open}
             aria-label={`${d.title}${isDone ? ' (geschafft, wiederholen)' : open ? ' (spielen)' : ' (gesperrt)'}`}
@@ -329,9 +324,19 @@ export function DialogHub({ onClose }) {
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'block', fontWeight: 600, fontSize: 15, color: C.sumi }}>{d.title}</span>
               <span style={{ display: 'block', fontSize: 12, color: C.textMuted }}>{d.place}</span>
-              {!open && gate.missing.length > 0 && (
-                <span style={{ display: 'block', fontSize: 12, color: C.shu, marginTop: 3 }}>
-                  🔒 Erst auf der Reise lernen: <span style={{ fontFamily: NE, fontSize: 14 }}>{gate.missing.slice(0, 5).join(' · ')}</span>{gate.missing.length > 5 ? ' …' : ''}
+              {!open && (
+                <span style={{ display: 'block', fontSize: 12, color: C.shu, marginTop: 3, lineHeight: 1.45 }}>
+                  {missing.length === 0 ? '🔒 Kommt auf deiner Reise noch – spiel erst die Stationen davor.' : (
+                    <>
+                      🔒 Erst auf der Reise lernen:
+                      {missing.slice(0, 3).map(m => (
+                        <span key={m.dev} style={{ display: 'block' }}>
+                          <span style={{ fontFamily: NE, fontSize: 14 }}>{m.dev}</span>{m.de ? ` „${m.de}“` : ''}{m.where ? ` · lernst du in „${m.where}“` : ''}
+                        </span>
+                      ))}
+                      {missing.length > 3 && <span style={{ display: 'block' }}>… und {missing.length - 3} weitere</span>}
+                    </>
+                  )}
                 </span>
               )}
             </span>

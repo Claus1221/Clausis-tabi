@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useContext } from 'react'
+import { useState, useEffect, useMemo, useContext } from 'react'
 import { C, NE } from '../../theme.js'
 import { Btn, Card, Stars } from '../../components/ui.jsx'
 import { ProgressCtx } from '../../state/ProgressContext.js'
@@ -13,7 +13,7 @@ import { useSound, ListenButton, NoSoundMark, NO_SOUND_HINT } from '../component
 import { NeText, TappableSentence, useShowRoman } from '../components/text.jsx'
 import { GapDrill, GAP } from '../components/GapDrill.jsx'
 import { BuildStep } from '../components/BuildStep.jsx'
-import { LessonFrame, useFinishOnce } from './players.jsx'
+import { LessonFrame, useFinishOnce, useOnce } from './players.jsx'
 
 // ─── Geschichts-Kapitel, Tagebuch und Ziel ────────────────────────────────────
 // Gegenstück zu ChapterPlayer/StoryJournal in src/screens/reise.jsx. Eigene Datei statt
@@ -25,12 +25,6 @@ import { LessonFrame, useFinishOnce } from './players.jsx'
 // Umschrift bei Sätzen nur mit settings.showRoman, Antworten werden getippt. Jede Aufgabe
 // wird EINMAL beantwortet: danach Rückmeldung, Auflösung (Übersetzung, Umschrift) und ein
 // eigener „Weiter“-Knopf, der onDone(richtig?) genau einmal ruft (Ref-Sperre wie GapDrill).
-
-// Ein Aufruf je Erscheinen, auch bei Doppeltipp.
-function useOnce(fn) {
-  const done = useRef(false)
-  return (...a) => { if (done.current) return; done.current = true; fn(...a) }
-}
 
 const label = text => (
   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.indigo, textAlign: 'center', marginBottom: 6 }}>{text}</div>
