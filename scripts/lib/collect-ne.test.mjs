@@ -25,6 +25,11 @@ describe('collectNeTexts', () => {
     expect(t).toEqual([['क', RATE_WORD]])
   })
 
+  it('reine Satzzeichen (Danda) werden nicht vertont – Azure liefert dafür 0 Byte', () => {
+    const t = collectNeTexts({ script: { '।': { say: '।' }, '॥': { say: '॥' }, '५': { say: '५' }, क: script.क } })
+    expect(t.map(([x]) => x).sort()).toEqual(['क', '५'].sort())
+  })
+
   it('kein Text doppelt, NFC-normalisiert', () => {
     const decomposed = 'क' + '़' // क + Nukta
     const composed = decomposed.normalize('NFC')

@@ -14,7 +14,9 @@ import { solved } from '../../src/ne/data/grammar.js'
 export const RATE_WORD = 0.8
 export const RATE_SENTENCE = 1
 
-const HAS_DEVA = /[ऀ-ॿ]/
+// Devanagari OHNE Danda/Doppel-Danda (U+0964/0965): ein reines Satzzeichen hat
+// keinen Klang – Azure liefert dafür eine leere Datei (0 Byte).
+const HAS_DEVA = /[ऀ-ॣ०-ॿ]/
 
 export function collectNeTexts(sources = {}) {
   const texts = new Map() // NFC-Text → Rate
